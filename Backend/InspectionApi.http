@@ -1,0 +1,6 @@
+@InspectionApi_HostAddress = http://localhost:5097
+
+GET {{InspectionApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

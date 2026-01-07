@@ -1,0 +1,42 @@
+/* App 级别的自定义样式 */
+
+/* 侧边栏 Logo 区域 */
+.sidebar-logo {
+  height: 32px;
+  margin: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  text-align: center;
+  color: white;
+  line-height: 32px;
+  font-weight: bold;
+  border-radius: 6px;
+}
+
+/* 页面过渡动画 */
+.page-container {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 表格行悬停效果增强 */
+.ant-table-tbody>tr:hover>td {
+  background-color: #fafafa !important;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+}
