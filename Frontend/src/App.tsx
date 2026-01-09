@@ -3,21 +3,17 @@ import { Layout, Menu, theme } from 'antd';
 import {
   HomeOutlined,
   CalendarOutlined,
-  DollarOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
-// ✅ 引入你刚才写好的页面
+// ✅ 引入页面
 import PropertiesPage from './pages/PropertiesPage';
+import TasksPage from './pages/TasksPage';
+import HistoryPage from './pages/HistoryPage';
 
 const { Header, Content, Footer, Sider } = Layout;
-
-// 🚧 临时占位组件 (等你以后写好了其他页面再替换)
-const TaskBoard = () => <h2 style={{textAlign:'center', marginTop: 50}}>🚧 任务计划开发中...</h2>;
-const Reports = () => <h2 style={{textAlign:'center', marginTop: 50}}>🚧 报表功能开发中...</h2>;
-const Sundry = () => <h2 style={{textAlign:'center', marginTop: 50}}>🚧 杂活记录开发中...</h2>;
 
 const App: React.FC = () => {
   const {
@@ -39,8 +35,7 @@ const App: React.FC = () => {
             items={[
               { key: '1', icon: <HomeOutlined />, label: <Link to="/">物业档案</Link> },
               { key: '2', icon: <CalendarOutlined />, label: <Link to="/tasks">任务计划</Link> },
-              { key: '3', icon: <FileTextOutlined />, label: <Link to="/sundry">杂活记录</Link> },
-              { key: '4', icon: <DollarOutlined />, label: <Link to="/reports">工资报表</Link> },
+              { key: '3', icon: <FileTextOutlined />, label: <Link to="/history">历史记录</Link> },
             ]}
           />
         </Sider>
@@ -64,10 +59,9 @@ const App: React.FC = () => {
                 {/* 首页显示 物业列表 */}
                 <Route path="/" element={<PropertiesPage />} />
                 
-                {/* 其他页面暂时显示占位符 */}
-                <Route path="/tasks" element={<TaskBoard />} />
-                <Route path="/sundry" element={<Sundry />} />
-                <Route path="/reports" element={<Reports />} />
+                {/* 其他页面 */}
+                <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/history" element={<HistoryPage />} />
               </Routes>
             </div>
           </Content>

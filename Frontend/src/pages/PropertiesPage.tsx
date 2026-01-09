@@ -136,17 +136,16 @@ const PropertiesPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 150,
+      width: 120,
       fixed: 'right' as const,
       render: (_: unknown, record: Property) => (
-        <Space>
+        <Space size="small">
           <Button
             icon={<EditOutlined />}
             size="small"
             onClick={() => openEditModal(record)}
-          >
-            编辑
-          </Button>
+            title="编辑"
+          />
           <Popconfirm
             title="确定删除吗?"
             description="删除后无法恢复"
@@ -154,7 +153,12 @@ const PropertiesPage: React.FC = () => {
             okText="确定"
             cancelText="取消"
           >
-            <Button danger icon={<DeleteOutlined />} size="small">删除</Button>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              size="small"
+              title="删除"
+            />
           </Popconfirm>
         </Space>
       ),

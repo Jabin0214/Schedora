@@ -7,7 +7,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const API_ENDPOINTS = {
   properties: `${API_BASE_URL}/properties`,
   inspectionTasks: `${API_BASE_URL}/inspectiontasks`,
-  inspectionRecords: `${API_BASE_URL}/inspectionrecords`,
   sundryTasks: `${API_BASE_URL}/sundrytasks`,
+  reports: `${API_BASE_URL}/reports`,
 } as const;
 

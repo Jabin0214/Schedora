@@ -1,6 +1,7 @@
 using InspectionApi.Data;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,12 +20,15 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-// 3. 配置 Controllers 和 JSON 序列化选项（使用 camelCase）
+// 3. 配置 Controllers 和 JSON 序列化选项（使用 camelCase 和字符串枚举）
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+        // 配置枚举以字符串形式序列化/反序列化（不使用命名策略，保持原始 PascalCase）
+        // 因为前端发送的是 "MoveIn", "MoveOut" 等 PascalCase 格式
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -36,7 +40,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated(); // 确保数据库和表存在
+    
+    // 开发环境：删除并重建数据库（会丢失数据，但确保表结构最新）
+    if (app.Environment.IsDevelopment())
+    {
+        db.Database.EnsureDeleted(); // 删除旧数据库
+        db.Database.EnsureCreated(); // 创建新数据库和表
+    }
+    else
+    {
+        db.Database.EnsureCreated(); // 生产环境只确保存在
+    }
 }
 
 // 5. 全局异常处理中间件
