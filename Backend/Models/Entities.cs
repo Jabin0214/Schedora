@@ -10,6 +10,9 @@ namespace InspectionApi.Models
         [Required(ErrorMessage = "地址不能为空")]
         [StringLength(200, MinimumLength = 5, ErrorMessage = "地址长度必须在5-200个字符之间")]
         public string Address { get; set; } = string.Empty;
+
+        // 计费策略：六个月不收费 / 三个月交替收费
+        public BillingPolicy BillingPolicy { get; set; } = BillingPolicy.ThreeMonthToggle;
         
         // 上次检查信息（用于判断是否收费）
         public DateTime? LastInspectionDate { get; set; } // 上次检查时间
@@ -18,16 +21,20 @@ namespace InspectionApi.Models
     }
 
     public enum InspectionType { MoveIn, MoveOut, Routine }
-    
-    // 丰富状态管理：待预约、已预约、待执行、执行中、已完成、已取消
-    public enum InspectionStatus 
-    { 
-        Pending,      // 待预约
-        Scheduled,    // 已预约（已确定时间）
-        Ready,        // 待执行（预约确认后）
-        InProgress,   // 执行中
-        Completed,   // 已完成
-        Cancelled     // 已取消
+
+    // 状态精简：待预约、待执行、已完成
+    public enum InspectionStatus
+    {
+        Pending,    // 待预约
+        Ready,      // 待执行（已确定时间/待执行）
+        Completed   // 已完成
+    }
+
+    // 物业计费策略
+    public enum BillingPolicy
+    {
+        SixMonthFree,      // 六个月一次，不收费
+        ThreeMonthToggle   // 三个月周期，收费/免费交替（上次收费则本次免费，反之收费）
     }
 
     // 检查任务 (计划中)
@@ -38,9 +45,8 @@ namespace InspectionApi.Models
         public Property? Property { get; set; } // 导航属性
         
         // 预约信息
-        [Phone(ErrorMessage = "电话号码格式不正确")]
         [StringLength(20, ErrorMessage = "电话号码不能超过20个字符")]
-        public string? ContactPhone { get; set; } // 联系电话
+        public string? ContactPhone { get; set; } // 联系电话（支持国际格式和中国手机号）
         
         [EmailAddress(ErrorMessage = "邮箱格式不正确")]
         [StringLength(100, ErrorMessage = "邮箱不能超过100个字符")]

@@ -4,7 +4,6 @@ import {
   Modal,
   Form,
   Input,
-  InputNumber,
   Select,
   DatePicker,
   message,
@@ -16,6 +15,7 @@ import {
   Tag,
   Tooltip,
   Card,
+  InputNumber,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,8 +26,9 @@ import {
   CloseOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { handleApiError } from '../utils/errorHandler';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -53,12 +54,17 @@ const statusLabels: Record<InspectionStatus, { label: string; color: string }> =
 interface Property {
   id: number;
   address: string;
+  billingPolicy?: 'SixMonthFree' | 'ThreeMonthToggle';
+  lastInspectionDate?: string;
+  lastInspectionType?: InspectionType;
+  lastInspectionWasCharged?: boolean;
 }
 
 interface InspectionTask {
   id: number;
   propertyId: number;
   propertyAddress?: string;
+  propertyBillingPolicy?: Property['billingPolicy'];
   contactPhone?: string;
   contactEmail?: string;
   scheduledAt?: string;
@@ -87,6 +93,7 @@ interface CombinedTask {
   taskType: 'inspection' | 'sundry';
   propertyId?: number;
   propertyAddress?: string;
+  propertyBillingPolicy?: Property['billingPolicy'];
   contactPhone?: string;
   contactEmail?: string;
   scheduledAt?: string;
@@ -98,11 +105,6 @@ interface CombinedTask {
   executionDate?: string;
   notes?: string;
   createdAt: string;
-}
-
-interface ApiError {
-  message?: string;
-  errors?: Record<string, string[]>;
 }
 
 dayjs.extend(isBetween);
@@ -130,26 +132,18 @@ const TasksPage: React.FC = () => {
   const [completeForm] = Form.useForm();
   const [sundryForm] = Form.useForm();
   const [rowForm] = Form.useForm();
+  const [propertyHistory, setPropertyHistory] = useState<InspectionTask[]>([]);
 
-  const handleApiError = (error: unknown, defaultMessage: string) => {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<ApiError>;
-      const responseData = axiosError.response?.data;
-
-      if (responseData?.message) {
-        message.error(responseData.message);
-      } else if (responseData?.errors) {
-        const errorMessages = Object.values(responseData.errors).flat();
-        message.error(errorMessages.join('; '));
-      } else if (axiosError.code === 'ERR_NETWORK') {
-        message.error('无法连接到服务器，请检查后端是否启动');
-      } else {
-        message.error(defaultMessage);
-      }
-    } else {
-      message.error(defaultMessage);
-    }
-    console.error(error);
+  const updatePropertyHistory = (propertyId: number) => {
+    const history = tasks
+      .filter((t) => t.propertyId === propertyId && t.status === 'Completed')
+      .sort(
+        (a, b) =>
+          new Date(b.completedAt || b.createdAt || '').getTime() -
+          new Date(a.completedAt || a.createdAt || '').getTime()
+      )
+      .slice(0, 2);
+    setPropertyHistory(history);
   };
 
   const fetchProperties = useCallback(async () => {
@@ -189,6 +183,7 @@ const TasksPage: React.FC = () => {
         taskType: 'inspection' as const,
         propertyId: task.propertyId,
         propertyAddress: task.propertyAddress,
+        propertyBillingPolicy: task.propertyBillingPolicy as Property['billingPolicy'] | undefined,
         contactPhone: task.contactPhone,
         contactEmail: task.contactEmail,
         scheduledAt: task.scheduledAt,
@@ -221,6 +216,7 @@ const TasksPage: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     form.resetFields();
+    setPropertyHistory([]);
   };
 
   const openSundryModal = () => {
@@ -238,7 +234,9 @@ const TasksPage: React.FC = () => {
       const values = await sundryForm.validateFields();
       setSundrySubmitting(true);
       await axios.post(API_ENDPOINTS.sundryTasks, {
-        ...values,
+        description: values.description,
+        cost: values.cost || 0,
+        notes: values.notes,
         executionDate: values.executionDate ? values.executionDate.toISOString() : null,
       });
       message.success('杂活已记录');
@@ -261,6 +259,7 @@ const TasksPage: React.FC = () => {
       const taskData = {
         ...values,
         scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : null,
+        isBillable: values.isBillable,
       };
 
       await axios.post(API_ENDPOINTS.inspectionTasks, taskData);
@@ -379,7 +378,7 @@ const TasksPage: React.FC = () => {
 
   const rowStyle: React.CSSProperties = {
     display: 'grid',
-    gridTemplateColumns: '170px 2.2fr 1.2fr 1fr 1fr 150px',
+    gridTemplateColumns: '170px 2.2fr 1.2fr 1fr 100px 1fr 150px',
     alignItems: 'center',
     gap: 8,
     padding: '6px 10px',
@@ -405,10 +404,11 @@ const TasksPage: React.FC = () => {
       propertyId: inspection?.propertyId ?? record.propertyId,
       type: inspection?.type ?? record.type,
       status: inspection?.status ?? record.status,
+      isBillable: inspection?.isBillable ?? record.isBillable,
       scheduledAt: record.scheduledAt ? dayjs(record.scheduledAt) : null,
       notes: record.notes || '',
       description: record.description || '',
-      cost: record.cost,
+      cost: record.cost || 0,
       executionDate: record.executionDate ? dayjs(record.executionDate) : null,
     });
   };
@@ -431,6 +431,7 @@ const TasksPage: React.FC = () => {
           propertyId: values.propertyId ?? editingInspection.propertyId,
           type: values.type ?? editingInspection.type,
           status: values.status ?? editingInspection.status,
+          isBillable: values.isBillable ?? editingInspection.isBillable,
           scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : null,
           notes: values.notes ?? '',
         };
@@ -438,8 +439,9 @@ const TasksPage: React.FC = () => {
       } else if (editingRecord.taskType === 'sundry') {
         const targetId = editingSundry?.id ?? editingRecord.id;
         const payload = {
+          id: targetId,
           description: values.description,
-          cost: values.cost,
+          cost: values.cost || 0,
           executionDate: values.executionDate ? values.executionDate.toISOString() : null,
           notes: values.notes ?? '',
         };
@@ -523,7 +525,7 @@ const TasksPage: React.FC = () => {
         <div style={cellTextStyle}>
           {record.taskType === 'inspection' ? (
             isEditing ? (
-              <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: '选择类型' }]}> 
+              <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: '选择类型' }]}>
                 <Select
                   options={Object.entries(typeLabels).map(([value, cfg]) => ({
                     value,
@@ -536,35 +538,34 @@ const TasksPage: React.FC = () => {
             ) : (
               '-'
             )
-          ) : isEditing ? (
-            <Form.Item
-              name="cost"
-              style={{ margin: 0 }}
-              rules={[
-                { required: true, message: '费用必填' },
-                { type: 'number', min: 0, message: '费用不能小于0' },
-              ]}
-            >
-              <InputNumber prefix="$" style={{ width: '100%' }} precision={2} min={0} />
-            </Form.Item>
-          ) : record.cost !== undefined ? (
-            <span style={{ color: '#cf1322', fontWeight: 600 }}>${record.cost.toFixed(2)}</span>
           ) : (
-            '-'
+            <Tag color="purple">杂活</Tag>
           )}
         </div>
 
         <div style={cellTextStyle}>
           {record.taskType === 'inspection' ? (
             isEditing ? (
-              <Form.Item name="status" style={{ margin: 0 }} rules={[{ required: true, message: '选择状态' }]}>
-                <Select
-                  options={Object.entries(statusLabels).map(([value, cfg]) => ({
-                    value,
-                    label: cfg.label,
-                  }))}
-                />
-              </Form.Item>
+              <Space size={8}>
+                <Form.Item name="status" style={{ margin: 0 }} rules={[{ required: true, message: '选择状态' }]}>
+                  <Select
+                    style={{ width: 110 }}
+                    options={Object.entries(statusLabels).map(([value, cfg]) => ({
+                      value,
+                      label: cfg.label,
+                    }))}
+                  />
+                </Form.Item>
+                <Form.Item name="isBillable" style={{ margin: 0 }}>
+                  <Select
+                    style={{ width: 90 }}
+                    options={[
+                      { value: true, label: '收费' },
+                      { value: false, label: '免费' },
+                    ]}
+                  />
+                </Form.Item>
+              </Space>
             ) : statusConfig ? (
               <Tag color={statusConfig.color}>{statusConfig.label}</Tag>
             ) : (
@@ -574,6 +575,29 @@ const TasksPage: React.FC = () => {
             dayjs(record.executionDate).format('YYYY-MM-DD')
           ) : (
             '待定'
+          )}
+        </div>
+
+        <div style={cellTextStyle}>
+          {record.taskType === 'sundry' ? (
+            isEditing ? (
+              <Form.Item name="cost" style={{ margin: 0 }} rules={[{ required: true, message: '费用必填' }]}>
+                <InputNumber
+                  min={0}
+                  max={999999.99}
+                  precision={2}
+                  style={{ width: '100%' }}
+                  placeholder="费用"
+                  prefix="$"
+                />
+              </Form.Item>
+            ) : (
+              <span style={{ fontWeight: 500, color: '#1890ff' }}>
+                ${(record.cost || 0).toFixed(2)}
+              </span>
+            )
+          ) : (
+            '-'
           )}
         </div>
 
@@ -651,14 +675,15 @@ const TasksPage: React.FC = () => {
     <Card
       size="small"
       title={`${title}（${data.length}）`}
-      bodyStyle={{ padding: 0 }}
+      styles={{ body: { padding: 0 } }}
       style={{ marginBottom: 12 }}
     >
       <div style={{ ...rowStyle, background: '#fafafa', fontWeight: 600, cursor: 'default' }}>
         <div>时间</div>
         <div>地址/描述</div>
-        <div>类型/费用</div>
+        <div>类型</div>
         <div>状态/日期</div>
+        <div>费用</div>
         <div>备注</div>
         <div>操作</div>
       </div>
@@ -712,7 +737,7 @@ const TasksPage: React.FC = () => {
         confirmLoading={submitting}
         okText="添加"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
         width={600}
       >
         <Form form={form} layout="vertical">
@@ -731,18 +756,30 @@ const TasksPage: React.FC = () => {
                 label: p.address,
               }))}
               onChange={(value) => {
-                const task = tasks.find((t) => t.propertyId === value);
-                if (task && task.lastInspectionDate) {
-                  message.info({
-                    content: `上次检查: ${dayjs(task.lastInspectionDate).format('YYYY-MM-DD')} ${
-                      task.lastInspectionType ? typeLabels[task.lastInspectionType].label : ''
-                    } ${task.lastInspectionWasCharged ? '(收费)' : '(免费)'}`,
-                    duration: 3,
-                  });
-                }
+                updatePropertyHistory(value);
               }}
             />
           </Form.Item>
+          <div style={{ marginTop: -16, marginBottom: 16, padding: '8px 10px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
+            {propertyHistory.length === 0 ? (
+              <div style={{ color: '#999', fontSize: 12 }}>最近两次记录：无</div>
+            ) : (
+              propertyHistory.map((h) => {
+                const date = h.completedAt
+                  ? dayjs(h.completedAt).format('YYYY-MM-DD')
+                  : h.createdAt
+                  ? dayjs(h.createdAt).format('YYYY-MM-DD')
+                  : '未知';
+                const typeLabel = h.type ? typeLabels[h.type]?.label : '';
+                const charge = h.isBillable ? '收费' : '免费';
+                return (
+                  <div key={`history-${h.id}`} style={{ color: '#555', fontSize: 12, lineHeight: '18px' }}>
+                    {date} ｜ {typeLabel} ｜ {charge} ｜ {h.notes || '无备注'}
+                  </div>
+                );
+              })
+            )}
+          </div>
 
           <Form.Item
             name="contactPhone"
@@ -804,6 +841,20 @@ const TasksPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item
+            name="isBillable"
+            label="是否收费"
+            rules={[{ required: true, message: '请选择是否收费' }]}
+            initialValue={true}
+          >
+            <Select
+              options={[
+                { value: true, label: '收费' },
+                { value: false, label: '免费' },
+              ]}
+            />
+          </Form.Item>
+
+          <Form.Item
             name="notes"
             label="预约备注"
             rules={[{ max: 500, message: '备注不能超过500个字符' }]}
@@ -824,7 +875,7 @@ const TasksPage: React.FC = () => {
         }}
         okText="完成"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
         width={500}
       >
         <Form form={completeForm} layout="vertical">
@@ -849,7 +900,7 @@ const TasksPage: React.FC = () => {
         confirmLoading={sundrySubmitting}
         okText="保存"
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
         width={520}
       >
         <Form form={sundryForm} layout="vertical">
@@ -869,15 +920,17 @@ const TasksPage: React.FC = () => {
             label="费用"
             rules={[
               { required: true, message: '费用必填' },
-              { type: 'number', min: 0, message: '费用不能小于0' },
+              { type: 'number', min: 0, max: 999999.99, message: '费用必须在0-999999.99之间' },
             ]}
+            initialValue={0}
           >
             <InputNumber
-              prefix="$"
+              min={0}
+              max={999999.99}
+              precision={2}
               style={{ width: '100%' }}
               placeholder="输入费用"
-              precision={2}
-              min={0}
+              prefix="$"
             />
           </Form.Item>
 

@@ -93,8 +93,9 @@ namespace InspectionApi.Controllers
                     return NotFound(new { message = $"未找到ID为{id}的物业" });
                 }
 
-                // 更新字段（仅地址）
+                // 更新字段
                 existingProperty.Address = property.Address;
+                existingProperty.BillingPolicy = property.BillingPolicy;
 
                 await _context.SaveChangesAsync();
 
@@ -123,6 +124,15 @@ namespace InspectionApi.Controllers
                 if (property == null)
                 {
                     return NotFound(new { message = $"未找到ID为{id}的物业" });
+                }
+
+                // 检查是否有关联的任务或记录
+                var hasRelatedTasks = await _context.InspectionTasks.AnyAsync(t => t.PropertyId == id);
+                var hasRelatedRecords = await _context.InspectionRecords.AnyAsync(r => r.PropertyId == id);
+
+                if (hasRelatedTasks || hasRelatedRecords)
+                {
+                    return BadRequest(new { message = "该物业存在关联的任务或记录，无法删除" });
                 }
 
                 _context.Properties.Remove(property);

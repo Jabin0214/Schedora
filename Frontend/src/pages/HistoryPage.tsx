@@ -1,31 +1,22 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import {
-  Card,
-  Table,
-  DatePicker,
-  Button,
-  Space,
-  Typography,
-  Statistic,
-  Row,
-  Col,
-  message,
-  Spin,
-  Empty,
-  Tag,
-} from 'antd';
-import { ReloadOutlined, CalendarOutlined, HistoryOutlined } from '@ant-design/icons';
+import { Table, DatePicker, Button, Space, Typography, message, Spin, Empty, Tag } from 'antd';
+import { ReloadOutlined, HistoryOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/zh-cn';
-import { API_ENDPOINTS } from '../config/api';
 import isBetween from 'dayjs/plugin/isBetween';
+import { API_ENDPOINTS } from '../config/api';
+import { handleApiError } from '../utils/errorHandler';
+
+dayjs.extend(isBetween);
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
 type InspectionType = 'MoveIn' | 'MoveOut' | 'Routine';
 type InspectionStatus = 'Pending' | 'Ready' | 'Completed';
+
+type BillingPolicy = 'SixMonthFree' | 'ThreeMonthToggle';
 
 const typeLabels: Record<string, { label: string; color: string }> = {
   MoveIn: { label: '入住检查', color: 'blue' },
@@ -46,9 +37,11 @@ interface InspectionTask {
   scheduledAt?: string;
   type: InspectionType;
   status: InspectionStatus;
+  isBillable: boolean;
   notes?: string;
   createdAt?: string;
   completedAt?: string;
+  propertyBillingPolicy?: BillingPolicy;
 }
 
 interface SundryTask {
@@ -67,55 +60,21 @@ interface CombinedTask {
   scheduledAt?: string;
   type?: InspectionType;
   status?: InspectionStatus;
+  isBillable?: boolean;
   description?: string;
   cost?: number;
   executionDate?: string;
+  completedAt?: string;
   notes?: string;
   createdAt: string;
 }
 
-interface InspectionRecord {
-  id: number;
-  executionDate: string;
-  propertyAddress?: string;
-  type: string;
-  isCharged: boolean;
-  notes?: string;
-}
-
-interface PayrollSundryTask {
-  id: number;
-  description: string;
-  cost: number;
-  notes?: string;
-  executionDate: string;
-}
-
-interface PayrollReport {
-  period: {
-    startDate: string;
-    endDate: string;
-    days: number;
-  };
-  summary: {
-    totalInspections: number;
-    totalSundryTasks: number;
-    totalSundryCost: number;
-  };
-  inspections: InspectionRecord[];
-  sundryTasks: PayrollSundryTask[];
-}
-
-dayjs.extend(isBetween);
-
 const HistoryPage: React.FC = () => {
   dayjs.locale('zh-cn');
 
-  const [report, setReport] = useState<PayrollReport | null>(null);
-  const [loadingReport, setLoadingReport] = useState(false);
-  const [loadingTasks, setLoadingTasks] = useState(false);
   const [inspectionTasks, setInspectionTasks] = useState<InspectionTask[]>([]);
   const [sundryTasks, setSundryTasks] = useState<SundryTask[]>([]);
+  const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(29, 'day'),
     dayjs(),
@@ -128,31 +87,8 @@ const HistoryPage: React.FC = () => {
     return task.executionDate;
   };
 
-  const fetchReport = useCallback(
-    async (startDate: Dayjs, endDate: Dayjs) => {
-      setLoadingReport(true);
-      try {
-        const res = await axios.get<PayrollReport>(`${API_ENDPOINTS.reports}/payroll`, {
-          params: {
-            startDate: startDate.format('YYYY-MM-DD'),
-            endDate: endDate.format('YYYY-MM-DD'),
-          },
-        });
-        setReport(res.data);
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          message.error('获取报表失败，请稍后重试');
-        }
-        console.error(error);
-      } finally {
-        setLoadingReport(false);
-      }
-    },
-    []
-  );
-
   const fetchHistoryTasks = useCallback(async () => {
-    setLoadingTasks(true);
+    setLoading(true);
     try {
       const [insRes, sunRes] = await Promise.all([
         axios.get<InspectionTask[]>(API_ENDPOINTS.inspectionTasks),
@@ -161,22 +97,15 @@ const HistoryPage: React.FC = () => {
       setInspectionTasks(insRes.data);
       setSundryTasks(sunRes.data);
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        message.error('获取历史任务失败');
-      }
-      console.error(error);
+      handleApiError(error, '获取历史数据失败');
     } finally {
-      setLoadingTasks(false);
+      setLoading(false);
     }
   }, []);
 
   useEffect(() => {
     fetchHistoryTasks();
   }, [fetchHistoryTasks]);
-
-  useEffect(() => {
-    fetchReport(dateRange[0], dateRange[1]);
-  }, [dateRange, fetchReport]);
 
   const combinedHistory = useMemo<CombinedTask[]>(() => {
     const combined: CombinedTask[] = [
@@ -187,6 +116,8 @@ const HistoryPage: React.FC = () => {
         scheduledAt: task.scheduledAt,
         type: task.type,
         status: task.status,
+        isBillable: task.isBillable,
+        completedAt: task.completedAt,
         notes: task.notes,
         createdAt: task.createdAt || '',
       })),
@@ -206,32 +137,35 @@ const HistoryPage: React.FC = () => {
 
     return combined
       .filter((item) => {
-        const planned = getPlannedDate(item);
-        const fallbackDate = item.createdAt ? dayjs(item.createdAt) : dayjs();
-        const pivot = planned ? dayjs(planned) : fallbackDate;
+        if (item.taskType === 'inspection' && item.status !== 'Completed') return false;
+        if (item.taskType === 'sundry' && !item.executionDate) return false;
+
+        const pivotStr = item.completedAt || getPlannedDate(item) || item.createdAt;
+        const pivot = dayjs(pivotStr);
+        if (!pivot.isValid()) return false;
         if (!pivot.isBefore(startOfToday)) return false;
         return pivot.isBetween(start, end, 'day', '[]');
       })
       .sort((a, b) => {
-        const da = getPlannedDate(a) || a.createdAt || startOfToday.toISOString();
-        const db = getPlannedDate(b) || b.createdAt || startOfToday.toISOString();
+        const da = a.completedAt || getPlannedDate(a) || a.createdAt || startOfToday.toISOString();
+        const db = b.completedAt || getPlannedDate(b) || b.createdAt || startOfToday.toISOString();
         return dayjs(db).valueOf() - dayjs(da).valueOf();
       });
   }, [inspectionTasks, sundryTasks, dateRange, startOfToday]);
 
-  const historyColumns = [
+  const columns = [
     {
       title: '日期',
       dataIndex: 'date',
       key: 'date',
       width: 140,
       render: (_: unknown, record: CombinedTask) => {
-        const planned = getPlannedDate(record) || record.createdAt;
-        return dayjs(planned).format('MM-DD ddd HH:mm');
+        const pivot = record.completedAt || getPlannedDate(record) || record.createdAt;
+        return dayjs(pivot).format('YYYY-MM-DD');
       },
     },
     {
-      title: '地址 / 描述',
+      title: '内容',
       dataIndex: 'content',
       key: 'content',
       ellipsis: { showTitle: false },
@@ -239,27 +173,35 @@ const HistoryPage: React.FC = () => {
         record.taskType === 'inspection' ? record.propertyAddress || '-' : record.description || '-',
     },
     {
-      title: '类型 / 费用',
+      title: '类型',
       dataIndex: 'type',
       key: 'type',
-      width: 160,
+      width: 120,
       render: (_: unknown, record: CombinedTask) => {
         if (record.taskType === 'inspection') {
           const cfg = record.type ? typeLabels[record.type] : null;
           return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : '-';
         }
-        return record.cost !== undefined ? (
-          <span style={{ color: '#cf1322', fontWeight: 600 }}>${record.cost.toFixed(2)}</span>
-        ) : (
-          '-'
-        );
+        return <Tag color="purple">杂活</Tag>;
+      },
+    },
+    {
+      title: '收费/费用',
+      dataIndex: 'charge',
+      key: 'charge',
+      width: 120,
+      render: (_: unknown, record: CombinedTask) => {
+        if (record.taskType === 'sundry') {
+          return <span style={{ fontWeight: 500, color: '#1890ff' }}>${(record.cost || 0).toFixed(2)}</span>;
+        }
+        return record.isBillable ? <Tag color="red">收费</Tag> : <Tag color="default">免费</Tag>;
       },
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: 100,
       render: (_: unknown, record: CombinedTask) => {
         if (record.taskType === 'inspection') {
           const cfg = record.status ? statusLabels[record.status] : null;
@@ -267,80 +209,6 @@ const HistoryPage: React.FC = () => {
         }
         return <Tag color="purple">杂活</Tag>;
       },
-    },
-    {
-      title: '备注',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: { showTitle: false },
-      render: (text: string) => <span title={text}>{text || '-'}</span>,
-    },
-  ];
-
-  const inspectionColumns = [
-    {
-      title: '执行日期',
-      dataIndex: 'executionDate',
-      key: 'executionDate',
-      width: 120,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
-    },
-    {
-      title: '物业地址',
-      dataIndex: 'propertyAddress',
-      key: 'propertyAddress',
-      ellipsis: { showTitle: false },
-      render: (text: string) => <span title={text}>{text || '-'}</span>,
-    },
-    {
-      title: '检查类型',
-      dataIndex: 'type',
-      key: 'type',
-      width: 120,
-      render: (type: string) => {
-        const config = typeLabels[type];
-        return config ? <Tag color={config.color}>{config.label}</Tag> : type;
-      },
-    },
-    {
-      title: '是否收费',
-      dataIndex: 'isCharged',
-      key: 'isCharged',
-      width: 100,
-      render: (isCharged: boolean) => (
-        <Tag color={isCharged ? 'green' : 'default'}>{isCharged ? '是' : '否'}</Tag>
-      ),
-    },
-    {
-      title: '备注',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: { showTitle: false },
-      render: (text: string) => <span title={text}>{text || '-'}</span>,
-    },
-  ];
-
-  const sundryColumns = [
-    {
-      title: '执行日期',
-      dataIndex: 'executionDate',
-      key: 'executionDate',
-      width: 120,
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD'),
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: { showTitle: false },
-      render: (text: string) => <span title={text}>{text}</span>,
-    },
-    {
-      title: '费用',
-      dataIndex: 'cost',
-      key: 'cost',
-      width: 120,
-      render: (cost: number) => `$${cost.toFixed(2)}`,
     },
     {
       title: '备注',
@@ -361,7 +229,7 @@ const HistoryPage: React.FC = () => {
     <div>
       <div
         style={{
-          marginBottom: 16,
+          marginBottom: 12,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -375,97 +243,29 @@ const HistoryPage: React.FC = () => {
         <Space>
           <RangePicker
             value={dateRange}
-            onChange={handleDateRangeChange as any}
+            onChange={handleDateRangeChange}
             allowClear={false}
             presets={[
               { label: '近14天', value: [dayjs().subtract(13, 'day'), dayjs()] },
               { label: '近30天', value: [dayjs().subtract(29, 'day'), dayjs()] },
             ]}
           />
-          <Button icon={<ReloadOutlined />} onClick={fetchHistoryTasks} loading={loadingTasks}>
-            刷新任务
-          </Button>
-          <Button icon={<CalendarOutlined />} onClick={() => fetchReport(dateRange[0], dateRange[1])} loading={loadingReport}>
-            刷新报表
+          <Button icon={<ReloadOutlined />} onClick={fetchHistoryTasks} loading={loading}>
+            刷新
           </Button>
         </Space>
       </div>
 
-      <Spin spinning={loadingTasks}>
-        <Card title={`历史任务（${combinedHistory.length}）`} size="small" bodyStyle={{ padding: 12 }}>
-          <Table
-            dataSource={combinedHistory}
-            columns={historyColumns}
-            rowKey={(record) => `${record.taskType}-${record.id}`}
-            pagination={{ pageSize: 20, showSizeChanger: true }}
-            locale={{ emptyText: <Empty description="暂无历史记录" /> }}
-          />
-        </Card>
+      <Spin spinning={loading}>
+        <Table
+          size="small"
+          dataSource={combinedHistory}
+          columns={columns}
+          rowKey={(record) => `${record.taskType}-${record.id}`}
+          pagination={{ pageSize: 30, showSizeChanger: true, showQuickJumper: true }}
+          locale={{ emptyText: <Empty description="暂无历史记录" /> }}
+        />
       </Spin>
-
-      <Card
-        title="工资报表"
-        size="small"
-        style={{ marginTop: 16 }}
-        bodyStyle={{ padding: 12 }}
-        extra={
-          <Button type="link" icon={<ReloadOutlined />} onClick={() => fetchReport(dateRange[0], dateRange[1])}>
-            刷新
-          </Button>
-        }
-      >
-        <Spin spinning={loadingReport}>
-          <Row gutter={[16, 16]}>
-            <Col span={8}>
-              <Card size="small">
-                <Statistic
-                  title="检查次数"
-                  value={report?.summary.totalInspections ?? 0}
-                  prefix={<Tag color="blue">检查</Tag>}
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card size="small">
-                <Statistic
-                  title="杂活数量"
-                  value={report?.summary.totalSundryTasks ?? 0}
-                  prefix={<Tag color="purple">杂活</Tag>}
-                />
-              </Card>
-            </Col>
-            <Col span={8}>
-              <Card size="small">
-                <Statistic
-                  title="杂活费用"
-                  value={(report?.summary.totalSundryCost ?? 0).toFixed(2)}
-                  prefix="$"
-                />
-              </Card>
-            </Col>
-          </Row>
-
-          <Card title="检查明细" size="small" style={{ marginTop: 12 }} bodyStyle={{ padding: 0 }}>
-            <Table
-              dataSource={report?.inspections || []}
-              columns={inspectionColumns}
-              rowKey={(item) => `inspection-${item.id}`}
-              pagination={{ pageSize: 10, showSizeChanger: true }}
-              locale={{ emptyText: <Empty description="暂无检查记录" /> }}
-            />
-          </Card>
-
-          <Card title="杂活明细" size="small" style={{ marginTop: 12 }} bodyStyle={{ padding: 0 }}>
-            <Table
-              dataSource={report?.sundryTasks || []}
-              columns={sundryColumns}
-              rowKey={(item) => `sundry-${item.id}`}
-              pagination={{ pageSize: 10, showSizeChanger: true }}
-              locale={{ emptyText: <Empty description="暂无杂活记录" /> }}
-            />
-          </Card>
-        </Spin>
-      </Card>
     </div>
   );
 };

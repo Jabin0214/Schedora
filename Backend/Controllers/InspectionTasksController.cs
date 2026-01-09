@@ -18,41 +18,31 @@ namespace InspectionApi.Controllers
             _logger = logger;
         }
 
-        // 判断是否应该收费（三个月间隔规则）
-        private bool ShouldCharge(Property property, InspectionType type)
+        // 判断是否应该收费（物业计费策略）
+        private bool ShouldCharge(Property property)
         {
-            // MoveIn 和 MoveOut 总是收费
-            if (type == InspectionType.MoveIn || type == InspectionType.MoveOut)
-                return true;
-
-            // Routine 检查：如果上次收费了，这次免费；如果上次免费或超过3个月，这次收费
-            if (type == InspectionType.Routine)
+            if (property.BillingPolicy == BillingPolicy.SixMonthFree)
             {
-                if (!property.LastInspectionDate.HasValue)
-                    return true; // 首次检查收费
-
-                var monthsSinceLastInspection = (DateTime.UtcNow - property.LastInspectionDate.Value).TotalDays / 30;
-
-                // 如果上次收费了，这次免费（间隔收费）
-                if (property.LastInspectionWasCharged)
-                    return false;
-
-                // 如果超过3个月，收费
-                return monthsSinceLastInspection >= 3;
+                return false; // 六个月一次不收费策略：当前不收费
             }
 
-            return true;
+            // 三个月交替收费：上次收费则本次免费；上次没收费则本次收费；若无历史则收费
+            if (!property.LastInspectionDate.HasValue)
+                return true;
+
+            return !property.LastInspectionWasCharged;
         }
 
         // GET: api/inspectiontasks
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<object>>> GetInspectionTasks()
+        public async Task<ActionResult<IEnumerable<object>>> GetInspectionTasks(CancellationToken cancellationToken = default)
         {
             try
             {
                 var tasks = await _context.InspectionTasks
                     .Include(t => t.Property)
-                    .OrderByDescending(t => t.ScheduledAt ?? DateTime.MaxValue)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .ThenByDescending(t => t.ScheduledAt)
                     .Select(t => new
                     {
                         t.Id,
@@ -70,9 +60,10 @@ namespace InspectionApi.Controllers
                         // 物业的上次检查信息
                         LastInspectionDate = t.Property != null ? t.Property.LastInspectionDate : null,
                         LastInspectionType = t.Property != null ? t.Property.LastInspectionType : null,
-                        LastInspectionWasCharged = t.Property != null ? t.Property.LastInspectionWasCharged : false
+                        LastInspectionWasCharged = t.Property != null ? t.Property.LastInspectionWasCharged : false,
+                        BillingPolicy = t.Property != null ? t.Property.BillingPolicy : BillingPolicy.ThreeMonthToggle
                     })
-                    .ToListAsync();
+                    .ToListAsync(cancellationToken);
                 return Ok(tasks);
             }
             catch (Exception ex)
@@ -139,12 +130,12 @@ namespace InspectionApi.Controllers
                 }
 
                 // 自动判断是否收费
-                task.IsBillable = ShouldCharge(property, task.Type);
+                task.IsBillable = ShouldCharge(property);
 
-                // 如果设置了预约时间，状态改为已预约
+                // 如果设置了预约时间，状态改为待执行
                 if (task.ScheduledAt.HasValue && task.Status == InspectionStatus.Pending)
                 {
-                    task.Status = InspectionStatus.Scheduled;
+                    task.Status = InspectionStatus.Ready;
                 }
 
                 // 确保创建时间已设置
@@ -188,13 +179,6 @@ namespace InspectionApi.Controllers
                     return NotFound(new { message = $"未找到ID为{id}的任务" });
                 }
 
-                // 验证物业是否存在
-                var propertyExists = await _context.Properties.AnyAsync(p => p.Id == task.PropertyId);
-                if (!propertyExists)
-                {
-                    return BadRequest(new { message = "指定的物业不存在" });
-                }
-
                 // 获取物业信息用于判断是否收费
                 var property = await _context.Properties.FindAsync(task.PropertyId);
                 if (property == null)
@@ -207,20 +191,16 @@ namespace InspectionApi.Controllers
                 existingTask.ContactPhone = task.ContactPhone;
                 existingTask.ContactEmail = task.ContactEmail;
                 existingTask.ScheduledAt = task.ScheduledAt;
-                existingTask.Type = task.Type;
                 existingTask.Status = task.Status;
                 existingTask.Notes = task.Notes;
+                existingTask.Type = task.Type;
+                // 重新计算是否收费（策略驱动）
+                existingTask.IsBillable = ShouldCharge(property);
 
-                // 重新计算是否收费（如果类型改变）
-                if (existingTask.Type != task.Type)
-                {
-                    existingTask.IsBillable = ShouldCharge(property, task.Type);
-                }
-
-                // 如果设置了预约时间，状态改为已预约
+                // 如果设置了预约时间，状态改为待执行
                 if (task.ScheduledAt.HasValue && existingTask.Status == InspectionStatus.Pending)
                 {
-                    existingTask.Status = InspectionStatus.Scheduled;
+                    existingTask.Status = InspectionStatus.Ready;
                 }
 
                 await _context.SaveChangesAsync();

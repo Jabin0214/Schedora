@@ -36,20 +36,22 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 4. 自动创建/迁移数据库（开发环境）
+// 4. 自动创建数据库（如果不存在）
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     
-    // 开发环境：删除并重建数据库（会丢失数据，但确保表结构最新）
-    if (app.Environment.IsDevelopment())
+    try
     {
-        db.Database.EnsureDeleted(); // 删除旧数据库
-        db.Database.EnsureCreated(); // 创建新数据库和表
+        // 只在数据库不存在时创建，不会删除现有数据
+        db.Database.EnsureCreated();
+        logger.LogInformation("数据库已就绪");
     }
-    else
+    catch (Exception ex)
     {
-        db.Database.EnsureCreated(); // 生产环境只确保存在
+        logger.LogError(ex, "数据库初始化失败");
+        throw;
     }
 }
 

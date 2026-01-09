@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Spin, Empty, Typography, Space } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Spin, Empty, Typography, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { handleApiError } from '../utils/errorHandler';
 
 const { Title } = Typography;
 
@@ -10,12 +11,7 @@ const { Title } = Typography;
 interface Property {
   id: number;
   address: string;
-}
-
-// API 错误响应类型
-interface ApiError {
-  message?: string;
-  errors?: Record<string, string[]>;
+  billingPolicy: 'SixMonthFree' | 'ThreeMonthToggle';
 }
 
 const PropertiesPage: React.FC = () => {
@@ -25,29 +21,6 @@ const PropertiesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
   const [form] = Form.useForm();
-
-  // 统一错误处理
-  const handleApiError = (error: unknown, defaultMessage: string) => {
-    if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError<ApiError>;
-      const responseData = axiosError.response?.data;
-
-      if (responseData?.message) {
-        message.error(responseData.message);
-      } else if (responseData?.errors) {
-        // 处理验证错误
-        const errorMessages = Object.values(responseData.errors).flat();
-        message.error(errorMessages.join('; '));
-      } else if (axiosError.code === 'ERR_NETWORK') {
-        message.error('无法连接到服务器，请检查后端是否启动');
-      } else {
-        message.error(defaultMessage);
-      }
-    } else {
-      message.error(defaultMessage);
-    }
-    console.error(error);
-  };
 
   // 1. 获取数据
   const fetchProperties = useCallback(async () => {
@@ -69,7 +42,20 @@ const PropertiesPage: React.FC = () => {
   // 打开编辑弹窗
   const openEditModal = (property: Property) => {
     setEditingProperty(property);
-    form.setFieldsValue(property);
+    form.setFieldsValue({
+      ...property,
+      billingPolicy: property.billingPolicy || 'ThreeMonthToggle', // 若没有计费策略，默认三个月交替
+    });
+    setIsModalOpen(true);
+  };
+
+  // 打开新增弹窗
+  const openAddModal = () => {
+    form.resetFields();
+    form.setFieldsValue({
+      address: '',
+      billingPolicy: 'ThreeMonthToggle',
+    });
     setIsModalOpen(true);
   };
 
@@ -134,6 +120,17 @@ const PropertiesPage: React.FC = () => {
       render: (text: string) => <span title={text}>{text}</span>,
     },
     {
+      title: '计费策略',
+      dataIndex: 'billingPolicy',
+      key: 'billingPolicy',
+      width: 140,
+      render: (policy: Property['billingPolicy']) => {
+        if (policy === 'SixMonthFree') return '六个月不收费';
+        if (policy === 'ThreeMonthToggle') return '三个月交替收费';
+        return '未设置';
+      },
+    },
+    {
       title: '操作',
       key: 'action',
       width: 120,
@@ -173,7 +170,7 @@ const PropertiesPage: React.FC = () => {
           <Button icon={<ReloadOutlined />} onClick={fetchProperties} loading={loading}>
             刷新
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAddModal}>
             添加新物业
           </Button>
         </Space>
@@ -204,7 +201,7 @@ const PropertiesPage: React.FC = () => {
         confirmLoading={submitting}
         okText={editingProperty ? '保存' : '添加'}
         cancelText="取消"
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -217,6 +214,19 @@ const PropertiesPage: React.FC = () => {
             ]}
           >
             <Input placeholder="请输入物业地址..." showCount maxLength={200} />
+          </Form.Item>
+
+          <Form.Item
+            name="billingPolicy"
+            label="计费策略"
+            rules={[{ required: true, message: '请选择计费策略' }]}
+          >
+            <Select
+              options={[
+                { value: 'SixMonthFree', label: '六个月不收费' },
+                { value: 'ThreeMonthToggle', label: '三个月交替收费' },
+              ]}
+            />
           </Form.Item>
         </Form>
       </Modal>
