@@ -15,7 +15,6 @@ import {
   Tag,
   Tooltip,
   Card,
-  InputNumber,
 } from 'antd';
 import {
   PlusOutlined,
@@ -65,8 +64,6 @@ interface InspectionTask {
   propertyId: number;
   propertyAddress?: string;
   propertyBillingPolicy?: Property['billingPolicy'];
-  contactPhone?: string;
-  contactEmail?: string;
   scheduledAt?: string;
   type: InspectionType;
   status: InspectionStatus;
@@ -82,7 +79,6 @@ interface InspectionTask {
 interface SundryTask {
   id: number;
   description: string;
-  cost: number;
   notes?: string;
   createdAt: string;
   executionDate?: string;
@@ -94,14 +90,11 @@ interface CombinedTask {
   propertyId?: number;
   propertyAddress?: string;
   propertyBillingPolicy?: Property['billingPolicy'];
-  contactPhone?: string;
-  contactEmail?: string;
   scheduledAt?: string;
   type?: InspectionType;
   status?: InspectionStatus;
   isBillable?: boolean;
   description?: string;
-  cost?: number;
   executionDate?: string;
   notes?: string;
   createdAt: string;
@@ -184,8 +177,6 @@ const TasksPage: React.FC = () => {
         propertyId: task.propertyId,
         propertyAddress: task.propertyAddress,
         propertyBillingPolicy: task.propertyBillingPolicy as Property['billingPolicy'] | undefined,
-        contactPhone: task.contactPhone,
-        contactEmail: task.contactEmail,
         scheduledAt: task.scheduledAt,
         type: task.type,
         status: task.status,
@@ -197,7 +188,6 @@ const TasksPage: React.FC = () => {
         id: sundry.id,
         taskType: 'sundry' as const,
         description: sundry.description,
-        cost: sundry.cost,
         executionDate: sundry.executionDate,
         notes: sundry.notes,
         createdAt: sundry.createdAt,
@@ -235,7 +225,6 @@ const TasksPage: React.FC = () => {
       setSundrySubmitting(true);
       await axios.post(API_ENDPOINTS.sundryTasks, {
         description: values.description,
-        cost: values.cost || 0,
         notes: values.notes,
         executionDate: values.executionDate ? values.executionDate.toISOString() : null,
       });
@@ -377,19 +366,33 @@ const TasksPage: React.FC = () => {
   );
 
   const rowStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '170px 2.2fr 1.2fr 1fr 100px 1fr 150px',
-    alignItems: 'center',
-    gap: 8,
     padding: '6px 10px',
     borderBottom: '1px solid #f0f0f0',
     cursor: 'pointer',
+    transition: 'background-color 0.2s',
   };
 
   const cellTextStyle: React.CSSProperties = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  };
+
+  const firstRowStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '130px 2fr 0.9fr 1fr 140px',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 3,
+  };
+
+  const secondRowStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '130px 1fr',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: '12px',
+    color: '#666',
   };
 
   const startEdit = (record: CombinedTask) => {
@@ -408,7 +411,6 @@ const TasksPage: React.FC = () => {
       scheduledAt: record.scheduledAt ? dayjs(record.scheduledAt) : null,
       notes: record.notes || '',
       description: record.description || '',
-      cost: record.cost || 0,
       executionDate: record.executionDate ? dayjs(record.executionDate) : null,
     });
   };
@@ -441,7 +443,6 @@ const TasksPage: React.FC = () => {
         const payload = {
           id: targetId,
           description: values.description,
-          cost: values.cost || 0,
           executionDate: values.executionDate ? values.executionDate.toISOString() : null,
           notes: values.notes ?? '',
         };
@@ -469,204 +470,229 @@ const TasksPage: React.FC = () => {
     return (
       <div
         key={rowKey}
-        style={rowStyle}
+        style={{
+          ...rowStyle,
+          backgroundColor: isEditing ? '#f5f7fa' : 'transparent',
+        }}
         onClick={() => {
           if (!isEditing) startEdit(record);
         }}
+        onMouseEnter={(e) => {
+          if (!isEditing) {
+            e.currentTarget.style.backgroundColor = '#fafafa';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isEditing) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
       >
-        <div style={{ ...cellTextStyle, color: '#444', fontWeight: 500 }}>
-          {isEditing ? (
-            record.taskType === 'inspection' ? (
-              <Form.Item name="scheduledAt" style={{ margin: 0 }}>
-                <DatePicker
-                  showTime
-                  format="MM-DD ddd HH:mm"
-                  style={{ width: '100%' }}
-                  placeholder="选择时间"
-                />
-              </Form.Item>
+        {/* 第一行：主要信息 */}
+        <div style={firstRowStyle}>
+          {/* 时间 */}
+          <div style={{ ...cellTextStyle, color: '#444', fontWeight: 500 }}>
+            {isEditing ? (
+              record.taskType === 'inspection' ? (
+                <Form.Item name="scheduledAt" style={{ margin: 0 }}>
+                  <DatePicker
+                    showTime
+                    format="MM-DD ddd HH:mm"
+                    style={{ width: '100%' }}
+                    placeholder="选择时间"
+                    size="small"
+                  />
+                </Form.Item>
+              ) : (
+                <Form.Item name="executionDate" style={{ margin: 0 }}>
+                  <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" placeholder="选择日期" size="small" />
+                </Form.Item>
+              )
             ) : (
-              <Form.Item name="executionDate" style={{ margin: 0 }}>
-                <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" placeholder="选择日期" />
-              </Form.Item>
-            )
-          ) : (
-            <span>{formattedDate(plannedDate)}</span>
-          )}
-        </div>
+              <span style={{ fontSize: '13px' }}>{formattedDate(plannedDate)}</span>
+            )}
+          </div>
 
-        <div style={cellTextStyle}>
-          {record.taskType === 'inspection' ? (
-            isEditing ? (
-              <Form.Item name="propertyId" style={{ margin: 0 }}>
-                <Select
-                  showSearch
-                  optionFilterProp="label"
-                  placeholder="选择物业"
-                  options={properties.map((p) => ({ value: p.id, label: p.address }))}
-                />
-              </Form.Item>
-            ) : (
-              <Tooltip title={record.propertyAddress}>{record.propertyAddress || '未填写地址'}</Tooltip>
-            )
-          ) : isEditing ? (
-            <Form.Item
-              name="description"
-              style={{ margin: 0 }}
-              rules={[{ required: true, message: '描述必填' }, { max: 200, message: '最多200字' }]}
-            >
-              <Input placeholder="描述" />
-            </Form.Item>
-          ) : (
-            <Tooltip title={record.description}>{record.description || '未填写描述'}</Tooltip>
-          )}
-        </div>
-
-        <div style={cellTextStyle}>
-          {record.taskType === 'inspection' ? (
-            isEditing ? (
-              <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: '选择类型' }]}>
-                <Select
-                  options={Object.entries(typeLabels).map(([value, cfg]) => ({
-                    value,
-                    label: cfg.label,
-                  }))}
-                />
-              </Form.Item>
-            ) : typeConfig ? (
-              <Tag color={typeConfig.color}>{typeConfig.label}</Tag>
-            ) : (
-              '-'
-            )
-          ) : (
-            <Tag color="purple">杂活</Tag>
-          )}
-        </div>
-
-        <div style={cellTextStyle}>
-          {record.taskType === 'inspection' ? (
-            isEditing ? (
-              <Space size={8}>
-                <Form.Item name="status" style={{ margin: 0 }} rules={[{ required: true, message: '选择状态' }]}>
+          {/* 地址/描述 */}
+          <div style={cellTextStyle}>
+            {record.taskType === 'inspection' ? (
+              isEditing ? (
+                <Form.Item name="propertyId" style={{ margin: 0 }}>
                   <Select
-                    style={{ width: 110 }}
-                    options={Object.entries(statusLabels).map(([value, cfg]) => ({
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder="选择物业"
+                    options={properties.map((p) => ({ value: p.id, label: p.address }))}
+                    size="small"
+                  />
+                </Form.Item>
+              ) : (
+                <Tooltip title={record.propertyAddress}>
+                  <span style={{ fontWeight: 500, fontSize: '14px' }}>{record.propertyAddress || '未填写地址'}</span>
+                </Tooltip>
+              )
+            ) : isEditing ? (
+              <Form.Item
+                name="description"
+                style={{ margin: 0 }}
+                rules={[{ required: true, message: '描述必填' }, { max: 200, message: '最多200字' }]}
+              >
+                <Input placeholder="描述" size="small" />
+              </Form.Item>
+            ) : (
+              <Tooltip title={record.description}>
+                <span style={{ fontWeight: 500, fontSize: '14px' }}>{record.description || '未填写描述'}</span>
+              </Tooltip>
+            )}
+          </div>
+
+          {/* 类型 */}
+          <div style={cellTextStyle}>
+            {record.taskType === 'inspection' ? (
+              isEditing ? (
+                <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: '选择类型' }]}>
+                  <Select
+                    size="small"
+                    options={Object.entries(typeLabels).map(([value, cfg]) => ({
                       value,
                       label: cfg.label,
                     }))}
                   />
                 </Form.Item>
-                <Form.Item name="isBillable" style={{ margin: 0 }}>
-                  <Select
-                    style={{ width: 90 }}
-                    options={[
-                      { value: true, label: '收费' },
-                      { value: false, label: '免费' },
-                    ]}
-                  />
-                </Form.Item>
-              </Space>
-            ) : statusConfig ? (
-              <Tag color={statusConfig.color}>{statusConfig.label}</Tag>
+              ) : typeConfig ? (
+                <Tag color={typeConfig.color} style={{ margin: 0 }}>{typeConfig.label}</Tag>
+              ) : (
+                '-'
+              )
             ) : (
-              '-'
-            )
-          ) : record.executionDate ? (
-            dayjs(record.executionDate).format('YYYY-MM-DD')
-          ) : (
-            '待定'
-          )}
-        </div>
+              <Tag color="purple" style={{ margin: 0 }}>杂活</Tag>
+            )}
+          </div>
 
-        <div style={cellTextStyle}>
-          {record.taskType === 'sundry' ? (
-            isEditing ? (
-              <Form.Item name="cost" style={{ margin: 0 }} rules={[{ required: true, message: '费用必填' }]}>
-                <InputNumber
-                  min={0}
-                  max={999999.99}
-                  precision={2}
-                  style={{ width: '100%' }}
-                  placeholder="费用"
-                  prefix="$"
-                />
-              </Form.Item>
+          {/* 状态/收费 */}
+          <div style={cellTextStyle}>
+            {record.taskType === 'inspection' ? (
+              isEditing ? (
+                <Space size={4}>
+                  <Form.Item name="status" style={{ margin: 0 }} rules={[{ required: true, message: '选择状态' }]}>
+                    <Select
+                      size="small"
+                      style={{ width: 90 }}
+                      options={Object.entries(statusLabels).map(([value, cfg]) => ({
+                        value,
+                        label: cfg.label,
+                      }))}
+                    />
+                  </Form.Item>
+                  <Form.Item name="isBillable" style={{ margin: 0 }}>
+                    <Select
+                      size="small"
+                      style={{ width: 70 }}
+                      options={[
+                        { value: true, label: '收费' },
+                        { value: false, label: '免费' },
+                      ]}
+                    />
+                  </Form.Item>
+                </Space>
+              ) : (
+                <Space size={4}>
+                  {statusConfig && <Tag color={statusConfig.color} style={{ margin: 0 }}>{statusConfig.label}</Tag>}
+                  {record.isBillable !== undefined && (
+                    <Tag color={record.isBillable ? 'gold' : 'green'} style={{ margin: 0 }}>
+                      {record.isBillable ? '收费' : '免费'}
+                    </Tag>
+                  )}
+                </Space>
+              )
+            ) : record.executionDate ? (
+              <span style={{ fontSize: '13px' }}>{dayjs(record.executionDate).format('YYYY-MM-DD')}</span>
             ) : (
-              <span style={{ fontWeight: 500, color: '#1890ff' }}>
-                ${(record.cost || 0).toFixed(2)}
-              </span>
-            )
-          ) : (
-            '-'
-          )}
-        </div>
+              <span style={{ color: '#999', fontSize: '13px' }}>待定</span>
+            )}
+          </div>
 
-        <div style={cellTextStyle}>
-          {isEditing ? (
-            <Form.Item name="notes" style={{ margin: 0 }}>
-              <Input placeholder="备注" />
-            </Form.Item>
-          ) : (
-            <Tooltip title={record.notes}>{record.notes || '—'}</Tooltip>
-          )}
-        </div>
-
-        <Space size="small" onClick={(e) => e.stopPropagation()}>
-          {isEditing ? (
-            <>
-              <Button size="small" type="primary" icon={<SaveOutlined />} onClick={saveEdit}>
-                保存
-              </Button>
-              <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit}>
-                取消
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="small" icon={<EditOutlined />} onClick={() => startEdit(record)}>
-                编辑
-              </Button>
-              {record.taskType === 'inspection' && record.status !== 'Completed' && inspectionTask && (
-                <Button
-                  size="small"
-                  type="primary"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => openCompleteModal(inspectionTask)}
-                >
-                  完成
+          {/* 操作按钮 */}
+          <Space size="small" onClick={(e) => e.stopPropagation()}>
+            {isEditing ? (
+              <>
+                <Button size="small" type="primary" icon={<SaveOutlined />} onClick={saveEdit}>
+                  保存
                 </Button>
-              )}
-              {record.taskType === 'sundry' && (
-                <Popconfirm
-                  title="确定删除这条杂活记录吗?"
-                  onConfirm={async () => {
-                    try {
-                      await axios.delete(`${API_ENDPOINTS.sundryTasks}/${record.id}`);
-                      message.success('删除成功');
-                      fetchSundryTasks();
-                    } catch (error) {
-                      handleApiError(error, '删除失败');
-                    }
-                  }}
-                  okText="确定"
-                  cancelText="取消"
-                >
-                  <Button danger size="small" icon={<DeleteOutlined />} />
-                </Popconfirm>
-              )}
-              {record.taskType === 'inspection' && (
-                <Popconfirm
-                  title="确定删除这条任务吗?"
-                  onConfirm={() => handleDelete(record.id)}
-                  okText="确定"
-                  cancelText="取消"
-                >
-                  <Button danger size="small" icon={<DeleteOutlined />} />
-                </Popconfirm>
-              )}
-            </>
-          )}
-        </Space>
+                <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit}>
+                  取消
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button size="small" icon={<EditOutlined />} onClick={() => startEdit(record)}>
+                  编辑
+                </Button>
+                {record.taskType === 'inspection' && record.status !== 'Completed' && inspectionTask && (
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<CheckCircleOutlined />}
+                    onClick={() => openCompleteModal(inspectionTask)}
+                  >
+                    完成
+                  </Button>
+                )}
+                {record.taskType === 'sundry' && (
+                  <Popconfirm
+                    title="确定删除这条杂活记录吗?"
+                    onConfirm={async () => {
+                      try {
+                        await axios.delete(`${API_ENDPOINTS.sundryTasks}/${record.id}`);
+                        message.success('删除成功');
+                        fetchSundryTasks();
+                      } catch (error) {
+                        handleApiError(error, '删除失败');
+                      }
+                    }}
+                    okText="确定"
+                    cancelText="取消"
+                  >
+                    <Button danger size="small" icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                )}
+                {record.taskType === 'inspection' && (
+                  <Popconfirm
+                    title="确定删除这条任务吗?"
+                    onConfirm={() => handleDelete(record.id)}
+                    okText="确定"
+                    cancelText="取消"
+                  >
+                    <Button danger size="small" icon={<DeleteOutlined />} />
+                  </Popconfirm>
+                )}
+              </>
+            )}
+          </Space>
+        </div>
+
+        {/* 第二行：备注 - 仅在有内容或编辑时显示 */}
+        {(isEditing || record.notes) && (
+          <div style={secondRowStyle}>
+            {/* 占位 - 对齐第一行的时间列 */}
+            <div></div>
+            
+            {/* 备注 */}
+            <div style={cellTextStyle}>
+              {isEditing ? (
+                <Form.Item name="notes" style={{ margin: 0 }}>
+                  <Input placeholder="备注" size="small" />
+                </Form.Item>
+              ) : record.notes ? (
+                <Tooltip title={record.notes}>
+                  <span style={{ color: '#888', fontSize: '12px' }}>
+                    💬 {record.notes}
+                  </span>
+                </Tooltip>
+              ) : null}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -674,21 +700,32 @@ const TasksPage: React.FC = () => {
   const renderSection = (title: string, data: CombinedTask[]) => (
     <Card
       size="small"
-      title={`${title}（${data.length}）`}
+      title={<span style={{ fontSize: '14px', fontWeight: 600 }}>{`${title}（${data.length}）`}</span>}
       styles={{ body: { padding: 0 } }}
-      style={{ marginBottom: 12 }}
+      style={{ marginBottom: 8 }}
     >
-      <div style={{ ...rowStyle, background: '#fafafa', fontWeight: 600, cursor: 'default' }}>
-        <div>时间</div>
-        <div>地址/描述</div>
-        <div>类型</div>
-        <div>状态/日期</div>
-        <div>费用</div>
-        <div>备注</div>
-        <div>操作</div>
+      <div style={{ 
+        padding: '5px 10px',
+        background: '#fafafa', 
+        fontWeight: 600, 
+        cursor: 'default',
+        borderBottom: '1px solid #e0e0e0',
+        fontSize: '13px',
+      }}>
+        <div style={firstRowStyle}>
+          <div>时间</div>
+          <div>地址/描述</div>
+          <div>类型</div>
+          <div>状态/收费</div>
+          <div>操作</div>
+        </div>
+        <div style={{...secondRowStyle, fontSize: '11px', color: '#999', marginTop: 2}}>
+          <div></div>
+          <div>💬 备注</div>
+        </div>
       </div>
       {data.length === 0 ? (
-        <div style={{ padding: '12px 16px' }}>
+        <div style={{ padding: '10px 16px' }}>
           <Empty description="暂无任务" image={Empty.PRESENTED_IMAGE_SIMPLE} />
         </div>
       ) : (
@@ -703,7 +740,7 @@ const TasksPage: React.FC = () => {
     <div>
       <div
         style={{
-          marginBottom: 16,
+          marginBottom: 12,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -712,14 +749,14 @@ const TasksPage: React.FC = () => {
         <Title level={4} style={{ margin: 0 }}>
           📅 任务计划
         </Title>
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>
+        <Space size="small">
+          <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>
             刷新
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
+          <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>
             添加新任务
           </Button>
-          <Button onClick={openSundryModal}>添加杂活</Button>
+          <Button size="small" onClick={openSundryModal}>添加杂活</Button>
         </Space>
       </div>
 
@@ -780,28 +817,6 @@ const TasksPage: React.FC = () => {
               })
             )}
           </div>
-
-          <Form.Item
-            name="contactPhone"
-            label="联系电话"
-            rules={[
-              { pattern: /^[0-9+\-\s()]*$/, message: '请输入有效的电话号码' },
-              { max: 20, message: '电话号码不能超过20个字符' },
-            ]}
-          >
-            <Input placeholder="输入联系电话..." />
-          </Form.Item>
-
-          <Form.Item
-            name="contactEmail"
-            label="联系邮箱"
-            rules={[
-              { type: 'email', message: '请输入有效的邮箱地址' },
-              { max: 100, message: '邮箱不能超过100个字符' },
-            ]}
-          >
-            <Input placeholder="输入联系邮箱..." />
-          </Form.Item>
 
           <Form.Item
             name="type"
@@ -913,25 +928,6 @@ const TasksPage: React.FC = () => {
             ]}
           >
             <Input placeholder="例如：购买微波炉" showCount maxLength={200} />
-          </Form.Item>
-
-          <Form.Item
-            name="cost"
-            label="费用"
-            rules={[
-              { required: true, message: '费用必填' },
-              { type: 'number', min: 0, max: 999999.99, message: '费用必须在0-999999.99之间' },
-            ]}
-            initialValue={0}
-          >
-            <InputNumber
-              min={0}
-              max={999999.99}
-              precision={2}
-              style={{ width: '100%' }}
-              placeholder="输入费用"
-              prefix="$"
-            />
           </Form.Item>
 
           <Form.Item name="executionDate" label="执行日期">

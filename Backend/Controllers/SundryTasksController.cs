@@ -93,7 +93,6 @@ namespace InspectionApi.Controllers
                 }
 
                 existingTask.Description = task.Description;
-                existingTask.Cost = task.Cost;
                 existingTask.Notes = task.Notes;
                 existingTask.ExecutionDate = task.ExecutionDate;
 

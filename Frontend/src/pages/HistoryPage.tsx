@@ -47,7 +47,6 @@ interface InspectionTask {
 interface SundryTask {
   id: number;
   description: string;
-  cost: number;
   notes?: string;
   createdAt: string;
   executionDate?: string;
@@ -62,7 +61,6 @@ interface CombinedTask {
   status?: InspectionStatus;
   isBillable?: boolean;
   description?: string;
-  cost?: number;
   executionDate?: string;
   completedAt?: string;
   notes?: string;
@@ -125,7 +123,6 @@ const HistoryPage: React.FC = () => {
         id: sundry.id,
         taskType: 'sundry' as const,
         description: sundry.description,
-        cost: sundry.cost,
         executionDate: sundry.executionDate,
         notes: sundry.notes,
         createdAt: sundry.createdAt,
@@ -186,15 +183,15 @@ const HistoryPage: React.FC = () => {
       },
     },
     {
-      title: '收费/费用',
+      title: '收费',
       dataIndex: 'charge',
       key: 'charge',
-      width: 120,
+      width: 100,
       render: (_: unknown, record: CombinedTask) => {
-        if (record.taskType === 'sundry') {
-          return <span style={{ fontWeight: 500, color: '#1890ff' }}>${(record.cost || 0).toFixed(2)}</span>;
+        if (record.taskType === 'inspection') {
+          return record.isBillable ? <Tag color="red">收费</Tag> : <Tag color="green">免费</Tag>;
         }
-        return record.isBillable ? <Tag color="red">收费</Tag> : <Tag color="default">免费</Tag>;
+        return '-';
       },
     },
     {

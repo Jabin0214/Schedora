@@ -48,8 +48,6 @@ namespace InspectionApi.Controllers
                         t.Id,
                         t.PropertyId,
                         PropertyAddress = t.Property != null ? t.Property.Address : null,
-                        t.ContactPhone,
-                        t.ContactEmail,
                         t.ScheduledAt,
                         t.Type,
                         t.Status,
@@ -188,8 +186,6 @@ namespace InspectionApi.Controllers
 
                 // 更新字段
                 existingTask.PropertyId = task.PropertyId;
-                existingTask.ContactPhone = task.ContactPhone;
-                existingTask.ContactEmail = task.ContactEmail;
                 existingTask.ScheduledAt = task.ScheduledAt;
                 existingTask.Status = task.Status;
                 existingTask.Notes = task.Notes;

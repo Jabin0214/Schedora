@@ -52,7 +52,6 @@ namespace InspectionApi.Controllers
                     {
                         s.Id,
                         s.Description,
-                        s.Cost,
                         s.Notes,
                         ExecutionDate = s.ExecutionDate!.Value
                     })
@@ -61,7 +60,6 @@ namespace InspectionApi.Controllers
                 // 统计信息
                 var totalInspections = inspectionRecords.Count;
                 var totalSundryTasks = sundryTasks.Count;
-                var totalSundryCost = sundryTasks.Sum(s => s.Cost);
 
                 var report = new
                 {
@@ -74,8 +72,7 @@ namespace InspectionApi.Controllers
                     Summary = new
                     {
                         TotalInspections = totalInspections,
-                        TotalSundryTasks = totalSundryTasks,
-                        TotalSundryCost = totalSundryCost
+                        TotalSundryTasks = totalSundryTasks
                     },
                     Inspections = inspectionRecords,
                     SundryTasks = sundryTasks

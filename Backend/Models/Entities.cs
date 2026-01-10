@@ -44,14 +44,6 @@ namespace InspectionApi.Models
         public int PropertyId { get; set; }
         public Property? Property { get; set; } // 导航属性
         
-        // 预约信息
-        [StringLength(20, ErrorMessage = "电话号码不能超过20个字符")]
-        public string? ContactPhone { get; set; } // 联系电话（支持国际格式和中国手机号）
-        
-        [EmailAddress(ErrorMessage = "邮箱格式不正确")]
-        [StringLength(100, ErrorMessage = "邮箱不能超过100个字符")]
-        public string? ContactEmail { get; set; } // 联系邮箱
-        
         public DateTime? ScheduledAt { get; set; } // 预约时间
         public InspectionType Type { get; set; }
         public InspectionStatus Status { get; set; }
@@ -94,9 +86,6 @@ namespace InspectionApi.Models
         [Required(ErrorMessage = "描述不能为空")]
         [StringLength(200, ErrorMessage = "描述不能超过200个字符")]
         public string Description { get; set; } = string.Empty;
-        
-        [Range(0, 999999.99, ErrorMessage = "费用必须在0-999999.99之间")]
-        public decimal Cost { get; set; } // 比如买东西花了多少钱
         
         [StringLength(500, ErrorMessage = "备注不能超过500个字符")]
         public string? Notes { get; set; } // 详细说明
