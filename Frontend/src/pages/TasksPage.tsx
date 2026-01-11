@@ -615,7 +615,19 @@ const TasksPage: React.FC = () => {
 
           <Form.Item name="scheduledAt" label="计划时间">
             <DatePicker
-              showTime
+              showTime={{
+                format: 'HH:mm',
+                hideDisabledOptions: true, // 隐藏非 10 倍数的选项，让界面更整洁
+                disabledMinutes: () => {
+                  const disabled = [];
+                  for (let i = 0; i < 60; i++) {
+                    if (i % 10 !== 0) {
+                      disabled.push(i);
+                    }
+                  }
+                  return disabled;
+                },
+              }}
               format="YYYY-MM-DD HH:mm"
               style={{ width: '100%' }}
               placeholder="选择计划时间"
