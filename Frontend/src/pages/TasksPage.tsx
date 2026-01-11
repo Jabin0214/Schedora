@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Button,
   Modal,
@@ -6,7 +6,6 @@ import {
   Input,
   Select,
   DatePicker,
-  message,
   Popconfirm,
   Spin,
   Empty,
@@ -25,18 +24,15 @@ import {
   CloseOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
-import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
-import { handleApiError } from '../utils/errorHandler';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import isBetween from 'dayjs/plugin/isBetween';
+import { useTasks } from '../hooks/useTasks';
+import { useProperties } from '../hooks/useProperties';
+import type { InspectionType, InspectionStatus, CombinedTask } from '../types/api';
 
 const { Title } = Typography;
 const { TextArea } = Input;
-
-type InspectionType = 'MoveIn' | 'MoveOut' | 'Routine';
-type InspectionStatus = 'Pending' | 'Ready' | 'Completed';
 
 const typeLabels: Record<InspectionType, { label: string; color: string }> = {
   MoveIn: { label: '入住检查', color: 'blue' },
@@ -50,320 +46,138 @@ const statusLabels: Record<InspectionStatus, { label: string; color: string }> =
   Completed: { label: '已完成', color: 'success' },
 };
 
-interface Property {
-  id: number;
-  address: string;
-  billingPolicy?: 'SixMonthFree' | 'ThreeMonthToggle';
-  lastInspectionDate?: string;
-  lastInspectionType?: InspectionType;
-  lastInspectionWasCharged?: boolean;
-}
-
-interface InspectionTask {
-  id: number;
-  propertyId: number;
-  propertyAddress?: string;
-  propertyBillingPolicy?: Property['billingPolicy'];
-  scheduledAt?: string;
-  type: InspectionType;
-  status: InspectionStatus;
-  isBillable: boolean;
-  notes?: string;
-  createdAt?: string;
-  completedAt?: string;
-  lastInspectionDate?: string;
-  lastInspectionType?: InspectionType;
-  lastInspectionWasCharged?: boolean;
-}
-
-interface SundryTask {
-  id: number;
-  description: string;
-  notes?: string;
-  createdAt: string;
-  executionDate?: string;
-}
-
-interface CombinedTask {
-  id: number;
-  taskType: 'inspection' | 'sundry';
-  propertyId?: number;
-  propertyAddress?: string;
-  propertyBillingPolicy?: Property['billingPolicy'];
-  scheduledAt?: string;
-  type?: InspectionType;
-  status?: InspectionStatus;
-  isBillable?: boolean;
-  description?: string;
-  executionDate?: string;
-  notes?: string;
-  createdAt: string;
-}
-
 dayjs.extend(isBetween);
 
 const TasksPage: React.FC = () => {
   dayjs.locale('zh-cn');
 
-  const [tasks, setTasks] = useState<InspectionTask[]>([]);
-  const [sundryTasks, setSundryTasks] = useState<SundryTask[]>([]);
-  const [combinedTasks, setCombinedTasks] = useState<CombinedTask[]>([]);
-  const [properties, setProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-  const [completingTask, setCompletingTask] = useState<InspectionTask | null>(null);
+  const [completingTask, setCompletingTask] = useState<CombinedTask | null>(null);
   const [isSundryModalOpen, setIsSundryModalOpen] = useState(false);
   const [sundrySubmitting, setSundrySubmitting] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<CombinedTask | null>(null);
-  const [editingInspection, setEditingInspection] = useState<InspectionTask | null>(null);
-  const [editingSundry, setEditingSundry] = useState<SundryTask | null>(null);
 
   const [form] = Form.useForm();
   const [completeForm] = Form.useForm();
   const [sundryForm] = Form.useForm();
   const [rowForm] = Form.useForm();
-  const [propertyHistory, setPropertyHistory] = useState<InspectionTask[]>([]);
 
-  const updatePropertyHistory = (propertyId: number) => {
-    const history = tasks
-      .filter((t) => t.propertyId === propertyId && t.status === 'Completed')
-      .sort(
-        (a, b) =>
-          new Date(b.completedAt || b.createdAt || '').getTime() -
-          new Date(a.completedAt || a.createdAt || '').getTime()
-      )
-      .slice(0, 2);
-    setPropertyHistory(history);
-  };
+  // 使用自定义hooks
+  const {
+    loading: tasksLoading,
+    todayTasks,
+    upcomingTasks,
+    unscheduledTasks,
+    fetchTasks,
+    createInspectionTask,
+    updateInspectionTask,
+    deleteInspectionTask,
+    completeInspectionTask,
+    createSundryTask,
+    updateSundryTask,
+    deleteSundryTask,
+  } = useTasks();
 
-  const fetchProperties = useCallback(async () => {
-    try {
-      const res = await axios.get<Property[]>(API_ENDPOINTS.properties);
-      setProperties(res.data);
-    } catch (error) {
-      handleApiError(error, '获取物业列表失败');
-    }
-  }, []);
+  const { properties, loading: propertiesLoading } = useProperties();
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get<InspectionTask[]>(API_ENDPOINTS.inspectionTasks);
-      setTasks(res.data);
-    } catch (error) {
-      handleApiError(error, '获取任务列表失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const loading = tasksLoading || propertiesLoading;
 
-  const fetchSundryTasks = useCallback(async () => {
-    try {
-      const res = await axios.get<SundryTask[]>(API_ENDPOINTS.sundryTasks);
-      setSundryTasks(res.data);
-    } catch (error) {
-      handleApiError(error, '获取杂活列表失败');
-    }
-  }, []);
-
-  useEffect(() => {
-    const combined: CombinedTask[] = [
-      ...tasks.map((task) => ({
-        id: task.id,
-        taskType: 'inspection' as const,
-        propertyId: task.propertyId,
-        propertyAddress: task.propertyAddress,
-        propertyBillingPolicy: task.propertyBillingPolicy as Property['billingPolicy'] | undefined,
-        scheduledAt: task.scheduledAt,
-        type: task.type,
-        status: task.status,
-        isBillable: task.isBillable,
-        notes: task.notes,
-        createdAt: task.createdAt || '',
-      })),
-      ...sundryTasks.map((sundry) => ({
-        id: sundry.id,
-        taskType: 'sundry' as const,
-        description: sundry.description,
-        executionDate: sundry.executionDate,
-        notes: sundry.notes,
-        createdAt: sundry.createdAt,
-      })),
-    ];
-    combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    setCombinedTasks(combined);
-  }, [tasks, sundryTasks]);
-
-  useEffect(() => {
-    fetchProperties();
-    fetchTasks();
-    fetchSundryTasks();
-  }, [fetchProperties, fetchTasks, fetchSundryTasks]);
-
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setIsModalOpen(false);
     form.resetFields();
-    setPropertyHistory([]);
-  };
+  }, [form]);
 
-  const openSundryModal = () => {
+  const openSundryModal = useCallback(() => {
     sundryForm.resetFields();
     setIsSundryModalOpen(true);
-  };
+  }, [sundryForm]);
 
-  const closeSundryModal = () => {
+  const closeSundryModal = useCallback(() => {
     setIsSundryModalOpen(false);
     sundryForm.resetFields();
-  };
+  }, [sundryForm]);
 
-  const handleSundryOk = async () => {
+  const handleSundryOk = useCallback(async () => {
     try {
       const values = await sundryForm.validateFields();
       setSundrySubmitting(true);
-      await axios.post(API_ENDPOINTS.sundryTasks, {
+      await createSundryTask({
         description: values.description,
         notes: values.notes,
-        executionDate: values.executionDate ? values.executionDate.toISOString() : null,
+        executionDate: values.executionDate ? values.executionDate.toISOString() : undefined,
       });
-      message.success('杂活已记录');
       closeSundryModal();
-      fetchSundryTasks();
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error, '添加杂活失败');
-      }
+      // Error handled by hook
     } finally {
       setSundrySubmitting(false);
     }
-  };
+  }, [sundryForm, createSundryTask, closeSundryModal]);
 
-  const handleOk = async () => {
+  const handleOk = useCallback(async () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
 
-      const taskData = {
-        ...values,
-        scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : null,
-        isBillable: values.isBillable,
-      };
-
-      await axios.post(API_ENDPOINTS.inspectionTasks, taskData);
-      message.success('添加成功');
+      await createInspectionTask({
+        propertyId: values.propertyId,
+        type: values.type,
+        status: values.status,
+        scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : undefined,
+        notes: values.notes,
+      });
 
       closeModal();
-      fetchTasks();
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error, '添加失败');
-      }
+      // Error handled by hook
     } finally {
       setSubmitting(false);
     }
-  };
+  }, [form, createInspectionTask, closeModal]);
 
-  const handleDelete = async (id: number) => {
-    try {
-      await axios.delete(`${API_ENDPOINTS.inspectionTasks}/${id}`);
-      message.success('删除成功');
-      setTasks((prev) => prev.filter((t) => t.id !== id));
-    } catch (error) {
-      handleApiError(error, '删除失败');
-    }
-  };
+  const handleDelete = useCallback(async (id: number) => {
+    await deleteInspectionTask(id);
+  }, [deleteInspectionTask]);
 
-  const openCompleteModal = (record: InspectionTask) => {
+  const openCompleteModal = useCallback((record: CombinedTask) => {
     setCompletingTask(record);
     completeForm.setFieldsValue({
       executionDate: dayjs(),
       notes: '',
     });
     setIsCompleteModalOpen(true);
-  };
+  }, [completeForm]);
 
-  const handleComplete = async () => {
+  const handleComplete = useCallback(async () => {
     try {
       const values = await completeForm.validateFields();
       if (!completingTask) return;
 
-      await axios.post(
-        `${API_ENDPOINTS.inspectionTasks}/${completingTask.id}/complete`,
-        {
-          executionDate: values.executionDate.toISOString(),
-          notes: values.notes || '',
-        }
-      );
-      message.success('任务完成');
+      await completeInspectionTask(completingTask.id, {
+        executionDate: values.executionDate.toISOString(),
+        notes: values.notes || '',
+      });
+
       setIsCompleteModalOpen(false);
       setCompletingTask(null);
       completeForm.resetFields();
-      fetchTasks();
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error, '完成任务失败');
-      }
+      // Error handled by hook
     }
-  };
-
-  const startOfToday = dayjs().startOf('day');
-  const endOfToday = dayjs().endOf('day');
-
-  const getPlannedDate = (task: CombinedTask) => {
-    if (task.taskType === 'inspection') return task.scheduledAt;
-    return task.executionDate;
-  };
+  }, [completeForm, completingTask, completeInspectionTask]);
 
   const formattedDate = (dateStr?: string) => {
     if (!dateStr) return '待定';
     return dayjs(dateStr).format('MM-DD ddd HH:mm');
   };
 
-  const visibleTasks = useMemo(() => {
-    const list = combinedTasks.filter((item) => {
-      if (item.taskType === 'inspection' && item.status === 'Completed') return false; // 已完成归档到历史
-      const dateStr = getPlannedDate(item);
-      if (dateStr) {
-        const d = dayjs(dateStr);
-        if (d.isBefore(startOfToday)) return false;
-      }
-      return true;
-    });
-    list.sort((a, b) => {
-      const da = getPlannedDate(a);
-      const db = getPlannedDate(b);
-      if (da && db) return dayjs(da).valueOf() - dayjs(db).valueOf();
-      if (da && !db) return -1;
-      if (!da && db) return 1;
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    });
-    return list;
-  }, [combinedTasks, startOfToday]);
-
-  const todayTasks = useMemo(
-    () =>
-      visibleTasks.filter((item) => {
-        const d = getPlannedDate(item);
-        return d ? dayjs(d).isBetween(startOfToday, endOfToday, 'minute', '[]') : false;
-      }),
-    [visibleTasks, startOfToday, endOfToday]
-  );
-
-  const upcomingTasks = useMemo(
-    () =>
-      visibleTasks.filter((item) => {
-        const d = getPlannedDate(item);
-        return d ? dayjs(d).isAfter(endOfToday) : false;
-      }),
-    [visibleTasks, endOfToday]
-  );
-
-  const unscheduledTasks = useMemo(
-    () => visibleTasks.filter((item) => !getPlannedDate(item)),
-    [visibleTasks]
-  );
+  const getPlannedDate = (task: CombinedTask) => {
+    if (task.taskType === 'inspection') return task.scheduledAt;
+    return task.executionDate;
+  };
 
   const rowStyle: React.CSSProperties = {
     padding: '6px 10px',
@@ -395,69 +209,54 @@ const TasksPage: React.FC = () => {
     color: '#666',
   };
 
-  const startEdit = (record: CombinedTask) => {
+  const startEdit = useCallback((record: CombinedTask) => {
     const key = `${record.taskType}-${record.id}`;
-    const inspection = record.taskType === 'inspection' ? tasks.find((t) => t.id === record.id) : null;
-    const sundry = record.taskType === 'sundry' ? sundryTasks.find((s) => s.id === record.id) : null;
     setEditingKey(key);
     setEditingRecord(record);
-    setEditingInspection(inspection || null);
-    setEditingSundry(sundry || null);
     rowForm.setFieldsValue({
-      propertyId: inspection?.propertyId ?? record.propertyId,
-      type: inspection?.type ?? record.type,
-      status: inspection?.status ?? record.status,
-      isBillable: inspection?.isBillable ?? record.isBillable,
+      propertyId: record.propertyId,
+      type: record.type,
+      status: record.status,
+      isBillable: record.isBillable,
       scheduledAt: record.scheduledAt ? dayjs(record.scheduledAt) : null,
       notes: record.notes || '',
       description: record.description || '',
       executionDate: record.executionDate ? dayjs(record.executionDate) : null,
     });
-  };
+  }, [rowForm]);
 
-  const cancelEdit = () => {
+  const cancelEdit = useCallback(() => {
     setEditingKey(null);
     setEditingRecord(null);
-    setEditingInspection(null);
-    setEditingSundry(null);
     rowForm.resetFields();
-  };
+  }, [rowForm]);
 
-  const saveEdit = async () => {
+  const saveEdit = useCallback(async () => {
     try {
       if (!editingRecord) return;
       const values = await rowForm.validateFields();
-      if (editingRecord.taskType === 'inspection' && editingInspection) {
-        const payload = {
-          ...editingInspection,
-          propertyId: values.propertyId ?? editingInspection.propertyId,
-          type: values.type ?? editingInspection.type,
-          status: values.status ?? editingInspection.status,
-          isBillable: values.isBillable ?? editingInspection.isBillable,
-          scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : null,
-          notes: values.notes ?? '',
-        };
-        await axios.put(`${API_ENDPOINTS.inspectionTasks}/${editingInspection.id}`, payload);
+
+      if (editingRecord.taskType === 'inspection') {
+        await updateInspectionTask(editingRecord.id, {
+          propertyId: values.propertyId,
+          type: values.type,
+          status: values.status,
+          scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : undefined,
+          notes: values.notes || '',
+        });
       } else if (editingRecord.taskType === 'sundry') {
-        const targetId = editingSundry?.id ?? editingRecord.id;
-        const payload = {
-          id: targetId,
+        await updateSundryTask(editingRecord.id, {
           description: values.description,
-          executionDate: values.executionDate ? values.executionDate.toISOString() : null,
-          notes: values.notes ?? '',
-        };
-        await axios.put(`${API_ENDPOINTS.sundryTasks}/${targetId}`, payload);
+          executionDate: values.executionDate ? values.executionDate.toISOString() : undefined,
+          notes: values.notes || '',
+        });
       }
-      message.success('已保存');
+
       cancelEdit();
-      fetchTasks();
-      fetchSundryTasks();
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        handleApiError(error, '保存失败');
-      }
+      // Error handled by hook
     }
-  };
+  }, [editingRecord, rowForm, updateInspectionTask, updateSundryTask, cancelEdit]);
 
   const renderRow = (record: CombinedTask) => {
     const rowKey = `${record.taskType}-${record.id}`;
@@ -465,7 +264,6 @@ const TasksPage: React.FC = () => {
     const plannedDate = getPlannedDate(record);
     const statusConfig = record.status ? statusLabels[record.status] : null;
     const typeConfig = record.type ? typeLabels[record.type] : null;
-    const inspectionTask = record.taskType === 'inspection' ? tasks.find((t) => t.id === record.id) : null;
 
     return (
       <div
@@ -479,12 +277,12 @@ const TasksPage: React.FC = () => {
         }}
         onMouseEnter={(e) => {
           if (!isEditing) {
-            e.currentTarget.style.backgroundColor = '#fafafa';
+            (e.currentTarget as HTMLElement).style.backgroundColor = '#fafafa';
           }
         }}
         onMouseLeave={(e) => {
           if (!isEditing) {
-            e.currentTarget.style.backgroundColor = 'transparent';
+            (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
           }
         }}
       >
@@ -628,12 +426,12 @@ const TasksPage: React.FC = () => {
                 <Button size="small" icon={<EditOutlined />} onClick={() => startEdit(record)}>
                   编辑
                 </Button>
-                {record.taskType === 'inspection' && record.status !== 'Completed' && inspectionTask && (
+                {record.taskType === 'inspection' && record.status !== 'Completed' && (
                   <Button
                     size="small"
                     type="primary"
                     icon={<CheckCircleOutlined />}
-                    onClick={() => openCompleteModal(inspectionTask)}
+                    onClick={() => openCompleteModal(record)}
                   >
                     完成
                   </Button>
@@ -641,15 +439,7 @@ const TasksPage: React.FC = () => {
                 {record.taskType === 'sundry' && (
                   <Popconfirm
                     title="确定删除这条杂活记录吗?"
-                    onConfirm={async () => {
-                      try {
-                        await axios.delete(`${API_ENDPOINTS.sundryTasks}/${record.id}`);
-                        message.success('删除成功');
-                        fetchSundryTasks();
-                      } catch (error) {
-                        handleApiError(error, '删除失败');
-                      }
-                    }}
+                    onConfirm={() => deleteSundryTask(record.id)}
                     okText="确定"
                     cancelText="取消"
                   >
@@ -676,7 +466,7 @@ const TasksPage: React.FC = () => {
           <div style={secondRowStyle}>
             {/* 占位 - 对齐第一行的时间列 */}
             <div></div>
-            
+
             {/* 备注 */}
             <div style={cellTextStyle}>
               {isEditing ? (
@@ -704,10 +494,10 @@ const TasksPage: React.FC = () => {
       styles={{ body: { padding: 0 } }}
       style={{ marginBottom: 8 }}
     >
-      <div style={{ 
+      <div style={{
         padding: '5px 10px',
-        background: '#fafafa', 
-        fontWeight: 600, 
+        background: '#fafafa',
+        fontWeight: 600,
         cursor: 'default',
         borderBottom: '1px solid #e0e0e0',
         fontSize: '13px',
@@ -792,31 +582,8 @@ const TasksPage: React.FC = () => {
                 value: p.id,
                 label: p.address,
               }))}
-              onChange={(value) => {
-                updatePropertyHistory(value);
-              }}
             />
           </Form.Item>
-          <div style={{ marginTop: -16, marginBottom: 16, padding: '8px 10px', background: '#fafafa', borderRadius: 6, border: '1px solid #f0f0f0' }}>
-            {propertyHistory.length === 0 ? (
-              <div style={{ color: '#999', fontSize: 12 }}>最近两次记录：无</div>
-            ) : (
-              propertyHistory.map((h) => {
-                const date = h.completedAt
-                  ? dayjs(h.completedAt).format('YYYY-MM-DD')
-                  : h.createdAt
-                  ? dayjs(h.createdAt).format('YYYY-MM-DD')
-                  : '未知';
-                const typeLabel = h.type ? typeLabels[h.type]?.label : '';
-                const charge = h.isBillable ? '收费' : '免费';
-                return (
-                  <div key={`history-${h.id}`} style={{ color: '#555', fontSize: 12, lineHeight: '18px' }}>
-                    {date} ｜ {typeLabel} ｜ {charge} ｜ {h.notes || '无备注'}
-                  </div>
-                );
-              })
-            )}
-          </div>
 
           <Form.Item
             name="type"
@@ -855,25 +622,7 @@ const TasksPage: React.FC = () => {
             />
           </Form.Item>
 
-          <Form.Item
-            name="isBillable"
-            label="是否收费"
-            rules={[{ required: true, message: '请选择是否收费' }]}
-            initialValue={true}
-          >
-            <Select
-              options={[
-                { value: true, label: '收费' },
-                { value: false, label: '免费' },
-              ]}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="notes"
-            label="预约备注"
-            rules={[{ max: 500, message: '备注不能超过500个字符' }]}
-          >
+          <Form.Item name="notes" label="预约备注">
             <TextArea rows={4} placeholder="输入预约备注..." showCount maxLength={500} />
           </Form.Item>
         </Form>

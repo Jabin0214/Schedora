@@ -11,7 +11,12 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// 2. 允许跨域 (CORS) - 允许前端 localhost:5173 访问
+// 2. 注册服务层
+builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
+builder.Services.AddScoped<ISundryTaskService, SundryTaskService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
+// 3. 允许跨域 (CORS) - 允许前端 localhost:5173 访问
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",

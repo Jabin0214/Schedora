@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using InspectionApi.Data;
-using InspectionApi.Models;
+using InspectionApi.Services;
+using InspectionApi.Models.DTOs;
 
 namespace InspectionApi.Controllers
 {
@@ -9,24 +8,22 @@ namespace InspectionApi.Controllers
     [ApiController]
     public class SundryTasksController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ISundryTaskService _taskService;
         private readonly ILogger<SundryTasksController> _logger;
 
-        public SundryTasksController(AppDbContext context, ILogger<SundryTasksController> logger)
+        public SundryTasksController(ISundryTaskService taskService, ILogger<SundryTasksController> logger)
         {
-            _context = context;
+            _taskService = taskService;
             _logger = logger;
         }
 
         // GET: api/sundrytasks
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<SundryTask>>> GetSundryTasks()
+        public async Task<ActionResult<IEnumerable<SundryTaskDto>>> GetSundryTasks()
         {
             try
             {
-                var tasks = await _context.SundryTasks
-                    .OrderByDescending(t => t.CreatedAt)
-                    .ToListAsync();
+                var tasks = await _taskService.GetAllTasksAsync();
                 return Ok(tasks);
             }
             catch (Exception ex)
@@ -42,7 +39,7 @@ namespace InspectionApi.Controllers
         {
             try
             {
-                var task = await _context.SundryTasks.FindAsync(id);
+                var task = await _taskService.GetTaskByIdAsync(id);
                 if (task == null)
                 {
                     return NotFound(new { message = $"未找到ID为{id}的杂活" });
@@ -58,53 +55,32 @@ namespace InspectionApi.Controllers
 
         // POST: api/sundrytasks
         [HttpPost]
-        public async Task<ActionResult<SundryTask>> PostSundryTask([FromBody] SundryTask task)
+        public async Task<ActionResult<SundryTaskDto>> PostSundryTask([FromBody] SundryTaskCreateDto dto)
         {
             try
             {
-                _context.SundryTasks.Add(task);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("新增杂活成功, ID: {Id}, 描述: {Description}", task.Id, task.Description);
-                return CreatedAtAction(nameof(GetSundryTask), new { id = task.Id }, task);
+                var result = await _taskService.CreateTaskAsync(dto);
+                return CreatedAtAction(nameof(GetSundryTask), new { id = result.Id }, result);
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "新增杂活数据库操作失败");
-                return StatusCode(500, new { message = "保存数据失败，请稍后重试" });
+                _logger.LogError(ex, "新增杂活失败");
+                return StatusCode(500, new { message = "操作失败，请稍后重试" });
             }
         }
 
         // PUT: api/sundrytasks/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSundryTask(int id, [FromBody] SundryTask task)
+        public async Task<IActionResult> PutSundryTask(int id, [FromBody] SundryTaskUpdateDto dto)
         {
-            if (id != task.Id)
-            {
-                return BadRequest(new { message = "ID不匹配" });
-            }
-
             try
             {
-                var existingTask = await _context.SundryTasks.FindAsync(id);
-                if (existingTask == null)
+                var success = await _taskService.UpdateTaskAsync(id, dto);
+                if (!success)
                 {
                     return NotFound(new { message = $"未找到ID为{id}的杂活" });
                 }
-
-                existingTask.Description = task.Description;
-                existingTask.Notes = task.Notes;
-                existingTask.ExecutionDate = task.ExecutionDate;
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("更新杂活成功, ID: {Id}", id);
                 return NoContent();
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "更新杂活并发冲突, ID: {Id}", id);
-                return StatusCode(409, new { message = "数据已被其他用户修改，请刷新后重试" });
             }
             catch (Exception ex)
             {
@@ -119,16 +95,11 @@ namespace InspectionApi.Controllers
         {
             try
             {
-                var task = await _context.SundryTasks.FindAsync(id);
-                if (task == null)
+                var success = await _taskService.DeleteTaskAsync(id);
+                if (!success)
                 {
                     return NotFound(new { message = $"未找到ID为{id}的杂活" });
                 }
-
-                _context.SundryTasks.Remove(task);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("删除杂活成功, ID: {Id}", id);
                 return NoContent();
             }
             catch (Exception ex)

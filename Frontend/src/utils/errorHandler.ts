@@ -1,5 +1,6 @@
 import { message } from 'antd';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
+import type { AxiosError } from 'axios';
 
 // API 错误响应类型
 interface ApiError {
