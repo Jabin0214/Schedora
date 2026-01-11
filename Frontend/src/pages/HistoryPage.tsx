@@ -16,18 +16,10 @@ const { RangePicker } = DatePicker;
 type InspectionType = 'MoveIn' | 'MoveOut' | 'Routine';
 type InspectionStatus = 'Pending' | 'Ready' | 'Completed';
 
-type BillingPolicy = 'SixMonthFree' | 'ThreeMonthToggle';
-
 const typeLabels: Record<string, { label: string; color: string }> = {
   MoveIn: { label: '入住检查', color: 'blue' },
   MoveOut: { label: '退房检查', color: 'orange' },
   Routine: { label: '例行检查', color: 'green' },
-};
-
-const statusLabels: Record<InspectionStatus, { label: string; color: string }> = {
-  Pending: { label: '待预约', color: 'default' },
-  Ready: { label: '待执行', color: 'blue' },
-  Completed: { label: '已完成', color: 'success' },
 };
 
 interface InspectionTask {
@@ -41,29 +33,17 @@ interface InspectionTask {
   notes?: string;
   createdAt?: string;
   completedAt?: string;
-  propertyBillingPolicy?: BillingPolicy;
-}
-
-interface SundryTask {
-  id: number;
-  description: string;
-  notes?: string;
-  createdAt: string;
-  executionDate?: string;
 }
 
 interface CombinedTask {
   id: number;
-  taskType: 'inspection' | 'sundry';
+  taskType: 'inspection';
   propertyAddress?: string;
   scheduledAt?: string;
   type?: InspectionType;
   status?: InspectionStatus;
   isBillable?: boolean;
-  description?: string;
-  executionDate?: string;
   completedAt?: string;
-  notes?: string;
   createdAt: string;
 }
 
@@ -71,7 +51,6 @@ const HistoryPage: React.FC = () => {
   dayjs.locale('zh-cn');
 
   const [inspectionTasks, setInspectionTasks] = useState<InspectionTask[]>([]);
-  const [sundryTasks, setSundryTasks] = useState<SundryTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
     dayjs().subtract(29, 'day'),
@@ -80,20 +59,11 @@ const HistoryPage: React.FC = () => {
 
   const startOfToday = dayjs().startOf('day');
 
-  const getPlannedDate = (task: CombinedTask) => {
-    if (task.taskType === 'inspection') return task.scheduledAt;
-    return task.executionDate;
-  };
-
   const fetchHistoryTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const [insRes, sunRes] = await Promise.all([
-        axios.get<InspectionTask[]>(API_ENDPOINTS.inspectionTasks),
-        axios.get<SundryTask[]>(API_ENDPOINTS.sundryTasks),
-      ]);
+      const insRes = await axios.get<InspectionTask[]>(API_ENDPOINTS.inspectionTasks);
       setInspectionTasks(insRes.data);
-      setSundryTasks(sunRes.data);
     } catch (error) {
       handleApiError(error, '获取历史数据失败');
     } finally {
@@ -106,8 +76,9 @@ const HistoryPage: React.FC = () => {
   }, [fetchHistoryTasks]);
 
   const combinedHistory = useMemo<CombinedTask[]>(() => {
-    const combined: CombinedTask[] = [
-      ...inspectionTasks.map((task) => ({
+    const combined: CombinedTask[] = inspectionTasks
+      .filter((task) => task.status === 'Completed')
+      .map((task) => ({
         id: task.id,
         taskType: 'inspection' as const,
         propertyAddress: task.propertyAddress,
@@ -116,103 +87,63 @@ const HistoryPage: React.FC = () => {
         status: task.status,
         isBillable: task.isBillable,
         completedAt: task.completedAt,
-        notes: task.notes,
         createdAt: task.createdAt || '',
-      })),
-      ...sundryTasks.map((sundry) => ({
-        id: sundry.id,
-        taskType: 'sundry' as const,
-        description: sundry.description,
-        executionDate: sundry.executionDate,
-        notes: sundry.notes,
-        createdAt: sundry.createdAt,
-      })),
-    ];
+      }));
 
     const start = dateRange[0].startOf('day');
     const end = dateRange[1].endOf('day');
 
     return combined
       .filter((item) => {
-        if (item.taskType === 'inspection' && item.status !== 'Completed') return false;
-        if (item.taskType === 'sundry' && !item.executionDate) return false;
-
-        const pivotStr = item.completedAt || getPlannedDate(item) || item.createdAt;
+        const pivotStr = item.completedAt || item.scheduledAt || item.createdAt;
         const pivot = dayjs(pivotStr);
         if (!pivot.isValid()) return false;
         if (!pivot.isBefore(startOfToday)) return false;
         return pivot.isBetween(start, end, 'day', '[]');
       })
       .sort((a, b) => {
-        const da = a.completedAt || getPlannedDate(a) || a.createdAt || startOfToday.toISOString();
-        const db = b.completedAt || getPlannedDate(b) || b.createdAt || startOfToday.toISOString();
+        const da = a.completedAt || a.scheduledAt || a.createdAt || startOfToday.toISOString();
+        const db = b.completedAt || b.scheduledAt || b.createdAt || startOfToday.toISOString();
         return dayjs(db).valueOf() - dayjs(da).valueOf();
       });
-  }, [inspectionTasks, sundryTasks, dateRange, startOfToday]);
+  }, [inspectionTasks, dateRange, startOfToday]);
 
   const columns = [
     {
-      title: '日期',
+      title: '时间',
       dataIndex: 'date',
       key: 'date',
-      width: 140,
+      width: 160,
       render: (_: unknown, record: CombinedTask) => {
-        const pivot = record.completedAt || getPlannedDate(record) || record.createdAt;
-        return dayjs(pivot).format('YYYY-MM-DD');
+        const pivot = record.completedAt || record.scheduledAt || record.createdAt;
+        return dayjs(pivot).format('YYYY-MM-DD HH:mm');
       },
     },
     {
-      title: '内容',
-      dataIndex: 'content',
-      key: 'content',
+      title: '地址',
+      dataIndex: 'address',
+      key: 'address',
       ellipsis: { showTitle: false },
-      render: (_: unknown, record: CombinedTask) =>
-        record.taskType === 'inspection' ? record.propertyAddress || '-' : record.description || '-',
+      render: (_: unknown, record: CombinedTask) => record.propertyAddress || '-',
     },
     {
-      title: '类型',
+      title: '检查类型',
       dataIndex: 'type',
       key: 'type',
       width: 120,
       render: (_: unknown, record: CombinedTask) => {
-        if (record.taskType === 'inspection') {
-          const cfg = record.type ? typeLabels[record.type] : null;
-          return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : '-';
-        }
-        return <Tag color="purple">杂活</Tag>;
+        const cfg = record.type ? typeLabels[record.type] : null;
+        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : '-';
       },
     },
     {
-      title: '收费',
+      title: '是否收费',
       dataIndex: 'charge',
       key: 'charge',
       width: 100,
       render: (_: unknown, record: CombinedTask) => {
-        if (record.taskType === 'inspection') {
-          return record.isBillable ? <Tag color="red">收费</Tag> : <Tag color="green">免费</Tag>;
-        }
-        return '-';
+        return record.isBillable ? <Tag color="red">收费</Tag> : <Tag color="green">免费</Tag>;
       },
-    },
-    {
-      title: '状态',
-      dataIndex: 'status',
-      key: 'status',
-      width: 100,
-      render: (_: unknown, record: CombinedTask) => {
-        if (record.taskType === 'inspection') {
-          const cfg = record.status ? statusLabels[record.status] : null;
-          return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : '-';
-        }
-        return <Tag color="purple">杂活</Tag>;
-      },
-    },
-    {
-      title: '备注',
-      dataIndex: 'notes',
-      key: 'notes',
-      ellipsis: { showTitle: false },
-      render: (text: string) => <span title={text}>{text || '-'}</span>,
     },
   ];
 
