@@ -1,4 +1,5 @@
 using InspectionApi.Data;
+using InspectionApi.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,11 +17,11 @@ builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
 builder.Services.AddScoped<ISundryTaskService, SundryTaskService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
-// 3. 允许跨域 (CORS) - 允许前端 localhost:5173 访问
+// 3. 允许跨域 (CORS) - 允许前端访问
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp",
-        policy => policy.WithOrigins("http://localhost:5173")
+        policy => policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
                         .AllowAnyMethod()
                         .AllowAnyHeader());
 });

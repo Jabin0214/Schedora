@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using InspectionApi.Services;
+using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
 
 namespace InspectionApi.Controllers

@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
@@ -34,26 +35,25 @@ namespace InspectionApi.Services
                 .Include(t => t.Property)
                 .OrderByDescending(t => t.CreatedAt)
                 .ThenByDescending(t => t.ScheduledAt)
-                .Select(t => new InspectionTaskDto
-                {
-                    Id = t.Id,
-                    PropertyId = t.PropertyId,
-                    PropertyAddress = t.Property != null ? t.Property.Address : null,
-                    ScheduledAt = t.ScheduledAt?.ToString("O"),
-                    Type = t.Type.ToString(),
-                    Status = t.Status.ToString(),
-                    IsBillable = t.IsBillable,
-                    Notes = t.Notes,
-                    CreatedAt = t.CreatedAt.ToString("O"),
-                    CompletedAt = t.CompletedAt?.ToString("O"),
-                    LastInspectionDate = t.Property != null ? t.Property.LastInspectionDate?.ToString("O") : null,
-                    LastInspectionType = t.Property?.LastInspectionType?.ToString(),
-                    LastInspectionWasCharged = t.Property != null ? t.Property.LastInspectionWasCharged : false,
-                    BillingPolicy = t.Property != null ? t.Property.BillingPolicy.ToString() : BillingPolicy.ThreeMonthToggle.ToString()
-                })
                 .ToListAsync(cancellationToken);
 
-            return tasks;
+            return tasks.Select(t => new InspectionTaskDto
+            {
+                Id = t.Id,
+                PropertyId = t.PropertyId,
+                PropertyAddress = t.Property?.Address,
+                ScheduledAt = t.ScheduledAt?.ToString("O"),
+                Type = t.Type.ToString(),
+                Status = t.Status.ToString(),
+                IsBillable = t.IsBillable,
+                Notes = t.Notes,
+                CreatedAt = t.CreatedAt.ToString("O"),
+                CompletedAt = t.CompletedAt?.ToString("O"),
+                LastInspectionDate = t.Property?.LastInspectionDate?.ToString("O"),
+                LastInspectionType = t.Property?.LastInspectionType?.ToString(),
+                LastInspectionWasCharged = t.Property != null ? t.Property.LastInspectionWasCharged : false,
+                BillingPolicy = t.Property != null ? t.Property.BillingPolicy.ToString() : BillingPolicy.ThreeMonthToggle.ToString()
+            });
         }
 
         public async Task<InspectionTask?> GetTaskByIdAsync(int id)

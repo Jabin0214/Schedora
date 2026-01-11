@@ -1,3 +1,5 @@
+using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
@@ -19,17 +21,16 @@ namespace InspectionApi.Services
         {
             var tasks = await _context.SundryTasks
                 .OrderByDescending(t => t.CreatedAt)
-                .Select(t => new SundryTaskDto
-                {
-                    Id = t.Id,
-                    Description = t.Description,
-                    Notes = t.Notes,
-                    CreatedAt = t.CreatedAt.ToString("O"),
-                    ExecutionDate = t.ExecutionDate?.ToString("O")
-                })
                 .ToListAsync();
 
-            return tasks;
+            return tasks.Select(t => new SundryTaskDto
+            {
+                Id = t.Id,
+                Description = t.Description,
+                Notes = t.Notes,
+                CreatedAt = t.CreatedAt.ToString("O"),
+                ExecutionDate = t.ExecutionDate?.ToString("O")
+            });
         }
 
         public async Task<SundryTask?> GetTaskByIdAsync(int id)

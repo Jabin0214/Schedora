@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
@@ -32,20 +34,21 @@ namespace InspectionApi.Services
                 })
                 .ToListAsync();
 
-            var sundryTasks = await _context.SundryTasks
+            var sundryTasksQuery = await _context.SundryTasks
                 .Where(s => s.ExecutionDate.HasValue &&
                             s.ExecutionDate.Value >= startDate &&
                             s.ExecutionDate.Value <= endDate)
                 .OrderBy(s => s.ExecutionDate)
-                .Select(s => new SundryTaskDto
-                {
-                    Id = s.Id,
-                    Description = s.Description,
-                    Notes = s.Notes,
-                    CreatedAt = s.CreatedAt.ToString("O"),
-                    ExecutionDate = s.ExecutionDate!.Value.ToString("O")
-                })
                 .ToListAsync();
+
+            var sundryTasks = sundryTasksQuery.Select(s => new SundryTaskDto
+            {
+                Id = s.Id,
+                Description = s.Description,
+                Notes = s.Notes,
+                CreatedAt = s.CreatedAt.ToString("O"),
+                ExecutionDate = s.ExecutionDate!.Value.ToString("O")
+            }).ToList();
 
             var report = new PayrollReportDto
             {
