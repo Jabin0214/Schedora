@@ -1,4 +1,3 @@
-using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
@@ -19,10 +18,7 @@ namespace InspectionApi.Services
 
         public async Task<IEnumerable<SundryTaskDto>> GetAllTasksAsync()
         {
-            var tasks = await _context.SundryTasks
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
-
+            var tasks = await _context.SundryTasks.OrderByDescending(t => t.CreatedAt).ToListAsync();
             return tasks.Select(t => new SundryTaskDto
             {
                 Id = t.Id,
@@ -33,24 +29,18 @@ namespace InspectionApi.Services
             });
         }
 
-        public async Task<SundryTask?> GetTaskByIdAsync(int id)
-        {
-            return await _context.SundryTasks.FindAsync(id);
-        }
-
         public async Task<SundryTaskDto> CreateTaskAsync(SundryTaskCreateDto dto)
         {
             var task = new SundryTask
             {
                 Description = dto.Description,
                 Notes = dto.Notes,
-                ExecutionDate = string.IsNullOrEmpty(dto.ExecutionDate) ? null : DateTime.Parse(dto.ExecutionDate)
+                ExecutionDate = string.IsNullOrEmpty(dto.ExecutionDate) ? null : DateTime.Parse(dto.ExecutionDate, null, System.Globalization.DateTimeStyles.RoundtripKind)
             };
 
             _context.SundryTasks.Add(task);
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation("新增杂活成功, ID: {Id}, 描述: {Description}", task.Id, task.Description);
+            _logger.LogInformation("新增杂活成功, ID: {Id}", task.Id);
 
             return new SundryTaskDto
             {
@@ -64,18 +54,14 @@ namespace InspectionApi.Services
 
         public async Task<bool> UpdateTaskAsync(int id, SundryTaskUpdateDto dto)
         {
-            var existingTask = await _context.SundryTasks.FindAsync(id);
-            if (existingTask == null)
-            {
-                return false;
-            }
+            var task = await _context.SundryTasks.FindAsync(id);
+            if (task == null) return false;
 
-            existingTask.Description = dto.Description;
-            existingTask.Notes = dto.Notes;
-            existingTask.ExecutionDate = string.IsNullOrEmpty(dto.ExecutionDate) ? null : DateTime.Parse(dto.ExecutionDate);
+            task.Description = dto.Description;
+            task.Notes = dto.Notes;
+            task.ExecutionDate = string.IsNullOrEmpty(dto.ExecutionDate) ? null : DateTime.Parse(dto.ExecutionDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
             await _context.SaveChangesAsync();
-
             _logger.LogInformation("更新杂活成功, ID: {Id}", id);
             return true;
         }
@@ -83,14 +69,10 @@ namespace InspectionApi.Services
         public async Task<bool> DeleteTaskAsync(int id)
         {
             var task = await _context.SundryTasks.FindAsync(id);
-            if (task == null)
-            {
-                return false;
-            }
+            if (task == null) return false;
 
             _context.SundryTasks.Remove(task);
             await _context.SaveChangesAsync();
-
             _logger.LogInformation("删除杂活成功, ID: {Id}", id);
             return true;
         }

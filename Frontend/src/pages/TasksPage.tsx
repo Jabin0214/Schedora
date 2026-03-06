@@ -25,8 +25,6 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import 'dayjs/locale/zh-cn';
-import isBetween from 'dayjs/plugin/isBetween';
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
 import type { InspectionType, InspectionStatus, CombinedTask } from '../types/api';
@@ -46,11 +44,7 @@ const statusLabels: Record<InspectionStatus, { label: string; color: string }> =
   Completed: { label: '已完成', color: 'success' },
 };
 
-dayjs.extend(isBetween);
-
 const TasksPage: React.FC = () => {
-  dayjs.locale('zh-cn');
-
   const [submitting, setSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
@@ -217,7 +211,6 @@ const TasksPage: React.FC = () => {
       propertyId: record.propertyId,
       type: record.type,
       status: record.status,
-      isBillable: record.isBillable,
       scheduledAt: record.scheduledAt ? dayjs(record.scheduledAt) : null,
       notes: record.notes || '',
       description: record.description || '',
@@ -371,28 +364,16 @@ const TasksPage: React.FC = () => {
           <div style={cellTextStyle}>
             {record.taskType === 'inspection' ? (
               isEditing ? (
-                <Space size={4}>
-                  <Form.Item name="status" style={{ margin: 0 }} rules={[{ required: true, message: '选择状态' }]}>
-                    <Select
-                      size="small"
-                      style={{ width: 90 }}
-                      options={Object.entries(statusLabels).map(([value, cfg]) => ({
-                        value,
-                        label: cfg.label,
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item name="isBillable" style={{ margin: 0 }}>
-                    <Select
-                      size="small"
-                      style={{ width: 70 }}
-                      options={[
-                        { value: true, label: '收费' },
-                        { value: false, label: '免费' },
-                      ]}
-                    />
-                  </Form.Item>
-                </Space>
+                <Form.Item name="status" style={{ margin: 0 }} rules={[{ required: true, message: '选择状态' }]}>
+                  <Select
+                    size="small"
+                    style={{ width: 90 }}
+                    options={Object.entries(statusLabels).map(([value, cfg]) => ({
+                      value,
+                      label: cfg.label,
+                    }))}
+                  />
+                </Form.Item>
               ) : (
                 <Space size={4}>
                   {statusConfig && <Tag color={statusConfig.color} style={{ margin: 0 }}>{statusConfig.label}</Tag>}

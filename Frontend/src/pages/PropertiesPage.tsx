@@ -4,15 +4,9 @@ import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined } from '@ant
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
+import type { Property } from '../types/api';
 
 const { Title } = Typography;
-
-// 定义数据类型 (和后端对应)
-interface Property {
-  id: number;
-  address: string;
-  billingPolicy: 'SixMonthFree' | 'ThreeMonthToggle';
-}
 
 const PropertiesPage: React.FC = () => {
   const [properties, setProperties] = useState<Property[]>([]);

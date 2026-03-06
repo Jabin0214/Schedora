@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;

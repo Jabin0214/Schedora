@@ -6,11 +6,15 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. 注入 SQLite 数据库连接
+// 1. 注入 PostgreSQL 数据库连接 (Supabase)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Data Source=inspection.db";
+    ?? throw new InvalidOperationException("数据库连接字符串未配置");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseNpgsql(connectionString, npgsqlOptions => 
+    {
+        // Supabase Pooler (Transaction Mode) 不支持 prepared statements
+        npgsqlOptions.MaxBatchSize(1);
+    }));
 
 // 2. 注册服务层
 builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
@@ -26,7 +30,7 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-// 3. 配置 Controllers 和 JSON 序列化选项（使用 camelCase 和字符串枚举）
+// 4. 配置 Controllers 和 JSON 序列化选项（使用 camelCase 和字符串枚举）
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -42,7 +46,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// 4. 自动创建数据库（如果不存在）
+// 4. 验证数据库连接
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -50,14 +54,21 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
-        // 只在数据库不存在时创建，不会删除现有数据
-        db.Database.EnsureCreated();
-        logger.LogInformation("数据库已就绪");
+        // 验证数据库是否可以连接
+        var canConnect = await db.Database.CanConnectAsync();
+        if (canConnect)
+        {
+            logger.LogInformation("✅ 成功连接到 Supabase PostgreSQL 数据库！");
+        }
+        else
+        {
+            logger.LogWarning("⚠️ 无法连接到数据库");
+        }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "数据库初始化失败");
-        throw;
+        logger.LogError(ex, "❌ 数据库连接失败");
+        logger.LogWarning("应用将继续运行，但数据库功能可能不可用");
     }
 }
 
@@ -66,17 +77,14 @@ app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
+        var exFeature = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        var logger = context.RequestServices.GetRequiredService<ILogger<Program>>();
+        if (exFeature?.Error != null)
+            logger.LogError(exFeature.Error, "未处理的异常: {Path}", context.Request.Path);
+
         context.Response.StatusCode = 500;
         context.Response.ContentType = "application/json";
-
-        var error = new
-        {
-            success = false,
-            message = "服务器内部错误，请稍后重试",
-            timestamp = DateTime.UtcNow
-        };
-
-        await context.Response.WriteAsJsonAsync(error);
+        await context.Response.WriteAsJsonAsync(new { message = "服务器内部错误，请稍后重试" });
     });
 });
 
