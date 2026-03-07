@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InspectionApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260130114735_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260307031601_RemoveStatus")]
+    partial class RemoveStatus
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -39,15 +39,7 @@ namespace InspectionApi.Migrations
                     b.Property<bool>("IsCharged")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
                     b.Property<int>("PropertyId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("TaskId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Type")
@@ -59,8 +51,6 @@ namespace InspectionApi.Migrations
 
                     b.HasIndex("PropertyId");
 
-                    b.HasIndex("TaskId");
-
                     b.ToTable("InspectionRecords");
                 });
 
@@ -71,12 +61,6 @@ namespace InspectionApi.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsBillable")
                         .HasColumnType("boolean");
@@ -91,21 +75,14 @@ namespace InspectionApi.Migrations
                     b.Property<DateTime?>("ScheduledAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedAt");
-
                     b.HasIndex("PropertyId");
 
                     b.HasIndex("ScheduledAt");
-
-                    b.HasIndex("Status");
 
                     b.ToTable("InspectionTasks");
                 });
@@ -126,52 +103,11 @@ namespace InspectionApi.Migrations
                     b.Property<int>("BillingPolicy")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("LastInspectionDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("LastInspectionType")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("LastInspectionWasCharged")
-                        .HasColumnType("boolean");
-
                     b.HasKey("Id");
 
                     b.HasIndex("Address");
 
                     b.ToTable("Properties");
-                });
-
-            modelBuilder.Entity("InspectionApi.Models.SundryTask", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<DateTime?>("ExecutionDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("ExecutionDate");
-
-                    b.ToTable("SundryTasks");
                 });
 
             modelBuilder.Entity("InspectionApi.Models.InspectionRecord", b =>

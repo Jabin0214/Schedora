@@ -16,40 +16,40 @@ namespace InspectionApi.Services
             _logger = logger;
         }
 
-        private bool ShouldCharge(Property property)
+        private async Task<bool> ShouldChargeAsync(int propertyId, BillingPolicy billingPolicy)
         {
-            if (property.BillingPolicy == BillingPolicy.SixMonthFree)
+            if (billingPolicy == BillingPolicy.SixMonthFree)
                 return false;
-            if (!property.LastInspectionDate.HasValue)
-                return true;
-            return !property.LastInspectionWasCharged;
+
+            var lastRecord = await _context.InspectionRecords
+                .Where(r => r.PropertyId == propertyId)
+                .OrderByDescending(r => r.ExecutionDate)
+                .FirstOrDefaultAsync();
+
+            if (lastRecord == null) return true;
+            return !lastRecord.IsCharged;
         }
+
+        private static InspectionTaskDto ToDto(InspectionTask t, string billingPolicy) => new()
+        {
+            Id = t.Id,
+            PropertyId = t.PropertyId,
+            PropertyAddress = t.Property?.Address,
+            ScheduledAt = t.ScheduledAt?.ToString("O"),
+            Type = t.Type.ToString(),
+            IsBillable = t.IsBillable,
+            Notes = t.Notes,
+            BillingPolicy = billingPolicy
+        };
 
         public async Task<IEnumerable<InspectionTaskDto>> GetAllTasksAsync(CancellationToken cancellationToken = default)
         {
             var tasks = await _context.InspectionTasks
                 .Include(t => t.Property)
-                .OrderByDescending(t => t.CreatedAt)
-                .ThenByDescending(t => t.ScheduledAt)
+                .OrderByDescending(t => t.ScheduledAt)
                 .ToListAsync(cancellationToken);
 
-            return tasks.Select(t => new InspectionTaskDto
-            {
-                Id = t.Id,
-                PropertyId = t.PropertyId,
-                PropertyAddress = t.Property?.Address,
-                ScheduledAt = t.ScheduledAt?.ToString("O"),
-                Type = t.Type.ToString(),
-                Status = t.Status.ToString(),
-                IsBillable = t.IsBillable,
-                Notes = t.Notes,
-                CreatedAt = t.CreatedAt.ToString("O"),
-                CompletedAt = t.CompletedAt?.ToString("O"),
-                LastInspectionDate = t.Property?.LastInspectionDate?.ToString("O"),
-                LastInspectionType = t.Property?.LastInspectionType?.ToString(),
-                LastInspectionWasCharged = t.Property?.LastInspectionWasCharged ?? false,
-                BillingPolicy = t.Property != null ? t.Property.BillingPolicy.ToString() : BillingPolicy.ThreeMonthToggle.ToString()
-            });
+            return tasks.Select(t => ToDto(t, t.Property?.BillingPolicy.ToString() ?? BillingPolicy.ThreeMonthToggle.ToString()));
         }
 
         public async Task<InspectionTaskDto> CreateTaskAsync(InspectionTaskCreateDto dto)
@@ -57,55 +57,48 @@ namespace InspectionApi.Services
             var property = await _context.Properties.FindAsync(dto.PropertyId)
                 ?? throw new ArgumentException("指定的物业不存在");
 
+            var scheduledAt = string.IsNullOrEmpty(dto.ScheduledAt)
+                ? (DateTime?)null
+                : DateTime.Parse(dto.ScheduledAt, null, System.Globalization.DateTimeStyles.RoundtripKind);
+
             var task = new InspectionTask
             {
                 PropertyId = dto.PropertyId,
-                ScheduledAt = string.IsNullOrEmpty(dto.ScheduledAt) ? null : DateTime.Parse(dto.ScheduledAt, null, System.Globalization.DateTimeStyles.RoundtripKind),
+                ScheduledAt = scheduledAt,
                 Type = Enum.Parse<InspectionType>(dto.Type),
-                Status = Enum.Parse<InspectionStatus>(dto.Status),
                 Notes = dto.Notes,
-                IsBillable = ShouldCharge(property)
+                IsBillable = await ShouldChargeAsync(property.Id, property.BillingPolicy)
             };
-
-            if (task.ScheduledAt.HasValue && task.Status == InspectionStatus.Pending)
-                task.Status = InspectionStatus.Ready;
 
             _context.InspectionTasks.Add(task);
             await _context.SaveChangesAsync();
             _logger.LogInformation("新增任务成功, ID: {Id}", task.Id);
 
-            return new InspectionTaskDto
-            {
-                Id = task.Id,
-                PropertyId = task.PropertyId,
-                PropertyAddress = property.Address,
-                ScheduledAt = task.ScheduledAt?.ToString("O"),
-                Type = task.Type.ToString(),
-                Status = task.Status.ToString(),
-                IsBillable = task.IsBillable,
-                Notes = task.Notes,
-                CreatedAt = task.CreatedAt.ToString("O"),
-                BillingPolicy = property.BillingPolicy.ToString()
-            };
+            task.Property = property;
+            return ToDto(task, property.BillingPolicy.ToString());
         }
 
         public async Task<bool> UpdateTaskAsync(int id, InspectionTaskUpdateDto dto)
         {
-            var existingTask = await _context.InspectionTasks.FindAsync(id);
+            var existingTask = await _context.InspectionTasks.Include(t => t.Property).FirstOrDefaultAsync(t => t.Id == id);
             if (existingTask == null) return false;
 
-            var property = await _context.Properties.FindAsync(dto.PropertyId)
-                ?? throw new ArgumentException("指定的物业不存在");
+            if (existingTask.Property == null || existingTask.Property.Id != dto.PropertyId)
+            {
+                var property = await _context.Properties.FindAsync(dto.PropertyId)
+                    ?? throw new ArgumentException("指定的物业不存在");
+                existingTask.Property = property;
+            }
+
+            var scheduledAt = string.IsNullOrEmpty(dto.ScheduledAt)
+                ? (DateTime?)null
+                : DateTime.Parse(dto.ScheduledAt, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
             existingTask.PropertyId = dto.PropertyId;
-            existingTask.ScheduledAt = string.IsNullOrEmpty(dto.ScheduledAt) ? null : DateTime.Parse(dto.ScheduledAt, null, System.Globalization.DateTimeStyles.RoundtripKind);
-            existingTask.Status = Enum.Parse<InspectionStatus>(dto.Status);
+            existingTask.ScheduledAt = scheduledAt;
             existingTask.Notes = dto.Notes;
             existingTask.Type = Enum.Parse<InspectionType>(dto.Type);
-            existingTask.IsBillable = ShouldCharge(property);
-
-            if (existingTask.ScheduledAt.HasValue && existingTask.Status == InspectionStatus.Pending)
-                existingTask.Status = InspectionStatus.Ready;
+            existingTask.IsBillable = dto.IsBillable;
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("更新任务成功, ID: {Id}", id);
@@ -126,12 +119,8 @@ namespace InspectionApi.Services
         public async Task CompleteTaskAsync(int id, TaskCompletionDto dto)
         {
             var task = await _context.InspectionTasks
-                .Include(t => t.Property)
                 .FirstOrDefaultAsync(t => t.Id == id)
                 ?? throw new ArgumentException($"未找到ID为{id}的任务");
-
-            if (task.Status == InspectionStatus.Completed)
-                throw new InvalidOperationException("任务已完成，不能重复完成");
 
             var executionDate = DateTime.Parse(dto.ExecutionDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
@@ -140,20 +129,10 @@ namespace InspectionApi.Services
                 PropertyId = task.PropertyId,
                 ExecutionDate = executionDate,
                 Type = task.Type,
-                IsCharged = task.IsBillable,
-                Notes = dto.Notes,
-                TaskId = task.Id
+                IsCharged = task.IsBillable
             });
 
-            task.Status = InspectionStatus.Completed;
-            task.CompletedAt = DateTime.UtcNow;
-
-            if (task.Property != null)
-            {
-                task.Property.LastInspectionDate = executionDate;
-                task.Property.LastInspectionType = task.Type;
-                task.Property.LastInspectionWasCharged = task.IsBillable;
-            }
+            _context.InspectionTasks.Remove(task);
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("完成任务成功, ID: {Id}", id);

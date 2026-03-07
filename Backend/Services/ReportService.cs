@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
-using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
 
 namespace InspectionApi.Services
@@ -28,28 +27,11 @@ namespace InspectionApi.Services
                     ExecutionDate = r.ExecutionDate.ToString("O"),
                     PropertyAddress = r.Property != null ? r.Property.Address : null,
                     Type = r.Type.ToString(),
-                    IsCharged = r.IsCharged,
-                    Notes = r.Notes
+                    IsCharged = r.IsCharged
                 })
                 .ToListAsync();
 
-            var sundryTasksQuery = await _context.SundryTasks
-                .Where(s => s.ExecutionDate.HasValue &&
-                            s.ExecutionDate.Value >= startDate &&
-                            s.ExecutionDate.Value <= endDate)
-                .OrderBy(s => s.ExecutionDate)
-                .ToListAsync();
-
-            var sundryTasks = sundryTasksQuery.Select(s => new SundryTaskDto
-            {
-                Id = s.Id,
-                Description = s.Description,
-                Notes = s.Notes,
-                CreatedAt = s.CreatedAt.ToString("O"),
-                ExecutionDate = s.ExecutionDate!.Value.ToString("O")
-            }).ToList();
-
-            var report = new PayrollReportDto
+            return new PayrollReportDto
             {
                 Period = new ReportPeriodDto
                 {
@@ -59,21 +41,16 @@ namespace InspectionApi.Services
                 },
                 Summary = new ReportSummaryDto
                 {
-                    TotalInspections = inspectionRecords.Count,
-                    TotalSundryTasks = sundryTasks.Count
+                    TotalInspections = inspectionRecords.Count
                 },
-                Inspections = inspectionRecords,
-                SundryTasks = sundryTasks
+                Inspections = inspectionRecords
             };
-
-            return report;
         }
 
         public async Task<PayrollReportDto> GetTwoWeeksReportAsync()
         {
             var endDate = DateTime.UtcNow.Date;
             var startDate = endDate.AddDays(-13);
-
             return await GetPayrollReportAsync(startDate, endDate);
         }
     }

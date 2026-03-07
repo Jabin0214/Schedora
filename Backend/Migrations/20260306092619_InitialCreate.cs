@@ -19,30 +19,11 @@ namespace InspectionApi.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Address = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    BillingPolicy = table.Column<int>(type: "integer", nullable: false),
-                    LastInspectionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastInspectionType = table.Column<int>(type: "integer", nullable: true),
-                    LastInspectionWasCharged = table.Column<bool>(type: "boolean", nullable: false)
+                    BillingPolicy = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Properties", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SundryTasks",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Description = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ExecutionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SundryTasks", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -54,9 +35,7 @@ namespace InspectionApi.Migrations
                     PropertyId = table.Column<int>(type: "integer", nullable: false),
                     ExecutionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
-                    IsCharged = table.Column<bool>(type: "boolean", nullable: false),
-                    Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    TaskId = table.Column<int>(type: "integer", nullable: true)
+                    IsCharged = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -81,7 +60,6 @@ namespace InspectionApi.Migrations
                     Status = table.Column<int>(type: "integer", nullable: false),
                     IsBillable = table.Column<bool>(type: "boolean", nullable: false),
                     Notes = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CompletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
@@ -106,16 +84,6 @@ namespace InspectionApi.Migrations
                 column: "PropertyId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_InspectionRecords_TaskId",
-                table: "InspectionRecords",
-                column: "TaskId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_InspectionTasks_CreatedAt",
-                table: "InspectionTasks",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_InspectionTasks_PropertyId",
                 table: "InspectionTasks",
                 column: "PropertyId");
@@ -134,16 +102,6 @@ namespace InspectionApi.Migrations
                 name: "IX_Properties_Address",
                 table: "Properties",
                 column: "Address");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SundryTasks_CreatedAt",
-                table: "SundryTasks",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SundryTasks_ExecutionDate",
-                table: "SundryTasks",
-                column: "ExecutionDate");
         }
 
         /// <inheritdoc />
@@ -154,9 +112,6 @@ namespace InspectionApi.Migrations
 
             migrationBuilder.DropTable(
                 name: "InspectionTasks");
-
-            migrationBuilder.DropTable(
-                name: "SundryTasks");
 
             migrationBuilder.DropTable(
                 name: "Properties");

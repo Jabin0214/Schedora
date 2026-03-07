@@ -10,15 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("数据库连接字符串未配置");
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(connectionString, npgsqlOptions => 
-    {
-        // Supabase Pooler (Transaction Mode) 不支持 prepared statements
-        npgsqlOptions.MaxBatchSize(1);
-    }));
+    options.UseNpgsql(connectionString));
 
 // 2. 注册服务层
 builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
-builder.Services.AddScoped<ISundryTaskService, SundryTaskService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
 // 3. 允许跨域 (CORS) - 允许前端访问

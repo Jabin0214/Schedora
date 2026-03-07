@@ -49,9 +49,7 @@ namespace InspectionApi.Controllers
                         PropertyAddress = r.Property != null ? r.Property.Address : null,
                         r.ExecutionDate,
                         r.Type,
-                        r.IsCharged,
-                        r.Notes,
-                        r.TaskId
+                        r.IsCharged
                     })
                     .ToListAsync();
 
