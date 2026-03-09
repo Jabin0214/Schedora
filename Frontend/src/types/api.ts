@@ -1,4 +1,10 @@
-export type InspectionType = 'MoveIn' | 'MoveOut' | 'Routine';
+export const InspectionType = {
+  MoveIn: 0,
+  MoveOut: 1,
+  Routine: 2,
+  Other: 3,
+} as const;
+export type InspectionType = typeof InspectionType[keyof typeof InspectionType];
 export type BillingPolicy = 'SixMonthFree' | 'ThreeMonthToggle';
 
 export interface Property {
@@ -24,7 +30,7 @@ export interface InspectionTaskDto {
   propertyId: number;
   propertyAddress?: string;
   scheduledAt?: string;
-  type: string;
+  type: InspectionType;
   isBillable: boolean;
   notes?: string;
   billingPolicy: string;
@@ -33,7 +39,7 @@ export interface InspectionTaskDto {
 export interface InspectionTaskCreateRequest {
   propertyId: number;
   scheduledAt?: string;
-  type: string;
+  type: InspectionType;
   notes?: string;
 }
 
@@ -41,7 +47,7 @@ export interface InspectionTaskUpdateRequest {
   propertyId: number;
   scheduledAt?: string;
   notes?: string;
-  type: string;
+  type: InspectionType;
   isBillable: boolean;
 }
 
@@ -54,6 +60,6 @@ export interface InspectionRecordDto {
   propertyId: number;
   propertyAddress?: string;
   executionDate: string;
-  type: string;
+  type: InspectionType;
   isCharged: boolean;
 }

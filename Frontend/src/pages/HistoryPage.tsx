@@ -5,15 +5,17 @@ import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
+import { InspectionType } from '../types/api';
 import type { InspectionRecordDto } from '../types/api';
 
 const { Title } = Typography;
 const { RangePicker } = DatePicker;
 
-const typeLabels: Record<string, { label: string; color: string }> = {
-  MoveIn: { label: '入住检查', color: 'blue' },
-  MoveOut: { label: '退房检查', color: 'orange' },
-  Routine: { label: '例行检查', color: 'green' },
+const typeLabels: Record<InspectionType, { label: string; color: string }> = {
+  [InspectionType.MoveIn]: { label: '入住检查', color: 'blue' },
+  [InspectionType.MoveOut]: { label: '退房检查', color: 'orange' },
+  [InspectionType.Routine]: { label: '例行检查', color: 'green' },
+  [InspectionType.Other]: { label: '其他', color: 'default' },
 };
 
 const HistoryPage: React.FC = () => {
@@ -66,7 +68,7 @@ const HistoryPage: React.FC = () => {
       width: 120,
       render: (_: unknown, record: InspectionRecordDto) => {
         const cfg = typeLabels[record.type];
-        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : '-';
+        return cfg ? <Tag color={cfg.color}>{cfg.label}</Tag> : <span style={{ color: 'red' }}>{String(record.type)}({typeof record.type})</span>;
       },
     },
     {

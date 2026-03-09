@@ -48,7 +48,7 @@ namespace InspectionApi.Controllers
                         r.PropertyId,
                         PropertyAddress = r.Property != null ? r.Property.Address : null,
                         r.ExecutionDate,
-                        r.Type,
+                        Type = (int)r.Type,
                         r.IsCharged
                     })
                     .ToListAsync();

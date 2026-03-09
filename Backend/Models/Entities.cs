@@ -13,7 +13,7 @@ namespace InspectionApi.Models
         public BillingPolicy BillingPolicy { get; set; } = BillingPolicy.ThreeMonthToggle;
     }
 
-    public enum InspectionType { MoveIn, MoveOut, Routine }
+    public enum InspectionType { MoveIn, MoveOut, Routine, Other }
 
     public enum BillingPolicy
     {

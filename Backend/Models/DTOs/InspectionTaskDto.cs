@@ -6,7 +6,7 @@ namespace InspectionApi.Models.DTOs
         public int PropertyId { get; set; }
         public string? PropertyAddress { get; set; }
         public string? ScheduledAt { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public int Type { get; set; }
         public bool IsBillable { get; set; }
         public string? Notes { get; set; }
         public string BillingPolicy { get; set; } = string.Empty;
@@ -16,7 +16,7 @@ namespace InspectionApi.Models.DTOs
     {
         public int PropertyId { get; set; }
         public string? ScheduledAt { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public int Type { get; set; }
         public string? Notes { get; set; }
     }
 
@@ -25,7 +25,7 @@ namespace InspectionApi.Models.DTOs
         public int PropertyId { get; set; }
         public string? ScheduledAt { get; set; }
         public string? Notes { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public int Type { get; set; }
         public bool IsBillable { get; set; }
     }
 }

@@ -27,15 +27,17 @@ import {
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
-import type { InspectionType, CombinedTask } from '../types/api';
+import { InspectionType } from '../types/api';
+import type { CombinedTask } from '../types/api';
 
 const { Title } = Typography;
 const { TextArea } = Input;
 
 const typeLabels: Record<InspectionType, { label: string; color: string }> = {
-  MoveIn: { label: '入住检查', color: 'blue' },
-  MoveOut: { label: '退房检查', color: 'orange' },
-  Routine: { label: '例行检查', color: 'green' },
+  [InspectionType.MoveIn]: { label: '入住检查', color: 'blue' },
+  [InspectionType.MoveOut]: { label: '退房检查', color: 'orange' },
+  [InspectionType.Routine]: { label: '例行检查', color: 'green' },
+  [InspectionType.Other]: { label: '其他', color: 'default' },
 };
 
 const TasksPage: React.FC = () => {
@@ -226,7 +228,7 @@ const TasksPage: React.FC = () => {
           <div style={cellTextStyle}>
             {isEditing ? (
               <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: '选择类型' }]}>
-                <Select size="small" options={Object.entries(typeLabels).map(([value, cfg]) => ({ value, label: cfg.label }))} />
+                <Select size="small" options={Object.entries(typeLabels).map(([value, cfg]) => ({ value: Number(value), label: cfg.label }))} />
               </Form.Item>
             ) : typeConfig ? (
               <Tag color={typeConfig.color} style={{ margin: 0 }}>{typeConfig.label}</Tag>
@@ -343,7 +345,7 @@ const TasksPage: React.FC = () => {
           <Form.Item name="type" label="检查类型" rules={[{ required: true, message: '请选择检查类型' }]}>
             <Select placeholder="请选择检查类型">
               {Object.entries(typeLabels).map(([value, config]) => (
-                <Select.Option key={value} value={value}>{config.label}</Select.Option>
+                <Select.Option key={value} value={Number(value)}>{config.label}</Select.Option>
               ))}
             </Select>
           </Form.Item>

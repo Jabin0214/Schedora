@@ -36,7 +36,7 @@ namespace InspectionApi.Services
             PropertyId = t.PropertyId,
             PropertyAddress = t.Property?.Address,
             ScheduledAt = t.ScheduledAt?.ToString("O"),
-            Type = t.Type.ToString(),
+            Type = (int)t.Type,
             IsBillable = t.IsBillable,
             Notes = t.Notes,
             BillingPolicy = billingPolicy
@@ -49,7 +49,7 @@ namespace InspectionApi.Services
                 .OrderByDescending(t => t.ScheduledAt)
                 .ToListAsync(cancellationToken);
 
-            return tasks.Select(t => ToDto(t, t.Property?.BillingPolicy.ToString() ?? BillingPolicy.ThreeMonthToggle.ToString()));
+            return tasks.Select(t => ToDto(t, t.Property?.BillingPolicy.ToString() ?? nameof(BillingPolicy.ThreeMonthToggle)));
         }
 
         public async Task<InspectionTaskDto> CreateTaskAsync(InspectionTaskCreateDto dto)
@@ -65,7 +65,7 @@ namespace InspectionApi.Services
             {
                 PropertyId = dto.PropertyId,
                 ScheduledAt = scheduledAt,
-                Type = Enum.Parse<InspectionType>(dto.Type),
+                Type = (InspectionType)dto.Type,
                 Notes = dto.Notes,
                 IsBillable = await ShouldChargeAsync(property.Id, property.BillingPolicy)
             };
@@ -97,7 +97,7 @@ namespace InspectionApi.Services
             existingTask.PropertyId = dto.PropertyId;
             existingTask.ScheduledAt = scheduledAt;
             existingTask.Notes = dto.Notes;
-            existingTask.Type = Enum.Parse<InspectionType>(dto.Type);
+            existingTask.Type = (InspectionType)dto.Type;
             existingTask.IsBillable = dto.IsBillable;
 
             await _context.SaveChangesAsync();

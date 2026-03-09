@@ -2,7 +2,6 @@ using InspectionApi.Data;
 using InspectionApi.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,15 +24,12 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
-// 4. 配置 Controllers 和 JSON 序列化选项（使用 camelCase 和字符串枚举）
+// 4. 配置 Controllers 和 JSON 序列化选项（使用 camelCase，枚举以整数传输）
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
-        // 配置枚举以字符串形式序列化/反序列化（不使用命名策略，保持原始 PascalCase）
-        // 因为前端发送的是 "MoveIn", "MoveOut" 等 PascalCase 格式
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
 builder.Services.AddEndpointsApiExplorer();

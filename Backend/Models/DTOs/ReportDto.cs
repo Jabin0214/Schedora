@@ -24,7 +24,7 @@ namespace InspectionApi.Models.DTOs
         public int Id { get; set; }
         public string ExecutionDate { get; set; } = string.Empty;
         public string? PropertyAddress { get; set; }
-        public string Type { get; set; } = string.Empty;
+        public int Type { get; set; }
         public bool IsCharged { get; set; }
     }
 

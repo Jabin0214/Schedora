@@ -7,7 +7,6 @@ import { useApi } from './useApi';
 import type {
   InspectionTaskDto,
   CombinedTask,
-  InspectionType,
   BillingPolicy,
   InspectionTaskCreateRequest,
   InspectionTaskUpdateRequest,
@@ -29,7 +28,7 @@ export function useTasks() {
     propertyAddress: task.propertyAddress,
     propertyBillingPolicy: task.billingPolicy as BillingPolicy,
     scheduledAt: task.scheduledAt,
-    type: task.type as InspectionType,
+    type: task.type,
     isBillable: task.isBillable,
     notes: task.notes,
   });
