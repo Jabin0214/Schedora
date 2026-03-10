@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Layout, Menu, theme } from 'antd';
+import { Layout, Menu, theme, ConfigProvider } from 'antd';
 import {
   HomeOutlined,
   CalendarOutlined,
@@ -8,7 +8,6 @@ import {
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 
-// ✅ 引入页面和组件
 import PropertiesPage from './pages/PropertiesPage';
 import TasksPage from './pages/TasksPage';
 import HistoryPage from './pages/HistoryPage';
@@ -18,11 +17,7 @@ const { Header, Content, Footer, Sider } = Layout;
 
 const AppContent: React.FC = () => {
   const location = useLocation();
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
 
-  // 根据当前路由确定选中的菜单项
   const selectedKey = useMemo(() => {
     if (location.pathname === '/tasks') return '2';
     if (location.pathname === '/history') return '3';
@@ -30,16 +25,19 @@ const AppContent: React.FC = () => {
   }, [location.pathname]);
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      {/* 左侧菜单栏 */}
-      <Sider breakpoint="lg" collapsedWidth="0">
-        <div className="sidebar-logo">
-           PMS 管理系统
-        </div>
+    <Layout style={{ minHeight: '100vh', background: '#0d1117' }}>
+      {/* ── Sidebar ── */}
+      <Sider
+        breakpoint="lg"
+        collapsedWidth="0"
+        style={{ background: '#0a0e13', borderRight: '1px solid #30363d' }}
+      >
+        <div className="sidebar-logo">PMS 管理系统</div>
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
+          style={{ background: '#0a0e13', borderRight: 'none' }}
           items={[
             { key: '1', icon: <HomeOutlined />, label: <Link to="/">物业档案</Link> },
             { key: '2', icon: <CalendarOutlined />, label: <Link to="/tasks">任务计划</Link> },
@@ -48,35 +46,68 @@ const AppContent: React.FC = () => {
         />
       </Sider>
 
-      {/* 右侧主体内容 */}
-      <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }} />
-        <Content style={{ margin: '16px 16px' }}>
+      {/* ── Main Area ── */}
+      <Layout style={{ background: '#0d1117' }}>
+        <Header
+          style={{
+            padding: '0 20px',
+            background: '#0a0e13',
+            borderBottom: '1px solid #30363d',
+            height: 44,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{
+            color: '#484f58',
+            fontSize: '10px',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            fontWeight: 600,
+          }}>
+            PROPERTY MANAGEMENT SYSTEM
+          </span>
+          <span style={{ color: '#30363d', fontSize: '10px', letterSpacing: '1px' }}>
+            SYS:ONLINE ■
+          </span>
+        </Header>
+
+        <Content style={{ margin: '12px' }}>
           <div
             className="page-container"
             style={{
-              padding: 24,
+              padding: 20,
               minHeight: 360,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-              overflow: 'auto' // 防止表格太宽撑破
+              background: '#161b22',
+              borderRadius: 2,
+              border: '1px solid #30363d',
+              overflow: 'auto',
             }}
           >
-            {/* 路由配置：决定点击菜单后显示哪个组件 */}
             <ErrorBoundary>
               <Routes>
-                {/* 首页显示 物业列表 */}
                 <Route path="/" element={<PropertiesPage />} />
-
-                {/* 其他页面 */}
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/history" element={<HistoryPage />} />
               </Routes>
             </ErrorBoundary>
           </div>
         </Content>
-        <Footer style={{ textAlign: 'center', color: '#888' }}>
-          Property Management System ©2026 Created by Jabin
+
+        <Footer
+          style={{
+            textAlign: 'center',
+            color: '#484f58',
+            background: '#0a0e13',
+            borderTop: '1px solid #30363d',
+            padding: '7px 20px',
+            fontSize: '10px',
+            letterSpacing: '1.5px',
+            textTransform: 'uppercase',
+          }}
+        >
+          SCHEDORA PMS © 2026 — Created by Jabin
         </Footer>
       </Layout>
     </Layout>
@@ -85,9 +116,71 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <ConfigProvider
+      theme={{
+        algorithm: theme.darkAlgorithm,
+        token: {
+          colorPrimary:      '#00d4ff',
+          colorBgBase:       '#0d1117',
+          colorBgContainer:  '#161b22',
+          colorBgElevated:   '#1c2128',
+          colorBorder:       '#30363d',
+          colorText:         '#e6edf3',
+          colorTextSecondary:'#8b949e',
+          borderRadius:      2,
+          borderRadiusLG:    4,
+          colorSuccess:      '#22c55e',
+          colorWarning:      '#f0a500',
+          colorError:        '#ff4444',
+          fontFamily:        "'JetBrains Mono', 'Consolas', 'SF Mono', ui-monospace, monospace",
+        },
+        components: {
+          Layout: {
+            siderBg:    '#0a0e13',
+            headerBg:   '#0a0e13',
+
+            footerBg:   '#0a0e13',
+          },
+          Menu: {
+            darkItemBg:            '#0a0e13',
+            darkItemSelectedBg:    'rgba(0, 212, 255, 0.08)',
+            darkItemHoverBg:       'rgba(0, 212, 255, 0.04)',
+            darkItemColor:         '#8b949e',
+            darkItemSelectedColor: '#00d4ff',
+            darkItemHoverColor:    '#c6cdd5',
+          },
+          Card: {
+            headerBg: '#0d1117',
+          },
+          Table: {
+            headerBg:   '#0d1117',
+            rowHoverBg: '#1c2128',
+          },
+          Button: {
+            defaultBg:              'transparent',
+            defaultBorderColor:     '#30363d',
+            defaultColor:           '#8b949e',
+            defaultHoverBg:         'rgba(255,255,255,0.04)',
+            defaultHoverBorderColor:'#444d56',
+            defaultHoverColor:      '#e6edf3',
+          },
+          Modal: {
+            contentBg: '#161b22',
+            headerBg:  '#0d1117',
+          },
+          Select: {
+            optionSelectedBg: 'rgba(0, 212, 255, 0.1)',
+          },
+          DatePicker: {
+            cellHoverBg: 'rgba(0, 212, 255, 0.08)',
+          },
+        },
+      }}
+    >
+      <Router>
+        <AppContent />
+      </Router>
+    </ConfigProvider>
   );
 };
 

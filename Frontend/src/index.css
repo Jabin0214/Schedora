@@ -1,4 +1,7 @@
-/* 全局样式 - 与 Ant Design 兼容 */
+/* ═══════════════════════════════════════════════════════
+   SCHEDORA PMS — Industrial Control Console
+   Global Styles
+═══════════════════════════════════════════════════════ */
 
 * {
   margin: 0;
@@ -6,37 +9,54 @@
   box-sizing: border-box;
 }
 
+:root {
+  --ind-bg-base:      #0d1117;
+  --ind-bg-panel:     #161b22;
+  --ind-bg-elevated:  #1c2128;
+  --ind-bg-deep:      #0a0e13;
+  --ind-border:       #30363d;
+  --ind-border-hi:    #444d56;
+  --ind-cyan:         #00d4ff;
+  --ind-amber:        #f0a500;
+  --ind-green:        #22c55e;
+  --ind-red:          #ff4444;
+  --ind-text-hi:      #e6edf3;
+  --ind-text-sec:     #8b949e;
+  --ind-text-muted:   #484f58;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
-    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-    'Noto Color Emoji';
+  font-family: 'JetBrains Mono', 'Consolas', 'SF Mono', 'Fira Code',
+    ui-monospace, 'Cascadia Code', monospace;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--ind-bg-base);
+  color: var(--ind-text-hi);
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* 滚动条美化 (可选) */
+/* ── Industrial Scrollbars ────────────────────── */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: var(--ind-bg-deep);
+  border-left: 1px solid var(--ind-border);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: var(--ind-border-hi);
+  border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #636e7b;
 }
