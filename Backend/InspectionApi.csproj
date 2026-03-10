@@ -19,6 +19,11 @@
     </PackageReference>
 
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+
+    <!-- Google API 集成 -->
+    <PackageReference Include="Google.Apis.Calendar.v3" Version="1.69.0.3667" />
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.68.0.3658" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.69.0" />
   </ItemGroup>
 
 </Project>

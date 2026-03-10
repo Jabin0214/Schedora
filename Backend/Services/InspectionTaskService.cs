@@ -9,11 +9,13 @@ namespace InspectionApi.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<InspectionTaskService> _logger;
+        private readonly IGoogleSyncService _googleSync;
 
-        public InspectionTaskService(AppDbContext context, ILogger<InspectionTaskService> logger)
+        public InspectionTaskService(AppDbContext context, ILogger<InspectionTaskService> logger, IGoogleSyncService googleSync)
         {
             _context = context;
             _logger = logger;
+            _googleSync = googleSync;
         }
 
         private async Task<bool> ShouldChargeAsync(int propertyId, BillingPolicy billingPolicy)
@@ -75,6 +77,7 @@ namespace InspectionApi.Services
             _logger.LogInformation("新增任务成功, ID: {Id}", task.Id);
 
             task.Property = property;
+            _ = _googleSync.SyncTaskToCalendarAsync(task, "create");
             return ToDto(task, property.BillingPolicy.ToString());
         }
 
@@ -102,6 +105,7 @@ namespace InspectionApi.Services
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("更新任务成功, ID: {Id}", id);
+            _ = _googleSync.SyncTaskToCalendarAsync(existingTask, "update");
             return true;
         }
 
@@ -113,6 +117,7 @@ namespace InspectionApi.Services
             _context.InspectionTasks.Remove(task);
             await _context.SaveChangesAsync();
             _logger.LogInformation("删除任务成功, ID: {Id}", id);
+            _ = _googleSync.SyncTaskToCalendarAsync(task, "delete");
             return true;
         }
 

@@ -14,6 +14,7 @@ import {
   Tag,
   Tooltip,
   Card,
+  message,
 } from 'antd';
 import {
   PlusOutlined,
@@ -23,12 +24,15 @@ import {
   SaveOutlined,
   CloseOutlined,
   CheckCircleOutlined,
+  SyncOutlined,
 } from '@ant-design/icons';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
 import { InspectionType } from '../types/api';
 import type { CombinedTask } from '../types/api';
+import { API_ENDPOINTS } from '../config/api';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -41,7 +45,21 @@ const typeLabels: Record<InspectionType, { label: string; color: string }> = {
 };
 
 const TasksPage: React.FC = () => {
+  const [syncing, setSyncing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const handleSync = useCallback(async (target: 'all' | 'calendar' | 'sheets') => {
+    setSyncing(true);
+    try {
+      await axios.post(`${API_ENDPOINTS.googleSync}/${target}`);
+      const label = target === 'all' ? 'Calendar + Sheets' : target === 'calendar' ? 'Google Calendar' : 'Google Sheets';
+      message.success(`${label} 同步成功`);
+    } catch {
+      message.error('同步失败，请检查后端日志');
+    } finally {
+      setSyncing(false);
+    }
+  }, []);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [completingTask, setCompletingTask] = useState<CombinedTask | null>(null);
@@ -323,6 +341,8 @@ const TasksPage: React.FC = () => {
         <Title level={4} style={{ margin: 0 }}>📅 任务计划</Title>
         <Space size="small">
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>刷新</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncing}>同步日历</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncing}>同步表格</Button>
           <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>添加任务</Button>
         </Space>
       </div>

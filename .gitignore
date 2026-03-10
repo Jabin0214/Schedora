@@ -28,6 +28,9 @@ Thumbs.db
 *.swo
 *~
 
+# Google 凭证文件（敏感，禁止提交）
+Backend/google-credentials.json
+
 # 日志文件
 *.log
 

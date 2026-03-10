@@ -9,5 +9,6 @@ export const API_ENDPOINTS = {
   inspectionTasks: `${API_BASE_URL}/inspectiontasks`,
   inspectionRecords: `${API_BASE_URL}/inspectionrecords`,
   reports: `${API_BASE_URL}/reports`,
+  googleSync: `${API_BASE_URL}/googlesync`,
 } as const;
 

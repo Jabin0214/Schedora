@@ -14,6 +14,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // 2. 注册服务层
 builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IGoogleSyncService, GoogleSyncService>();
+builder.Services.AddHostedService<DailySyncBackgroundService>();
 
 // 3. 允许跨域 (CORS) - 允许前端访问
 builder.Services.AddCors(options =>
