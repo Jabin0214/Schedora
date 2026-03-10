@@ -11,7 +11,7 @@ import axios from 'axios';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
-import type { CombinedTask } from '../types/api';
+import type { CombinedTask, InspectionRecordDto } from '../types/api';
 import { API_ENDPOINTS } from '../config/api';
 import { IndTitle, modalStyles, typeLabels } from '../components/shared';
 
@@ -37,6 +37,9 @@ const TasksPage: React.FC = () => {
   const [syncing,             setSyncing]             = useState(false);
   const [submitting,          setSubmitting]          = useState(false);
   const [isModalOpen,         setIsModalOpen]         = useState(false);
+  const [recentRecords,       setRecentRecords]       = useState<InspectionRecordDto[]>([]);
+  const [recordsLoading,      setRecordsLoading]      = useState(false);
+  const [selectedPropertyId,  setSelectedPropertyId]  = useState<number | null>(null);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const [completingTask,      setCompletingTask]      = useState<CombinedTask | null>(null);
   const [editingKey,          setEditingKey]          = useState<string | null>(null);
@@ -77,8 +80,32 @@ const TasksPage: React.FC = () => {
     }
   }, []);
 
+  const fetchRecentRecords = useCallback(async (propertyId: number) => {
+    setRecordsLoading(true);
+    try {
+      const res = await axios.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
+        params: {
+          propertyId,
+          startDate: dayjs().subtract(2, 'year').toISOString(),
+          endDate: dayjs().toISOString(),
+        },
+      });
+      const sorted = res.data
+        .filter(r => r.propertyId === propertyId)
+        .sort((a, b) => dayjs(b.executionDate).valueOf() - dayjs(a.executionDate).valueOf())
+        .slice(0, 2);
+      setRecentRecords(sorted);
+    } catch {
+      setRecentRecords([]);
+    } finally {
+      setRecordsLoading(false);
+    }
+  }, []);
+
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
+    setRecentRecords([]);
+    setSelectedPropertyId(null);
     form.resetFields();
   }, [form]);
 
@@ -89,6 +116,7 @@ const TasksPage: React.FC = () => {
       await createInspectionTask({
         propertyId:  values.propertyId,
         type:        values.type,
+        isBillable:  values.isBillable ?? false,
         scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : undefined,
         notes:       values.notes,
       });
@@ -361,12 +389,58 @@ const TasksPage: React.FC = () => {
       {/* ── 添加任务弹窗 ── */}
       <Modal title={<ModalTitle>添加任务</ModalTitle>} open={isModalOpen} onOk={handleOk} onCancel={closeModal}
         confirmLoading={submitting} okText="添加" cancelText="取消" destroyOnHidden width={600} styles={modalStyles}>
-        <Form form={form} layout="vertical">
+        <Form
+          form={form}
+          layout="vertical"
+          onValuesChange={(changed) => {
+            if ('propertyId' in changed) {
+              const pid = changed.propertyId as number | undefined;
+              setSelectedPropertyId(pid ?? null);
+              if (pid) fetchRecentRecords(pid);
+              else setRecentRecords([]);
+            }
+          }}
+        >
           <Form.Item name="propertyId" label="选择物业" rules={[{ required: true, message: '请选择物业' }]}>
             <Select placeholder="请选择物业" showSearch optionFilterProp="label"
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
               options={propertyOptions} />
           </Form.Item>
+
+          {/* ── 最近记录 ── */}
+          {selectedPropertyId && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+                最近记录
+              </div>
+              <Spin spinning={recordsLoading} size="small">
+                <div style={{ background: '#0d1117', border: '1px solid #30363d', borderLeft: '3px solid #444d56', borderRadius: 2, padding: '6px 10px', minHeight: 32 }}>
+                  {!recordsLoading && recentRecords.length === 0 ? (
+                    <span style={{ color: '#484f58', fontSize: '11px' }}>暂无历史记录</span>
+                  ) : (
+                    recentRecords.map((r, idx) => (
+                      <div key={r.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '3px 0',
+                        borderBottom: idx < recentRecords.length - 1 ? '1px solid #30363d' : 'none',
+                      }}>
+                        <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '11px', minWidth: 115 }}>
+                          {dayjs(r.executionDate).format('YYYY-MM-DD HH:mm')}
+                        </span>
+                        <Tag color={typeLabels[r.type]?.color} style={tagStyle}>
+                          {typeLabels[r.type]?.label ?? String(r.type)}
+                        </Tag>
+                        <Tag color={r.isCharged ? 'gold' : 'green'} style={tagStyle}>
+                          {r.isCharged ? '收费' : '免费'}
+                        </Tag>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </Spin>
+            </div>
+          )}
+
           <Form.Item name="type" label="检查类型" rules={[{ required: true, message: '请选择检查类型' }]}>
             <Select placeholder="请选择检查类型">
               {Object.entries(typeLabels).map(([value, config]) => (
@@ -374,6 +448,11 @@ const TasksPage: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
+
+          <Form.Item name="isBillable" label="是否收费" initialValue={false} rules={[{ required: true, message: '请选择收费状态' }]}>
+            <Select options={[{ value: false, label: '免费' }, { value: true, label: '收费' }]} />
+          </Form.Item>
+
           <Form.Item name="scheduledAt" label="计划时间">
             <DatePicker
               showTime={{ format: 'HH:mm', hideDisabledOptions: true, disabledMinutes: () => DISABLED_MINUTES }}

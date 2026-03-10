@@ -40,6 +40,7 @@ export interface InspectionTaskCreateRequest {
   propertyId: number;
   scheduledAt?: string;
   type: InspectionType;
+  isBillable?: boolean;
   notes?: string;
 }
 
