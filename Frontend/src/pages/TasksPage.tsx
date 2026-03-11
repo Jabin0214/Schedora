@@ -51,7 +51,7 @@ const TasksPage: React.FC = () => {
 
   const {
     loading: tasksLoading,
-    todayTasks, upcomingTasks, unscheduledTasks,
+    overdueTasks, todayTasks, upcomingTasks, unscheduledTasks,
     fetchTasks, createInspectionTask, updateInspectionTask,
     deleteInspectionTask, completeInspectionTask,
   } = useTasks();
@@ -331,12 +331,12 @@ const TasksPage: React.FC = () => {
   };
 
   // ── Section renderer ─────────────────────────────────────────
-  const renderSection = (title: string, data: CombinedTask[]) => (
+  const renderSection = (title: string, data: CombinedTask[], accentColor = '#00d4ff') => (
     <Card
       size="small"
       title={
         <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#8b949e' }}>
-          <span style={{ color: '#00d4ff', marginRight: 6 }}>▶</span>
+          <span style={{ color: accentColor, marginRight: 6 }}>▶</span>
           {title}
           <span style={{ color: '#484f58', marginLeft: 8, fontWeight: 400 }}>[{data.length}]</span>
         </span>
@@ -345,7 +345,7 @@ const TasksPage: React.FC = () => {
         body:   { padding: 0 },
         header: { background: '#0d1117', borderBottom: '1px solid #30363d', minHeight: 36, padding: '0 10px' },
       }}
-      style={{ marginBottom: 8, border: '1px solid #30363d', borderTop: '2px solid #00d4ff', borderRadius: 2, background: '#161b22' }}
+      style={{ marginBottom: 8, border: '1px solid #30363d', borderTop: `2px solid ${accentColor}`, borderRadius: 2, background: '#161b22' }}
     >
       <div style={{ overflowX: 'auto' }}>
         <div style={{ minWidth: 620 }}>
@@ -381,6 +381,7 @@ const TasksPage: React.FC = () => {
       </div>
 
       <Spin spinning={loading}>
+        {overdueTasks.length > 0 && renderSection('逾期', overdueTasks, '#f85149')}
         {renderSection('今日', todayTasks)}
         {renderSection('未来', upcomingTasks)}
         {renderSection('待定', unscheduledTasks)}

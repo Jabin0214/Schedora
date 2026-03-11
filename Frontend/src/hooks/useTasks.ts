@@ -86,12 +86,8 @@ export function useTasks() {
   const startOfToday = useMemo(() => dayjs().startOf('day'), []);
   const endOfToday = useMemo(() => dayjs().endOf('day'), []);
 
-  const visibleTasks = useMemo(() => {
-    const list = combinedTasks.filter((item) => {
-      const dateStr = getPlannedDate(item);
-      if (dateStr && dayjs(dateStr).isBefore(startOfToday)) return false;
-      return true;
-    });
+  const sortedTasks = useMemo(() => {
+    const list = [...combinedTasks];
     list.sort((a, b) => {
       const da = getPlannedDate(a);
       const db = getPlannedDate(b);
@@ -101,27 +97,35 @@ export function useTasks() {
       return 0;
     });
     return list;
-  }, [combinedTasks, startOfToday]);
+  }, [combinedTasks]);
+
+  const overdueTasks = useMemo(
+    () => sortedTasks.filter((item) => {
+      const d = getPlannedDate(item);
+      return d ? dayjs(d).isBefore(startOfToday) : false;
+    }),
+    [sortedTasks, startOfToday]
+  );
 
   const todayTasks = useMemo(
-    () => visibleTasks.filter((item) => {
+    () => sortedTasks.filter((item) => {
       const d = getPlannedDate(item);
       return d ? dayjs(d).isBetween(startOfToday, endOfToday, 'minute', '[]') : false;
     }),
-    [visibleTasks, startOfToday, endOfToday]
+    [sortedTasks, startOfToday, endOfToday]
   );
 
   const upcomingTasks = useMemo(
-    () => visibleTasks.filter((item) => {
+    () => sortedTasks.filter((item) => {
       const d = getPlannedDate(item);
       return d ? dayjs(d).isAfter(endOfToday) : false;
     }),
-    [visibleTasks, endOfToday]
+    [sortedTasks, endOfToday]
   );
 
   const unscheduledTasks = useMemo(
-    () => visibleTasks.filter((item) => !getPlannedDate(item)),
-    [visibleTasks]
+    () => sortedTasks.filter((item) => !getPlannedDate(item)),
+    [sortedTasks]
   );
 
   useEffect(() => {
@@ -130,6 +134,7 @@ export function useTasks() {
 
   return {
     loading,
+    overdueTasks,
     todayTasks,
     upcomingTasks,
     unscheduledTasks,
