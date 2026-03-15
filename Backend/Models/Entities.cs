@@ -15,6 +15,21 @@ namespace InspectionApi.Models
 
     public enum InspectionType { MoveIn, MoveOut, Routine, Other }
 
+    // Dynamic task type config (user-manageable)
+    public class TaskType
+    {
+        public int Id { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(30)]
+        public string Color { get; set; } = "default";
+
+        public int DisplayOrder { get; set; }
+    }
+
     public enum BillingPolicy
     {
         SixMonthFree,      // 六个月一次，不收费

@@ -25,7 +25,7 @@ export const handleApiError = (error: unknown, defaultMessage: string): void => 
       const errorMessages = Object.values(responseData.errors).flat();
       message.error(errorMessages.join('; '));
     } else if (axiosError.code === 'ERR_NETWORK') {
-      message.error('无法连接到服务器，请检查后端是否启动');
+      message.error('Cannot connect to server — please check the backend is running');
     } else {
       message.error(defaultMessage);
     }

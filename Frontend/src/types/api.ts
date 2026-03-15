@@ -1,3 +1,10 @@
+export interface TaskTypeConfig {
+  id: number;
+  name: string;
+  color: string;
+  displayOrder: number;
+}
+
 export const InspectionType = {
   MoveIn: 0,
   MoveOut: 1,

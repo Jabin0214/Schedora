@@ -39,7 +39,7 @@ export function useTasks() {
       const res = await axios.get<InspectionTaskDto[]>(API_ENDPOINTS.inspectionTasks);
       setCombinedTasks(res.data.map(toTask));
     } catch (error) {
-      handleApiError(error, '获取任务列表失败');
+      handleApiError(error, 'Failed to fetch tasks');
     } finally {
       setLoading(false);
     }
@@ -48,7 +48,7 @@ export function useTasks() {
   const createInspectionTask = useCallback(async (data: InspectionTaskCreateRequest) => {
     const result = await executeApi(
       () => axios.post<InspectionTaskDto>(API_ENDPOINTS.inspectionTasks, data),
-      '检查任务创建成功'
+      'Task created'
     );
     if (result) await fetchTasks();
     return result;
@@ -57,7 +57,7 @@ export function useTasks() {
   const updateInspectionTask = useCallback(async (id: number, data: InspectionTaskUpdateRequest) => {
     const success = await executeApi(
       () => axios.put(`${API_ENDPOINTS.inspectionTasks}/${id}`, data),
-      '检查任务更新成功'
+      'Task updated'
     );
     if (success !== null) await fetchTasks();
     return success !== null;
@@ -66,7 +66,7 @@ export function useTasks() {
   const deleteInspectionTask = useCallback(async (id: number) => {
     const success = await executeApi(
       () => axios.delete(`${API_ENDPOINTS.inspectionTasks}/${id}`),
-      '检查任务删除成功'
+      'Task deleted'
     );
     if (success !== null) {
       setCombinedTasks(prev => prev.filter(t => t.id !== id));
@@ -77,7 +77,7 @@ export function useTasks() {
   const completeInspectionTask = useCallback(async (id: number, data: TaskCompletionRequest) => {
     const result = await executeApi(
       () => axios.post(`${API_ENDPOINTS.inspectionTasks}/${id}/complete`, data),
-      '任务完成成功'
+      'Task completed'
     );
     if (result) await fetchTasks();
     return result;

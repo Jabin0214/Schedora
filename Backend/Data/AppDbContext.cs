@@ -10,6 +10,7 @@ namespace InspectionApi.Data
         public DbSet<Property> Properties { get; set; }
         public DbSet<InspectionTask> InspectionTasks { get; set; }
         public DbSet<InspectionRecord> InspectionRecords { get; set; }
+        public DbSet<TaskType> TaskTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,6 +32,15 @@ namespace InspectionApi.Data
                     .OnDelete(DeleteBehavior.Restrict);
                 entity.HasIndex(t => t.PropertyId);
                 entity.HasIndex(t => t.ScheduledAt);
+            });
+
+            modelBuilder.Entity<TaskType>(entity =>
+            {
+                entity.HasKey(t => t.Id);
+                entity.Property(t => t.Id).ValueGeneratedNever();
+                entity.Property(t => t.Name).IsRequired().HasMaxLength(50);
+                entity.Property(t => t.Color).HasMaxLength(30);
+                entity.HasIndex(t => t.DisplayOrder);
             });
 
             modelBuilder.Entity<InspectionRecord>(entity =>

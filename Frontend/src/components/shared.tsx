@@ -1,5 +1,5 @@
 import React from 'react';
-import { InspectionType } from '../types/api';
+import type { TaskTypeConfig } from '../types/api';
 
 // ── Page section title (cyan left bar + uppercase label) ───────
 export const IndTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -32,10 +32,11 @@ export const modalStyles = {
   footer:  { background: '#161b22', borderTop: '1px solid #30363d', padding: '8px 16px' },
 };
 
-// ── Inspection type → label + color ───────────────────────────
-export const typeLabels: Record<InspectionType, { label: string; color: string }> = {
-  [InspectionType.MoveIn]:  { label: '入住检查', color: 'cyan'    },
-  [InspectionType.MoveOut]: { label: '退房检查', color: 'gold'    },
-  [InspectionType.Routine]: { label: '例行检查', color: 'green'   },
-  [InspectionType.Other]:   { label: '其他',     color: 'default' },
-};
+// ── Lookup helper for dynamic task types ──────────────────────
+export function getTypeConfig(
+  types: TaskTypeConfig[],
+  id: number | undefined
+): TaskTypeConfig | undefined {
+  if (id === undefined) return undefined;
+  return types.find(t => t.id === id);
+}

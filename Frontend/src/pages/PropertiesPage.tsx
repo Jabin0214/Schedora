@@ -27,7 +27,7 @@ const PropertiesPage: React.FC = () => {
       const res = await axios.get<Property[]>(API_ENDPOINTS.properties);
       setProperties(res.data);
     } catch (error) {
-      handleApiError(error, '获取数据失败');
+      handleApiError(error, 'Failed to fetch properties');
     } finally {
       setLoading(false);
     }
@@ -61,15 +61,15 @@ const PropertiesPage: React.FC = () => {
       setSubmitting(true);
       if (editingProperty) {
         await axios.put(`${API_ENDPOINTS.properties}/${editingProperty.id}`, { ...values, id: editingProperty.id });
-        message.success('修改成功');
+        message.success('Property updated');
       } else {
         await axios.post(API_ENDPOINTS.properties, values);
-        message.success('添加成功');
+        message.success('Property added');
       }
       closeModal();
       fetchProperties();
     } catch (error) {
-      if (axios.isAxiosError(error)) handleApiError(error, editingProperty ? '修改失败' : '添加失败');
+      if (axios.isAxiosError(error)) handleApiError(error, editingProperty ? 'Update failed' : 'Add failed');
     } finally {
       setSubmitting(false);
     }
@@ -78,10 +78,10 @@ const PropertiesPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     try {
       await axios.delete(`${API_ENDPOINTS.properties}/${id}`);
-      message.success('删除成功');
+      message.success('Property deleted');
       setProperties(prev => prev.filter(p => p.id !== id));
     } catch (error) {
-      handleApiError(error, '删除失败');
+      handleApiError(error, 'Delete failed');
     }
   };
 
@@ -96,7 +96,7 @@ const PropertiesPage: React.FC = () => {
       ),
     },
     {
-      title: '物业地址',
+      title: 'Address',
       dataIndex: 'address',
       key: 'address',
       ellipsis: { showTitle: false },
@@ -105,29 +105,28 @@ const PropertiesPage: React.FC = () => {
       ),
     },
     {
-      title: '计费策略',
+      title: 'Billing Policy',
       dataIndex: 'billingPolicy',
       key: 'billingPolicy',
-      width: 160,
+      width: 180,
       render: (policy: unknown) => {
-        // API returns 0 = 不收费(SixMonthFree), 1 = 收费(ThreeMonthToggle)
         if (policy === 0 || policy === 'SixMonthFree')
-          return <Tag style={{ ...policyTagStyle, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e' }}>六个月不收费</Tag>;
+          return <Tag style={{ ...policyTagStyle, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e' }}>6-Month Free</Tag>;
         if (policy === 1 || policy === 'ThreeMonthToggle')
-          return <Tag style={{ ...policyTagStyle, background: 'rgba(240,165,0,0.08)', border: '1px solid rgba(240,165,0,0.4)', color: '#f0a500' }}>三个月交替收费</Tag>;
-        return <Tag style={{ ...policyTagStyle, background: 'rgba(139,148,158,0.08)', border: '1px solid rgba(139,148,158,0.3)', color: '#8b949e' }}>{String(policy ?? '未设置')}</Tag>;
+          return <Tag style={{ ...policyTagStyle, background: 'rgba(240,165,0,0.08)', border: '1px solid rgba(240,165,0,0.4)', color: '#f0a500' }}>3-Month Toggle</Tag>;
+        return <Tag style={{ ...policyTagStyle, background: 'rgba(139,148,158,0.08)', border: '1px solid rgba(139,148,158,0.3)', color: '#8b949e' }}>{String(policy ?? 'Not set')}</Tag>;
       },
     },
     {
-      title: '操作',
+      title: 'Actions',
       key: 'action',
       width: 100,
       fixed: 'right' as const,
       render: (_: unknown, record: Property) => (
         <Space size={4}>
-          <Button icon={<EditOutlined />} size="small" onClick={() => openEditModal(record)} title="编辑" />
-          <Popconfirm title="确定删除吗?" description="删除后无法恢复" onConfirm={() => handleDelete(record.id)} okText="确定" cancelText="取消">
-            <Button danger icon={<DeleteOutlined />} size="small" title="删除" />
+          <Button icon={<EditOutlined />} size="small" onClick={() => openEditModal(record)} title="Edit" />
+          <Popconfirm title="Delete this property?" description="This cannot be undone." onConfirm={() => handleDelete(record.id)} okText="Delete" cancelText="Cancel">
+            <Button danger icon={<DeleteOutlined />} size="small" title="Delete" />
           </Popconfirm>
         </Space>
       ),
@@ -138,10 +137,10 @@ const PropertiesPage: React.FC = () => {
     <div>
       {/* ── Toolbar ── */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
-        <IndTitle>物业档案</IndTitle>
+        <IndTitle>Properties</IndTitle>
         <Space size={4}>
-          <Button icon={<ReloadOutlined />} size="small" onClick={fetchProperties} loading={loading}>刷新</Button>
-          <Button type="primary" icon={<PlusOutlined />} size="small" onClick={openAddModal}>添加物业</Button>
+          <Button icon={<ReloadOutlined />} size="small" onClick={fetchProperties} loading={loading}>Refresh</Button>
+          <Button type="primary" icon={<PlusOutlined />} size="small" onClick={openAddModal}>Add Property</Button>
         </Space>
       </div>
 
@@ -154,27 +153,27 @@ const PropertiesPage: React.FC = () => {
           pagination={{
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => <span style={{ color: '#8b949e', fontSize: '12px' }}>共 {total} 条记录</span>,
+            showTotal: (total) => <span style={{ color: '#8b949e', fontSize: '12px' }}>{total} records</span>,
           }}
           locale={{
-            emptyText: <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— 暂无数据 —</span>} />,
+            emptyText: <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No properties —</span>} />,
           }}
         />
       </Spin>
 
-      {/* ── 添加/编辑弹窗 ── */}
+      {/* ── Add / Edit modal ── */}
       <Modal
-        title={<span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#e6edf3' }}>{editingProperty ? '编辑物业信息' : '录入新物业'}</span>}
+        title={<span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#e6edf3' }}>{editingProperty ? 'Edit Property' : 'New Property'}</span>}
         open={isModalOpen} onOk={handleOk} onCancel={closeModal}
-        confirmLoading={submitting} okText={editingProperty ? '保存' : '添加'} cancelText="取消"
+        confirmLoading={submitting} okText={editingProperty ? 'Save' : 'Add'} cancelText="Cancel"
         destroyOnHidden styles={modalStyles}
       >
         <Form form={form} layout="vertical">
-          <Form.Item name="address" label="物业地址" rules={[{ required: true, message: '地址必填' }, { min: 5, message: '地址至少5个字符' }, { max: 200, message: '地址不能超过200个字符' }]}>
-            <Input placeholder="请输入物业地址..." showCount maxLength={200} />
+          <Form.Item name="address" label="Address" rules={[{ required: true, message: 'Address is required' }, { min: 5, message: 'At least 5 characters' }, { max: 200, message: 'Max 200 characters' }]}>
+            <Input placeholder="Enter property address..." showCount maxLength={200} />
           </Form.Item>
-          <Form.Item name="billingPolicy" label="计费策略" rules={[{ required: true, message: '请选择计费策略' }]}>
-            <Select options={[{ value: 'SixMonthFree', label: '六个月不收费' }, { value: 'ThreeMonthToggle', label: '三个月交替收费' }]} />
+          <Form.Item name="billingPolicy" label="Billing Policy" rules={[{ required: true, message: 'Select a billing policy' }]}>
+            <Select options={[{ value: 'SixMonthFree', label: '6-Month Free' }, { value: 'ThreeMonthToggle', label: '3-Month Toggle' }]} />
           </Form.Item>
         </Form>
       </Modal>

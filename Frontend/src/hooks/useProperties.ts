@@ -14,7 +14,7 @@ export function useProperties() {
       const response = await axios.get<Property[]>(API_ENDPOINTS.properties);
       setProperties(response.data);
     } catch (error) {
-      handleApiError(error, '获取物业列表失败');
+      handleApiError(error, 'Failed to fetch properties');
     } finally {
       setLoading(false);
     }

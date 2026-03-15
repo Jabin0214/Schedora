@@ -6,13 +6,15 @@ import dayjs, { Dayjs } from 'dayjs';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import type { InspectionRecordDto } from '../types/api';
-import { IndTitle, typeLabels } from '../components/shared';
+import { IndTitle } from '../components/shared';
+import { useInspectionTypes } from '../hooks/useInspectionTypes';
 
 const { RangePicker } = DatePicker;
 
 const tagStyle: React.CSSProperties = { fontSize: '11px', letterSpacing: '0.3px' };
 
 const HistoryPage: React.FC = () => {
+  const { getType } = useInspectionTypes();
   const [records,   setRecords]   = useState<InspectionRecordDto[]>([]);
   const [loading,   setLoading]   = useState(false);
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
@@ -32,7 +34,7 @@ const HistoryPage: React.FC = () => {
       });
       setRecords(res.data);
     } catch (error) {
-      handleApiError(error, '获取历史数据失败');
+      handleApiError(error, 'Failed to fetch history');
     } finally {
       setLoading(false);
     }
@@ -44,7 +46,7 @@ const HistoryPage: React.FC = () => {
 
   const columns = [
     {
-      title: '时间',
+      title: 'Date',
       key: 'date',
       width: 160,
       render: (_: unknown, record: InspectionRecordDto) => (
@@ -54,7 +56,7 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '地址',
+      title: 'Address',
       key: 'address',
       ellipsis: { showTitle: false },
       render: (_: unknown, record: InspectionRecordDto) => (
@@ -62,23 +64,23 @@ const HistoryPage: React.FC = () => {
       ),
     },
     {
-      title: '检查类型',
+      title: 'Type',
       key: 'type',
       width: 120,
       render: (_: unknown, record: InspectionRecordDto) => {
-        const cfg = typeLabels[record.type];
+        const cfg = getType(record.type);
         return cfg
-          ? <Tag color={cfg.color} style={tagStyle}>{cfg.label}</Tag>
+          ? <Tag color={cfg.color} style={tagStyle}>{cfg.name}</Tag>
           : <span style={{ color: '#ff4444', fontFamily: 'monospace', fontSize: '11px' }}>{String(record.type)}</span>;
       },
     },
     {
-      title: '是否收费',
+      title: 'Charged',
       key: 'charge',
       width: 100,
       render: (_: unknown, record: InspectionRecordDto) => (
         <Tag color={record.isCharged ? 'gold' : 'green'} style={tagStyle}>
-          {record.isCharged ? '收费' : '免费'}
+          {record.isCharged ? 'Charged' : 'Free'}
         </Tag>
       ),
     },
@@ -88,7 +90,7 @@ const HistoryPage: React.FC = () => {
     <div>
       {/* ── Toolbar ── */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
-        <IndTitle>历史记录</IndTitle>
+        <IndTitle>History</IndTitle>
         <Space size={4} wrap>
           <RangePicker
             value={dateRange}
@@ -96,11 +98,11 @@ const HistoryPage: React.FC = () => {
             allowClear={false}
             size="small"
             presets={[
-              { label: '近14天', value: [dayjs().subtract(13, 'day'), dayjs()] },
-              { label: '近30天', value: [dayjs().subtract(29, 'day'), dayjs()] },
+              { label: 'Last 14 days', value: [dayjs().subtract(13, 'day'), dayjs()] },
+              { label: 'Last 30 days', value: [dayjs().subtract(29, 'day'), dayjs()] },
             ]}
           />
-          <Button icon={<ReloadOutlined />} size="small" onClick={fetchHistoryTasks} loading={loading}>刷新</Button>
+          <Button icon={<ReloadOutlined />} size="small" onClick={fetchHistoryTasks} loading={loading}>Refresh</Button>
         </Space>
       </div>
 
@@ -114,10 +116,10 @@ const HistoryPage: React.FC = () => {
             pageSize: 30,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => <span style={{ color: '#8b949e', fontSize: '12px' }}>共 {total} 条记录</span>,
+            showTotal: (total) => <span style={{ color: '#8b949e', fontSize: '12px' }}>{total} records</span>,
           }}
           locale={{
-            emptyText: <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— 暂无历史记录 —</span>} />,
+            emptyText: <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No records —</span>} />,
           }}
         />
       </Spin>

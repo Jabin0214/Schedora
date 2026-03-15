@@ -47,21 +47,38 @@ using (var scope = app.Services.CreateScope())
     
     try
     {
-        // 验证数据库是否可以连接
         var canConnect = await db.Database.CanConnectAsync();
         if (canConnect)
         {
-            logger.LogInformation("✅ 成功连接到 Supabase PostgreSQL 数据库！");
+            logger.LogInformation("✅ Connected to Supabase PostgreSQL");
+
+            // Create TaskTypes table and seed defaults if not present
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE IF NOT EXISTS ""TaskTypes"" (
+                    ""Id""           integer               NOT NULL,
+                    ""Name""         character varying(50) NOT NULL,
+                    ""Color""        character varying(30) NOT NULL DEFAULT 'default',
+                    ""DisplayOrder"" integer               NOT NULL DEFAULT 0,
+                    CONSTRAINT ""PK_TaskTypes"" PRIMARY KEY (""Id"")
+                );
+                INSERT INTO ""TaskTypes"" (""Id"", ""Name"", ""Color"", ""DisplayOrder"") VALUES
+                    (0, 'Move In',  'cyan',    0),
+                    (1, 'Move Out', 'gold',    1),
+                    (2, 'Routine',  'green',   2),
+                    (3, 'Other',    'default', 3)
+                ON CONFLICT (""Id"") DO NOTHING;
+            ");
+            logger.LogInformation("✅ TaskTypes table ready");
         }
         else
         {
-            logger.LogWarning("⚠️ 无法连接到数据库");
+            logger.LogWarning("⚠️ Cannot connect to database");
         }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "❌ 数据库连接失败");
-        logger.LogWarning("应用将继续运行，但数据库功能可能不可用");
+        logger.LogError(ex, "❌ Database connection failed");
+        logger.LogWarning("Application will continue but database features may be unavailable");
     }
 }
 

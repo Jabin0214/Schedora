@@ -4,24 +4,24 @@ import {
   Popconfirm, Spin, Empty, Space, Tag, Tooltip, Card, message,
 } from 'antd';
 import {
-  PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined,
+  PlusOutlined, DeleteOutlined, ReloadOutlined, CopyOutlined,
   SaveOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
+import { useInspectionTypes } from '../hooks/useInspectionTypes';
 import type { CombinedTask, InspectionRecordDto } from '../types/api';
 import { API_ENDPOINTS } from '../config/api';
-import { IndTitle, modalStyles, typeLabels } from '../components/shared';
+import { IndTitle, modalStyles } from '../components/shared';
 
 const { TextArea } = Input;
 
-// ── Module-level constants (computed once) ────────────────────
 const DISABLED_MINUTES = Array.from({ length: 60 }, (_, i) => i).filter(i => i % 10 !== 0);
 
 const formattedDate = (dateStr?: string): string => {
-  if (!dateStr) return '待定';
+  if (!dateStr) return 'Unscheduled';
   return dayjs(dateStr).format('MM-DD ddd HH:mm');
 };
 
@@ -57,11 +57,17 @@ const TasksPage: React.FC = () => {
   } = useTasks();
 
   const { properties, loading: propertiesLoading } = useProperties();
+  const { types: taskTypes, getType } = useInspectionTypes();
   const loading = tasksLoading || propertiesLoading;
 
   const propertyOptions = useMemo(
     () => properties.map(p => ({ value: p.id, label: p.address })),
     [properties]
+  );
+
+  const typeOptions = useMemo(
+    () => taskTypes.map(t => ({ value: t.id, label: t.name })),
+    [taskTypes]
   );
 
   // ── Handlers ────────────────────────────────────────────────
@@ -72,9 +78,9 @@ const TasksPage: React.FC = () => {
       const label =
         target === 'all'      ? 'Calendar + Sheets' :
         target === 'calendar' ? 'Google Calendar'   : 'Google Sheets';
-      message.success(`${label} 同步成功`);
+      message.success(`${label} synced successfully`);
     } catch {
-      message.error('同步失败，请检查后端日志');
+      message.error('Sync failed — check backend logs');
     } finally {
       setSyncing(false);
     }
@@ -192,7 +198,7 @@ const TasksPage: React.FC = () => {
   }, [editingRecord, rowForm, updateInspectionTask, cancelEdit]);
 
   // ── Layout constants ─────────────────────────────────────────
-  const gridTemplate = '130px 2fr 0.9fr 1fr 144px';
+  const gridTemplate = '130px 2fr 0.9fr 1fr 164px';
 
   const firstRowStyle: React.CSSProperties = {
     display: 'grid',
@@ -219,9 +225,9 @@ const TasksPage: React.FC = () => {
 
   // ── Row renderer ─────────────────────────────────────────────
   const renderRow = (record: CombinedTask) => {
-    const rowKey    = `inspection-${record.id}`;
-    const isEditing = editingKey === rowKey;
-    const typeConfig = record.type != null ? typeLabels[record.type] : null;
+    const rowKey     = `inspection-${record.id}`;
+    const isEditing  = editingKey === rowKey;
+    const typeConfig = record.type != null ? getType(record.type) : undefined;
 
     return (
       <div
@@ -239,11 +245,11 @@ const TasksPage: React.FC = () => {
         onMouseLeave={(e) => { if (!isEditing) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
       >
         <div style={firstRowStyle}>
-          {/* 时间 */}
+          {/* Time */}
           <div style={cellText}>
             {isEditing ? (
               <Form.Item name="scheduledAt" style={{ margin: 0 }}>
-                <DatePicker showTime format="MM-DD HH:mm" style={{ width: '100%' }} placeholder="选择时间" size="small" />
+                <DatePicker showTime format={['MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']} style={{ width: '100%' }} placeholder="03/02 10am" size="small" />
               </Form.Item>
             ) : (
               <span style={{ fontSize: '12px', color: record.scheduledAt ? '#00d4ff' : '#484f58', fontFamily: 'monospace', letterSpacing: '0.3px' }}>
@@ -252,57 +258,69 @@ const TasksPage: React.FC = () => {
             )}
           </div>
 
-          {/* 地址 */}
+          {/* Address */}
           <div style={cellText}>
             {isEditing ? (
               <Form.Item name="propertyId" style={{ margin: 0 }}>
-                <Select showSearch optionFilterProp="label" placeholder="选择物业" size="small" options={propertyOptions} />
+                <Select showSearch optionFilterProp="label" placeholder="Select property" size="small" options={propertyOptions} />
               </Form.Item>
             ) : (
               <Tooltip title={record.propertyAddress}>
                 <span style={{ fontWeight: 600, fontSize: '13px', color: '#e6edf3' }}>
-                  {record.propertyAddress || '未填写地址'}
+                  {record.propertyAddress || 'No address'}
                 </span>
               </Tooltip>
             )}
           </div>
 
-          {/* 类型 */}
+          {/* Type */}
           <div style={cellText}>
             {isEditing ? (
-              <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: '选择类型' }]}>
-                <Select size="small" options={Object.entries(typeLabels).map(([v, cfg]) => ({ value: Number(v), label: cfg.label }))} />
+              <Form.Item name="type" style={{ margin: 0 }} rules={[{ required: true, message: 'Select type' }]}>
+                <Select size="small" options={typeOptions} />
               </Form.Item>
             ) : typeConfig ? (
-              <Tag color={typeConfig.color} style={tagStyle}>{typeConfig.label}</Tag>
+              <Tag color={typeConfig.color} style={tagStyle}>{typeConfig.name}</Tag>
             ) : '-'}
           </div>
 
-          {/* 收费 */}
+          {/* Charge */}
           <div style={cellText}>
             {isEditing ? (
               <Form.Item name="isBillable" style={{ margin: 0 }}>
-                <Select size="small" style={{ width: 80 }} options={[{ value: true, label: '收费' }, { value: false, label: '免费' }]} />
+                <Select size="small" style={{ width: 90 }} options={[{ value: true, label: 'Charged' }, { value: false, label: 'Free' }]} />
               </Form.Item>
             ) : (
               <Tag color={record.isBillable ? 'gold' : 'green'} style={tagStyle}>
-                {record.isBillable ? '收费' : '免费'}
+                {record.isBillable ? 'Charged' : 'Free'}
               </Tag>
             )}
           </div>
 
-          {/* 操作 */}
+          {/* Actions */}
           <Space size={4} onClick={(e) => e.stopPropagation()}>
             {isEditing ? (
               <>
-                <Button size="small" type="primary" icon={<SaveOutlined />} onClick={saveEdit}>保存</Button>
-                <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit}>取消</Button>
+                <Button size="small" type="primary" icon={<SaveOutlined />} onClick={saveEdit}>Save</Button>
+                <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit}>Cancel</Button>
               </>
             ) : (
               <>
-                <Button size="small" icon={<EditOutlined />} onClick={() => startEdit(record)}>编辑</Button>
-                <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => openCompleteModal(record)}>完成</Button>
-                <Popconfirm title="确定删除这条任务吗?" onConfirm={() => deleteInspectionTask(record.id)} okText="确定" cancelText="取消">
+                <Tooltip title="Copy">
+                  <Button
+                    size="small"
+                    icon={<CopyOutlined />}
+                    onClick={() => {
+                      const formatted = record.scheduledAt
+                        ? `${dayjs(record.scheduledAt).format('DMMMYYYY')}:${record.propertyAddress}`
+                        : record.propertyAddress ?? '';
+                      navigator.clipboard.writeText(formatted);
+                      message.success('Copied');
+                    }}
+                  />
+                </Tooltip>
+                <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => openCompleteModal(record)}>Done</Button>
+                <Popconfirm title="Delete this task?" onConfirm={() => deleteInspectionTask(record.id)} okText="Delete" cancelText="Cancel">
                   <Button danger size="small" icon={<DeleteOutlined />} />
                 </Popconfirm>
               </>
@@ -316,11 +334,11 @@ const TasksPage: React.FC = () => {
             <div style={cellText}>
               {isEditing ? (
                 <Form.Item name="notes" style={{ margin: 0 }}>
-                  <Input placeholder="备注" size="small" />
+                  <Input placeholder="Notes" size="small" />
                 </Form.Item>
               ) : record.notes ? (
                 <Tooltip title={record.notes}>
-                  <span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '0.3px' }}>▸ {record.notes}</span>
+                  <span style={{ color: '#8b949e', fontSize: '12px', fontStyle: 'italic', letterSpacing: '0.3px' }}>▸ {record.notes}</span>
                 </Tooltip>
               ) : null}
             </div>
@@ -351,13 +369,13 @@ const TasksPage: React.FC = () => {
         <div style={{ minWidth: 620 }}>
           <div style={{ padding: '4px 10px 4px 16px', background: '#0d1117', borderBottom: '1px solid #30363d', fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
             <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, alignItems: 'center', gap: 6 }}>
-              <div>时间</div><div>地址</div><div>类型</div><div>收费</div><div>操作</div>
+              <div>Time</div><div>Address</div><div>Type</div><div>Charge</div><div>Actions</div>
             </div>
           </div>
 
           {data.length === 0 ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— 暂无任务 —</span>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No tasks —</span>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
             </div>
           ) : (
             <Form form={rowForm} component={false}>{data.map(renderRow)}</Form>
@@ -371,25 +389,25 @@ const TasksPage: React.FC = () => {
     <div>
       {/* ── Toolbar ── */}
       <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
-        <IndTitle>任务计划</IndTitle>
+        <IndTitle>Tasks</IndTitle>
         <Space size={4} wrap>
-          <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>刷新</Button>
-          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncing}>同步日历</Button>
-          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncing}>同步表格</Button>
-          <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>添加任务</Button>
+          <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncing}>Sync Calendar</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncing}>Sync Sheets</Button>
+          <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>Add Task</Button>
         </Space>
       </div>
 
       <Spin spinning={loading}>
-        {overdueTasks.length > 0 && renderSection('逾期', overdueTasks, '#f85149')}
-        {renderSection('今日', todayTasks)}
-        {renderSection('未来', upcomingTasks)}
-        {renderSection('待定', unscheduledTasks)}
+        {overdueTasks.length > 0 && renderSection('Overdue', overdueTasks, '#f85149')}
+        {renderSection('Today', todayTasks)}
+        {renderSection('Upcoming', upcomingTasks)}
+        {renderSection('Unscheduled', unscheduledTasks)}
       </Spin>
 
-      {/* ── 添加任务弹窗 ── */}
-      <Modal title={<ModalTitle>添加任务</ModalTitle>} open={isModalOpen} onOk={handleOk} onCancel={closeModal}
-        confirmLoading={submitting} okText="添加" cancelText="取消" destroyOnHidden width={600} styles={modalStyles}>
+      {/* ── Add task modal ── */}
+      <Modal title={<ModalTitle>Add Task</ModalTitle>} open={isModalOpen} onOk={handleOk} onCancel={closeModal}
+        confirmLoading={submitting} okText="Add" cancelText="Cancel" destroyOnHidden width={600} styles={modalStyles}>
         <Form
           form={form}
           layout="vertical"
@@ -402,75 +420,75 @@ const TasksPage: React.FC = () => {
             }
           }}
         >
-          <Form.Item name="propertyId" label="选择物业" rules={[{ required: true, message: '请选择物业' }]}>
-            <Select placeholder="请选择物业" showSearch optionFilterProp="label"
+          <Form.Item name="propertyId" label="Property" rules={[{ required: true, message: 'Please select a property' }]}>
+            <Select placeholder="Select a property" showSearch optionFilterProp="label"
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
               options={propertyOptions} />
           </Form.Item>
 
-          {/* ── 最近记录 ── */}
+          {/* ── Recent records ── */}
           {selectedPropertyId && (
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>
-                最近记录
+                Recent Records
               </div>
               <Spin spinning={recordsLoading} size="small">
                 <div style={{ background: '#0d1117', border: '1px solid #30363d', borderLeft: '3px solid #444d56', borderRadius: 2, padding: '6px 10px', minHeight: 32 }}>
                   {!recordsLoading && recentRecords.length === 0 ? (
-                    <span style={{ color: '#484f58', fontSize: '11px' }}>暂无历史记录</span>
+                    <span style={{ color: '#484f58', fontSize: '11px' }}>No history</span>
                   ) : (
-                    recentRecords.map((r, idx) => (
-                      <div key={r.id} style={{
-                        display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '3px 0',
-                        borderBottom: idx < recentRecords.length - 1 ? '1px solid #30363d' : 'none',
-                      }}>
-                        <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '11px', minWidth: 115 }}>
-                          {dayjs(r.executionDate).format('YYYY-MM-DD HH:mm')}
-                        </span>
-                        <Tag color={typeLabels[r.type]?.color} style={tagStyle}>
-                          {typeLabels[r.type]?.label ?? String(r.type)}
-                        </Tag>
-                        <Tag color={r.isCharged ? 'gold' : 'green'} style={tagStyle}>
-                          {r.isCharged ? '收费' : '免费'}
-                        </Tag>
-                      </div>
-                    ))
+                    recentRecords.map((r, idx) => {
+                      const tc = getType(r.type);
+                      return (
+                        <div key={r.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '3px 0',
+                          borderBottom: idx < recentRecords.length - 1 ? '1px solid #30363d' : 'none',
+                        }}>
+                          <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '11px', minWidth: 115 }}>
+                            {dayjs(r.executionDate).format('YYYY-MM-DD HH:mm')}
+                          </span>
+                          <Tag color={tc?.color ?? 'default'} style={tagStyle}>
+                            {tc?.name ?? String(r.type)}
+                          </Tag>
+                          <Tag color={r.isCharged ? 'gold' : 'green'} style={tagStyle}>
+                            {r.isCharged ? 'Charged' : 'Free'}
+                          </Tag>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </Spin>
             </div>
           )}
 
-          <Form.Item name="type" label="检查类型" rules={[{ required: true, message: '请选择检查类型' }]}>
-            <Select placeholder="请选择检查类型">
-              {Object.entries(typeLabels).map(([value, config]) => (
-                <Select.Option key={value} value={Number(value)}>{config.label}</Select.Option>
-              ))}
-            </Select>
+          <Form.Item name="type" label="Inspection Type" rules={[{ required: true, message: 'Please select a type' }]}>
+            <Select placeholder="Select inspection type" options={typeOptions} />
           </Form.Item>
 
-          <Form.Item name="isBillable" label="是否收费" initialValue={false} rules={[{ required: true, message: '请选择收费状态' }]}>
-            <Select options={[{ value: false, label: '免费' }, { value: true, label: '收费' }]} />
+          <Form.Item name="isBillable" label="Billable" initialValue={false} rules={[{ required: true, message: 'Please select billing status' }]}>
+            <Select options={[{ value: false, label: 'Free' }, { value: true, label: 'Charged' }]} />
           </Form.Item>
 
-          <Form.Item name="scheduledAt" label="计划时间">
+          <Form.Item name="scheduledAt" label="Scheduled Time">
             <DatePicker
               showTime={{ format: 'HH:mm', hideDisabledOptions: true, disabledMinutes: () => DISABLED_MINUTES }}
-              format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} placeholder="选择计划时间（留空则放入待定）" />
+              format={['YYYY-MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']}
+              style={{ width: '100%' }} placeholder="03/02 10am  or  03/02 10:30am" />
           </Form.Item>
-          <Form.Item name="notes" label="备注">
-            <TextArea rows={3} placeholder="输入备注..." showCount maxLength={500} />
+          <Form.Item name="notes" label="Notes">
+            <TextArea rows={3} placeholder="Enter notes..." showCount maxLength={500} />
           </Form.Item>
         </Form>
       </Modal>
 
-      {/* ── 完成任务弹窗 ── */}
-      <Modal title={<ModalTitle>完成任务</ModalTitle>} open={isCompleteModalOpen} onOk={handleComplete}
-        onCancel={closeCompleteModal} okText="完成" cancelText="取消" destroyOnHidden width={400} styles={modalStyles}>
+      {/* ── Complete task modal ── */}
+      <Modal title={<ModalTitle>Complete Task</ModalTitle>} open={isCompleteModalOpen} onOk={handleComplete}
+        onCancel={closeCompleteModal} okText="Confirm" cancelText="Cancel" destroyOnHidden width={400} styles={modalStyles}>
         <Form form={completeForm} layout="vertical">
-          <Form.Item name="executionDate" label="时间" rules={[{ required: true, message: '请选择时间' }]}>
-            <DatePicker showTime format="YYYY-MM-DD HH:mm" style={{ width: '100%' }} />
+          <Form.Item name="executionDate" label="Execution Date" rules={[{ required: true, message: 'Please select a date' }]}>
+            <DatePicker showTime format={['YYYY-MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']} style={{ width: '100%' }} placeholder="03/02 10am" />
           </Form.Item>
         </Form>
       </Modal>

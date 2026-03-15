@@ -4,6 +4,7 @@ import {
   HomeOutlined,
   CalendarOutlined,
   FileTextOutlined,
+  TagsOutlined,
 } from '@ant-design/icons';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
@@ -11,6 +12,7 @@ import './App.css';
 import PropertiesPage from './pages/PropertiesPage';
 import TasksPage from './pages/TasksPage';
 import HistoryPage from './pages/HistoryPage';
+import TypesPage from './pages/TypesPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -21,6 +23,7 @@ const AppContent: React.FC = () => {
   const selectedKey = useMemo(() => {
     if (location.pathname === '/tasks') return '2';
     if (location.pathname === '/history') return '3';
+    if (location.pathname === '/types') return '4';
     return '1';
   }, [location.pathname]);
 
@@ -32,16 +35,17 @@ const AppContent: React.FC = () => {
         collapsedWidth="0"
         style={{ background: '#0a0e13', borderRight: '1px solid #30363d' }}
       >
-        <div className="sidebar-logo">PMS 管理系统</div>
+        <div className="sidebar-logo">Schedora PMS</div>
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
           style={{ background: '#0a0e13', borderRight: 'none' }}
           items={[
-            { key: '1', icon: <HomeOutlined />, label: <Link to="/">物业档案</Link> },
-            { key: '2', icon: <CalendarOutlined />, label: <Link to="/tasks">任务计划</Link> },
-            { key: '3', icon: <FileTextOutlined />, label: <Link to="/history">历史记录</Link> },
+            { key: '1', icon: <HomeOutlined />, label: <Link to="/">Properties</Link> },
+            { key: '2', icon: <CalendarOutlined />, label: <Link to="/tasks">Tasks</Link> },
+            { key: '3', icon: <FileTextOutlined />, label: <Link to="/history">History</Link> },
+            { key: '4', icon: <TagsOutlined />, label: <Link to="/types">Task Types</Link> },
           ]}
         />
       </Sider>
@@ -90,6 +94,7 @@ const AppContent: React.FC = () => {
                 <Route path="/" element={<PropertiesPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/history" element={<HistoryPage />} />
+                <Route path="/types" element={<TypesPage />} />
               </Routes>
             </ErrorBoundary>
           </div>
