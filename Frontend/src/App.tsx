@@ -4,7 +4,7 @@ import {
   HomeOutlined,
   CalendarOutlined,
   FileTextOutlined,
-  TagsOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
@@ -12,7 +12,7 @@ import './App.css';
 import PropertiesPage from './pages/PropertiesPage';
 import TasksPage from './pages/TasksPage';
 import HistoryPage from './pages/HistoryPage';
-import TypesPage from './pages/TypesPage';
+import ConfigPage from './pages/ConfigPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -23,7 +23,7 @@ const AppContent: React.FC = () => {
   const selectedKey = useMemo(() => {
     if (location.pathname === '/tasks') return '2';
     if (location.pathname === '/history') return '3';
-    if (location.pathname === '/types') return '4';
+    if (location.pathname === '/config') return '4';
     return '1';
   }, [location.pathname]);
 
@@ -45,7 +45,7 @@ const AppContent: React.FC = () => {
             { key: '1', icon: <HomeOutlined />, label: <Link to="/">Properties</Link> },
             { key: '2', icon: <CalendarOutlined />, label: <Link to="/tasks">Tasks</Link> },
             { key: '3', icon: <FileTextOutlined />, label: <Link to="/history">History</Link> },
-            { key: '4', icon: <TagsOutlined />, label: <Link to="/types">Task Types</Link> },
+            { key: '4', icon: <SettingOutlined />, label: <Link to="/config">Config</Link> },
           ]}
         />
       </Sider>
@@ -94,7 +94,7 @@ const AppContent: React.FC = () => {
                 <Route path="/" element={<PropertiesPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/history" element={<HistoryPage />} />
-                <Route path="/types" element={<TypesPage />} />
+                <Route path="/config" element={<ConfigPage />} />
               </Routes>
             </ErrorBoundary>
           </div>
