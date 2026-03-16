@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Table, DatePicker, Button, Space, Spin, Empty, Tag } from 'antd';
-import { ReloadOutlined, FilePdfOutlined } from '@ant-design/icons';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber, Tooltip, message } from 'antd';
+import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
 import { API_ENDPOINTS } from '../config/api';
@@ -11,16 +11,60 @@ import { useInspectionTypes } from '../hooks/useInspectionTypes';
 
 const { RangePicker } = DatePicker;
 
+const PARKING_RECEIPTS_URL = 'https://drive.google.com/drive/folders/16DCZ-7VOv5Xbaa4pNwQf3WCyVcHxG7wp?usp=drive_link';
+
 const tagStyle: React.CSSProperties = { fontSize: '11px', letterSpacing: '0.3px' };
+
+interface EditState {
+  executionDate: Dayjs;
+  type: number;
+  isCharged: boolean;
+  parkingFee: number | null;
+}
+
+const countWorkdays = (start: Dayjs, end: Dayjs): number => {
+  let count = 0;
+  let cur = start.startOf('day');
+  const last = end.startOf('day');
+  while (!cur.isAfter(last)) {
+    const dow = cur.day();
+    if (dow !== 0 && dow !== 6) count++;
+    cur = cur.add(1, 'day');
+  }
+  return count;
+};
+
+const StatCard: React.FC<{ label: string; value: React.ReactNode; sub?: React.ReactNode }> = ({ label, value, sub }) => (
+  <div style={{
+    flex: 1,
+    minWidth: 130,
+    background: '#161b22',
+    border: '1px solid #30363d',
+    borderRadius: 4,
+    padding: '12px 16px',
+  }}>
+    <div style={{ fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
+    <div style={{ fontSize: '22px', fontWeight: 700, color: '#e6edf3', fontFamily: 'monospace', lineHeight: 1 }}>{value}</div>
+    {sub && <div style={{ fontSize: '10px', color: '#8b949e', marginTop: 4 }}>{sub}</div>}
+  </div>
+);
 
 const HistoryPage: React.FC = () => {
   const { getType, types } = useInspectionTypes();
-  const [records,   setRecords]   = useState<InspectionRecordDto[]>([]);
-  const [loading,   setLoading]   = useState(false);
-  const [dateRange, setDateRange] = useState<[Dayjs, Dayjs]>([
-    dayjs().subtract(29, 'day'),
+  const [records,    setRecords]    = useState<InspectionRecordDto[]>([]);
+  const [loading,    setLoading]    = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [editingId,  setEditingId]  = useState<number | null>(null);
+  const [editState,  setEditState]  = useState<EditState | null>(null);
+  const [dateRange,  setDateRange]  = useState<[Dayjs, Dayjs]>([
+    dayjs().subtract(13, 'day'),
     dayjs(),
   ]);
+
+  const typeOptions = useMemo(
+    () => types.map(t => ({ value: t.id, label: t.name })),
+    [types]
+  );
 
   const fetchHistoryTasks = useCallback(async () => {
     setLoading(true);
@@ -44,30 +88,114 @@ const HistoryPage: React.FC = () => {
     fetchHistoryTasks();
   }, [fetchHistoryTasks]);
 
+  // ── Summary stats ─────────────────────────────────────────────
+  const stats = useMemo(() => {
+    const [start, end] = dateRange;
+    const workdays    = countWorkdays(start, end);
+    const officeHours = workdays;           // 1 hr/workday
+    const totalParking = records.reduce((sum, r) => sum + (r.parkingFee ?? 0), 0);
+    return { workdays, officeHours, totalParking };
+  }, [dateRange, records]);
+
+  // ── Inline edit ───────────────────────────────────────────────
+  const startEdit = useCallback((record: InspectionRecordDto) => {
+    setEditingId(record.id);
+    setEditState({
+      executionDate: dayjs(record.executionDate),
+      type:          record.type,
+      isCharged:     record.isCharged,
+      parkingFee:    record.parkingFee ?? null,
+    });
+  }, []);
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditState(null);
+  }, []);
+
+  const saveEdit = useCallback(async (record: InspectionRecordDto) => {
+    if (!editState) return;
+    setSaving(true);
+    try {
+      await axios.put(`${API_ENDPOINTS.inspectionRecords}/${record.id}`, {
+        executionDate: editState.executionDate.toISOString(),
+        type:          editState.type,
+        isCharged:     editState.isCharged,
+        parkingFee:    editState.parkingFee ?? null,
+      });
+      setRecords(prev => prev.map(r =>
+        r.id === record.id
+          ? {
+              ...r,
+              executionDate: editState.executionDate.toISOString(),
+              type:          editState.type as InspectionRecordDto['type'],
+              isCharged:     editState.isCharged,
+              parkingFee:    editState.parkingFee ?? undefined,
+            }
+          : r
+      ));
+      message.success('Record updated');
+      cancelEdit();
+    } catch (error) {
+      handleApiError(error, 'Failed to update record');
+    } finally {
+      setSaving(false);
+    }
+  }, [editState, cancelEdit]);
+
+  // ── Table columns ─────────────────────────────────────────────
   const columns = [
     {
       title: 'Date',
       key: 'date',
-      width: 160,
-      render: (_: unknown, record: InspectionRecordDto) => (
-        <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '12px', letterSpacing: '0.3px' }}>
-          {dayjs(record.executionDate).format('YYYY-MM-DD HH:mm')}
-        </span>
-      ),
+      width: 170,
+      render: (_: unknown, record: InspectionRecordDto) => {
+        const isEditing = editingId === record.id;
+        return isEditing ? (
+          <DatePicker
+            value={editState!.executionDate}
+            onChange={(v) => v && setEditState(s => s ? { ...s, executionDate: v } : s)}
+            showTime
+            format="YYYY-MM-DD HH:mm"
+            size="small"
+            style={{ width: 155 }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '12px', letterSpacing: '0.3px' }}>
+            {dayjs(record.executionDate).format('YYYY-MM-DD HH:mm')}
+          </span>
+        );
+      },
     },
     {
       title: 'Address',
       key: 'address',
       ellipsis: { showTitle: false },
       render: (_: unknown, record: InspectionRecordDto) => (
-        <span style={{ color: '#e6edf3', fontWeight: 500 }}>{record.propertyAddress || '-'}</span>
+        <Tooltip title={record.propertyAddress}>
+          <span style={{ color: '#e6edf3', fontWeight: 500 }}>{record.propertyAddress || '-'}</span>
+        </Tooltip>
       ),
     },
     {
       title: 'Type',
       key: 'type',
-      width: 120,
+      width: 130,
       render: (_: unknown, record: InspectionRecordDto) => {
+        const isEditing = editingId === record.id;
+        if (isEditing) {
+          return (
+            <Select
+              value={editState!.type}
+              onChange={(v) => setEditState(s => s ? { ...s, type: v } : s)}
+              options={typeOptions}
+              size="small"
+              style={{ width: 110 }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
+        }
         const cfg = getType(record.type);
         return cfg
           ? <Tag color={cfg.color} style={tagStyle}>{cfg.name}</Tag>
@@ -77,32 +205,91 @@ const HistoryPage: React.FC = () => {
     {
       title: 'Charged',
       key: 'charge',
-      width: 100,
-      render: (_: unknown, record: InspectionRecordDto) => (
-        <Tag color={record.isCharged ? 'gold' : 'green'} style={tagStyle}>
-          {record.isCharged ? 'Charged' : 'Free'}
-        </Tag>
-      ),
+      width: 110,
+      render: (_: unknown, record: InspectionRecordDto) => {
+        const isEditing = editingId === record.id;
+        if (isEditing) {
+          return (
+            <Select
+              value={editState!.isCharged}
+              onChange={(v) => setEditState(s => s ? { ...s, isCharged: v } : s)}
+              options={[{ value: true, label: 'Charged' }, { value: false, label: 'Free' }]}
+              size="small"
+              style={{ width: 90 }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
+        }
+        return (
+          <Tag color={record.isCharged ? 'gold' : 'green'} style={tagStyle}>
+            {record.isCharged ? 'Charged' : 'Free'}
+          </Tag>
+        );
+      },
+    },
+    {
+      title: 'Parking',
+      key: 'parking',
+      width: 110,
+      render: (_: unknown, record: InspectionRecordDto) => {
+        const isEditing = editingId === record.id;
+        if (isEditing) {
+          return (
+            <InputNumber
+              value={editState!.parkingFee}
+              onChange={(v) => setEditState(s => s ? { ...s, parkingFee: v } : s)}
+              min={0}
+              precision={2}
+              prefix="$"
+              placeholder="0.00"
+              size="small"
+              style={{ width: 90 }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
+        }
+        return record.parkingFee != null && record.parkingFee > 0
+          ? <span style={{ color: '#e6edf3', fontFamily: 'monospace', fontSize: '12px' }}>${record.parkingFee.toFixed(2)}</span>
+          : <span style={{ color: '#484f58', fontSize: '11px' }}>—</span>;
+      },
+    },
+    {
+      title: '',
+      key: 'actions',
+      width: 80,
+      render: (_: unknown, record: InspectionRecordDto) => {
+        const isEditing = editingId === record.id;
+        if (!isEditing) return null;
+        return (
+          <Space size={4} onClick={(e) => e.stopPropagation()}>
+            <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => saveEdit(record)} />
+            <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit} />
+          </Space>
+        );
+      },
     },
   ];
 
+  // ── PDF export ────────────────────────────────────────────────
   const handleExportPdf = () => {
     const [start, end] = dateRange;
     const periodLabel = `${start.format('D MMM YYYY')} – ${end.format('D MMM YYYY')}`;
     const generatedAt = dayjs().format('D MMM YYYY, HH:mm');
 
-    // Build type name lookup
     const typeName = (id: number) => {
       const cfg = types.find(t => t.id === id);
       return cfg ? cfg.name : String(id);
     };
 
-    // Summary counts by type
     const countByType: Record<string, number> = {};
+    let totalParking = 0;
     for (const r of records) {
       const name = typeName(r.type);
       countByType[name] = (countByType[name] ?? 0) + 1;
+      if (r.parkingFee) totalParking += r.parkingFee;
     }
+
+    const { workdays, officeHours } = stats;
 
     const rows = records
       .slice()
@@ -112,17 +299,10 @@ const HistoryPage: React.FC = () => {
           <td class="num">${i + 1}</td>
           <td class="mono">${dayjs(r.executionDate).format('DD MMM YYYY')}</td>
           <td class="mono dim">${dayjs(r.executionDate).format('HH:mm')}</td>
-          <td class="addr">${r.propertyAddress ?? '-'}</td>
+          <td>${r.propertyAddress ?? '-'}</td>
           <td class="center">${typeName(r.type)}</td>
-          <td class="center ${r.isCharged ? 'charged' : 'free'}">${r.isCharged ? 'Charged' : 'Free'}</td>
-        </tr>`)
-      .join('');
-
-    const summaryRows = Object.entries(countByType)
-      .map(([name, count]) => `
-        <tr>
-          <td>${name}</td>
-          <td class="num bold">${count}</td>
+          <td class="center">${r.isCharged ? 'Charged' : 'Free'}</td>
+          <td class="center">${r.parkingFee != null && r.parkingFee > 0 ? '$' + r.parkingFee.toFixed(2) : '—'}</td>
         </tr>`)
       .join('');
 
@@ -130,69 +310,58 @@ const HistoryPage: React.FC = () => {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Inspection Report – ${periodLabel}</title>
+  <title>Work Report – ${periodLabel}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #1a1a1a; background: #fff; padding: 36px 48px; }
+    body { font-family: Arial, sans-serif; font-size: 12px; color: #000; background: #fff; padding: 32px 40px; }
+    h1 { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
+    .meta { font-size: 11px; color: #444; margin-bottom: 20px; }
 
-    .header { border-bottom: 2.5px solid #0a84ff; padding-bottom: 14px; margin-bottom: 20px; }
-    .logo   { font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: #555; margin-bottom: 6px; }
-    .title  { font-size: 20px; font-weight: 800; letter-spacing: 1px; color: #0a0a0a; }
-    .meta   { margin-top: 6px; font-size: 10px; color: #666; display: flex; gap: 24px; }
-    .meta span b { color: #111; }
+    /* Summary boxes */
+    .summary-grid { display: flex; gap: 16px; margin-bottom: 24px; }
+    .stat-box { flex: 1; border: 1px solid #ccc; border-radius: 4px; padding: 10px 14px; }
+    .stat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #666; margin-bottom: 4px; }
+    .stat-value { font-size: 20px; font-weight: bold; }
+    .stat-sub { font-size: 9px; color: #888; margin-top: 2px; }
 
-    .section-label {
-      font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
-      color: #0a84ff; margin-bottom: 8px; margin-top: 24px;
-    }
-
-    table { width: 100%; border-collapse: collapse; }
-    thead tr { background: #f0f4f8; }
-    thead th { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-               color: #555; padding: 7px 10px; text-align: left; border-bottom: 1.5px solid #d0d7de; }
-    tbody tr { border-bottom: 1px solid #eaecef; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody td { padding: 6px 10px; vertical-align: top; }
-    tbody tr:nth-child(even) { background: #fafbfc; }
-
-    .num    { width: 30px; color: #999; text-align: right; }
-    .mono   { font-family: 'Courier New', monospace; font-size: 10.5px; white-space: nowrap; }
-    .dim    { color: #888; }
-    .addr   { max-width: 280px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    th { font-size: 10px; font-weight: bold; text-align: left; padding: 5px 8px;
+         border-top: 2px solid #000; border-bottom: 1px solid #000; }
+    td { padding: 5px 8px; border-bottom: 1px solid #ccc; font-size: 11px; vertical-align: top; }
+    .num { width: 28px; text-align: right; color: #666; }
     .center { text-align: center; }
-    .charged { color: #b45309; font-weight: 600; }
-    .free    { color: #16a34a; font-weight: 600; }
-    .bold   { font-weight: 700; }
+    .mono { font-family: monospace; }
+    .dim { color: #666; }
 
-    .summary-wrap { margin-top: 24px; display: flex; gap: 32px; align-items: flex-start; }
-    .summary-box  { border: 1.5px solid #d0d7de; border-radius: 6px; padding: 14px 20px; min-width: 160px; }
-    .summary-box .big { font-size: 32px; font-weight: 800; color: #0a84ff; line-height: 1; }
-    .summary-box .lbl { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-top: 4px; }
-    .summary-table  { border: 1.5px solid #d0d7de; border-radius: 6px; overflow: hidden; }
-    .summary-table table { margin: 0; }
-    .summary-table thead th { background: #f0f4f8; }
-    .summary-table td { padding: 5px 14px; }
-
-    .footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid #d0d7de;
-              font-size: 9px; color: #aaa; display: flex; justify-content: space-between; }
-
-    @media print {
-      body { padding: 20px 28px; }
-      @page { size: A4; margin: 15mm 15mm; }
-    }
+    .receipts { margin-bottom: 16px; font-size: 10px; color: #555; padding: 7px 10px; border: 1px solid #ccc; border-left: 3px solid #555; border-radius: 2px; }
+    .footer { margin-top: 24px; font-size: 10px; color: #888; border-top: 1px solid #ccc; padding-top: 8px; }
+    @media print { @page { size: A4; margin: 15mm; } }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div class="logo">Schedora PMS</div>
-    <div class="title">Inspection Work Report</div>
-    <div class="meta">
-      <span><b>Period:</b> ${periodLabel}</span>
-      <span><b>Generated:</b> ${generatedAt}</span>
+  <h1>Work Report</h1>
+  <div class="meta">Period: ${periodLabel} &nbsp;&nbsp; Generated: ${generatedAt}</div>
+
+  ${totalParking > 0 ? `<div class="receipts">Parking receipts (Google Drive): <a href="${PARKING_RECEIPTS_URL}">${PARKING_RECEIPTS_URL}</a></div>` : ''}
+
+  <div class="summary-grid">
+    <div class="stat-box">
+      <div class="stat-label">Inspections</div>
+      <div class="stat-value">${records.length}</div>
+      <div class="stat-sub">${Object.entries(countByType).map(([n, c]) => `${n}: ${c}`).join(' · ')}</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Office Hours</div>
+      <div class="stat-value">${officeHours} hrs</div>
+      <div class="stat-sub">${workdays} workdays × 1 hr/day</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Parking Fees</div>
+      <div class="stat-value">${totalParking > 0 ? '$' + totalParking.toFixed(2) : '—'}</div>
+      <div class="stat-sub">${totalParking > 0 ? 'Receipts in Google Drive' : 'No parking charges'}</div>
     </div>
   </div>
 
-  <div class="section-label">Inspection Records</div>
   <table>
     <thead>
       <tr>
@@ -202,32 +371,16 @@ const HistoryPage: React.FC = () => {
         <th>Property Address</th>
         <th class="center">Type</th>
         <th class="center">Charge</th>
+        <th class="center">Parking</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">No records in this period</td></tr>'}
+      ${rows || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:16px">No records</td></tr>'}
     </tbody>
   </table>
 
-  <div class="section-label">Summary</div>
-  <div class="summary-wrap">
-    <div class="summary-box">
-      <div class="big">${records.length}</div>
-      <div class="lbl">Total Inspections</div>
-    </div>
-    <div class="summary-table">
-      <table>
-        <thead><tr><th>Type</th><th class="num">Count</th></tr></thead>
-        <tbody>${summaryRows || '<tr><td colspan="2" style="color:#aaa;padding:10px">—</td></tr>'}</tbody>
-      </table>
-    </div>
-  </div>
 
-  <div class="footer">
-    <span>Schedora PMS — Inspection Work Report</span>
-    <span>Period: ${periodLabel} &nbsp;|&nbsp; Total: ${records.length} inspections</span>
-  </div>
-
+  <div class="footer">Work Report &nbsp;|&nbsp; ${periodLabel} &nbsp;|&nbsp; Inspections: ${records.length} &nbsp;|&nbsp; Office: ${officeHours} hrs${totalParking > 0 ? ` &nbsp;|&nbsp; Parking: $${totalParking.toFixed(2)}` : ''}</div>
   <script>window.onload = () => { window.print(); }</script>
 </body>
 </html>`;
@@ -241,7 +394,7 @@ const HistoryPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
         <IndTitle>History</IndTitle>
         <Space size={4} wrap>
           <RangePicker
@@ -250,8 +403,8 @@ const HistoryPage: React.FC = () => {
             allowClear={false}
             size="small"
             presets={[
-              { label: 'Last 14 days', value: [dayjs().subtract(13, 'day'), dayjs()] },
-              { label: 'Last 30 days', value: [dayjs().subtract(29, 'day'), dayjs()] },
+              { label: 'This pay period (14 days)', value: [dayjs().subtract(13, 'day'), dayjs()] },
+              { label: 'Last 30 days',              value: [dayjs().subtract(29, 'day'), dayjs()] },
             ]}
           />
           <Button icon={<ReloadOutlined />} size="small" onClick={fetchHistoryTasks} loading={loading}>Refresh</Button>
@@ -259,12 +412,54 @@ const HistoryPage: React.FC = () => {
         </Space>
       </div>
 
+      {/* ── Summary stats ── */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        <StatCard
+          label="Inspections"
+          value={records.length}
+          sub={
+            types
+              .map(t => {
+                const count = records.filter(r => r.type === t.id).length;
+                return count > 0 ? `${t.name}: ${count}` : null;
+              })
+              .filter(Boolean)
+              .join('  ·  ') || undefined
+          }
+        />
+        <StatCard
+          label="Office Hours"
+          value={`${stats.officeHours} hrs`}
+          sub={`${stats.workdays} workdays × 1 hr/day`}
+        />
+        <StatCard
+          label="Parking Fees"
+          value={stats.totalParking > 0 ? `$${stats.totalParking.toFixed(2)}` : '—'}
+          sub={
+            stats.totalParking > 0
+              ? <a href={PARKING_RECEIPTS_URL} target="_blank" rel="noreferrer" style={{ color: '#58a6ff', fontSize: '10px' }}>View receipts ↗</a>
+              : 'No parking this period'
+          }
+        />
+      </div>
+
+      {/* ── Table ── */}
       <Spin spinning={loading}>
         <Table
           size="small"
           dataSource={records}
           columns={columns}
           rowKey="id"
+          onRow={(record) => ({
+            onDoubleClick: () => {
+              if (editingId !== record.id) startEdit(record);
+            },
+            style: {
+              cursor: 'pointer',
+              background: editingId === record.id ? '#1a2535' : undefined,
+              borderLeft: editingId === record.id ? '3px solid #00d4ff' : '3px solid transparent',
+            },
+          })}
           pagination={{
             pageSize: 30,
             showSizeChanger: true,

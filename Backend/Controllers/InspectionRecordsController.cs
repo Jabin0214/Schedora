@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
+using InspectionApi.Models.DTOs;
+using System.Globalization;
 
 namespace InspectionApi.Controllers
 {
@@ -49,7 +51,8 @@ namespace InspectionApi.Controllers
                         PropertyAddress = r.Property != null ? r.Property.Address : null,
                         r.ExecutionDate,
                         Type = (int)r.Type,
-                        r.IsCharged
+                        r.IsCharged,
+                        r.ParkingFee
                     })
                     .ToListAsync();
 
@@ -59,6 +62,32 @@ namespace InspectionApi.Controllers
             {
                 _logger.LogError(ex, "获取检查记录失败");
                 return StatusCode(500, new { message = "获取数据失败，请稍后重试" });
+            }
+        }
+
+        // PUT: api/inspectionrecords/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateInspectionRecord(int id, [FromBody] InspectionRecordUpdateDto dto)
+        {
+            try
+            {
+                var record = await _context.InspectionRecords.FindAsync(id);
+                if (record == null)
+                    return NotFound(new { message = $"未找到ID为{id}的记录" });
+
+                record.ExecutionDate = DateTimeOffset.Parse(dto.ExecutionDate, null, DateTimeStyles.RoundtripKind);
+                record.Type          = (InspectionType)dto.Type;
+                record.IsCharged     = dto.IsCharged;
+                record.ParkingFee    = dto.ParkingFee;
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("更新记录成功, ID: {Id}", id);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "更新记录失败, ID: {Id}", id);
+                return StatusCode(500, new { message = "更新失败，请稍后重试" });
             }
         }
 

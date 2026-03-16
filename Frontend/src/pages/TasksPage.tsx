@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  Button, Modal, Form, Input, Select, DatePicker,
+  Button, Modal, Form, Input, Select, DatePicker, InputNumber,
   Popconfirm, Spin, Empty, Space, Tag, Tooltip, Card, message,
 } from 'antd';
 import {
@@ -154,6 +154,7 @@ const TasksPage: React.FC = () => {
       if (!completingTask) return;
       const result = await completeInspectionTask(completingTask.id, {
         executionDate: values.executionDate.toISOString(),
+        parkingFee: values.parkingFee ?? undefined,
       });
       if (result !== null) closeCompleteModal();
     } catch {
@@ -489,6 +490,9 @@ const TasksPage: React.FC = () => {
         <Form form={completeForm} layout="vertical">
           <Form.Item name="executionDate" label="Execution Date" rules={[{ required: true, message: 'Please select a date' }]}>
             <DatePicker showTime format={['YYYY-MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']} style={{ width: '100%' }} placeholder="03/02 10am" />
+          </Form.Item>
+          <Form.Item name="parkingFee" label="Parking Fee (optional)">
+            <InputNumber min={0} precision={2} prefix="$" placeholder="0.00" style={{ width: '100%' }} />
           </Form.Item>
         </Form>
       </Modal>

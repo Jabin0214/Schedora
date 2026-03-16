@@ -61,6 +61,7 @@ export interface InspectionTaskUpdateRequest {
 
 export interface TaskCompletionRequest {
   executionDate: string;
+  parkingFee?: number;
 }
 
 export interface InspectionRecordDto {
@@ -70,4 +71,5 @@ export interface InspectionRecordDto {
   executionDate: string;
   type: InspectionType;
   isCharged: boolean;
+  parkingFee?: number;
 }

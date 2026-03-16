@@ -138,7 +138,8 @@ namespace InspectionApi.Services
                 PropertyId = task.PropertyId,
                 ExecutionDate = executionDate,
                 Type = task.Type,
-                IsCharged = task.IsBillable
+                IsCharged = task.IsBillable,
+                ParkingFee = dto.ParkingFee
             });
 
             _context.InspectionTasks.Remove(task);

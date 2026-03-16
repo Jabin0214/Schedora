@@ -26,10 +26,20 @@ namespace InspectionApi.Models.DTOs
         public string? PropertyAddress { get; set; }
         public int Type { get; set; }
         public bool IsCharged { get; set; }
+        public decimal? ParkingFee { get; set; }
     }
 
     public class TaskCompletionDto
     {
         public string ExecutionDate { get; set; } = string.Empty;
+        public decimal? ParkingFee { get; set; }
+    }
+
+    public class InspectionRecordUpdateDto
+    {
+        public string ExecutionDate { get; set; } = string.Empty;
+        public int Type { get; set; }
+        public bool IsCharged { get; set; }
+        public decimal? ParkingFee { get; set; }
     }
 }

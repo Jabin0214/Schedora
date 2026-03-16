@@ -70,6 +70,13 @@ using (var scope = app.Services.CreateScope())
             ");
             logger.LogInformation("✅ TaskTypes table ready");
 
+            // Add ParkingFee column if it doesn't exist yet
+            await db.Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE ""InspectionRecords""
+                ADD COLUMN IF NOT EXISTS ""ParkingFee"" numeric(10,2) NULL;
+            ");
+            logger.LogInformation("✅ ParkingFee column ready");
+
             // Sync auto-increment sequences so INSERT never hits a PK conflict.
             // Uses a DO block so each table is independent and NULL-safe
             // (pg_get_serial_sequence returns NULL for IDENTITY columns on some PG versions;

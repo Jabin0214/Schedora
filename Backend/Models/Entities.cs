@@ -58,5 +58,6 @@ namespace InspectionApi.Models
         public DateTimeOffset ExecutionDate { get; set; }
         public InspectionType Type { get; set; }
         public bool IsCharged { get; set; }
+        public decimal? ParkingFee { get; set; }
     }
 }
