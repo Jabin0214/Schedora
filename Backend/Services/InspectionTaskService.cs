@@ -73,7 +73,7 @@ namespace InspectionApi.Services
                 ScheduledAt = scheduledAt,
                 Type = (InspectionType)dto.Type,
                 Notes = dto.Notes,
-                IsBillable = await ShouldChargeAsync(property.Id, property.BillingPolicy)
+                IsBillable = dto.IsBillable
             };
 
             _context.InspectionTasks.Add(task);

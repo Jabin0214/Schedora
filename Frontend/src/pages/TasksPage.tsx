@@ -427,6 +427,24 @@ const TasksPage: React.FC = () => {
               options={propertyOptions} />
           </Form.Item>
 
+          {/* ── Billing policy badge ── */}
+          {selectedPropertyId && (() => {
+            const prop = properties.find(p => p.id === selectedPropertyId);
+            const isSixMonth = prop?.billingPolicy === 'SixMonthFree';
+            return (
+              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#0d1117', border: '1px solid #30363d', borderLeft: `3px solid ${isSixMonth ? '#3fb950' : '#d29922'}`, borderRadius: 2 }}>
+                <span style={{ fontSize: '11px', color: isSixMonth ? '#3fb950' : '#d29922', fontWeight: 600 }}>
+                  {isSixMonth ? '6-Month Cycle' : '3-Month Cycle'}
+                </span>
+                <span style={{ fontSize: '11px', color: '#8b949e' }}>
+                  {isSixMonth
+                    ? '— inspection every 6 months, always free'
+                    : '— inspection every 3 months, alternates Charged / Free'}
+                </span>
+              </div>
+            );
+          })()}
+
           {/* ── Recent records ── */}
           {selectedPropertyId && (
             <div style={{ marginBottom: 16 }}>

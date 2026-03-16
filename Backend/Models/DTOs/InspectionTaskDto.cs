@@ -17,6 +17,7 @@ namespace InspectionApi.Models.DTOs
         public int PropertyId { get; set; }
         public string? ScheduledAt { get; set; }
         public int Type { get; set; }
+        public bool IsBillable { get; set; }
         public string? Notes { get; set; }
     }
 
