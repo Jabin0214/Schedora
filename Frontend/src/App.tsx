@@ -3,6 +3,7 @@ import { Layout, Menu, theme, ConfigProvider } from 'antd';
 import {
   HomeOutlined,
   CalendarOutlined,
+  UnorderedListOutlined,
   FileTextOutlined,
   SettingOutlined,
 } from '@ant-design/icons';
@@ -11,6 +12,7 @@ import './App.css';
 
 import PropertiesPage from './pages/PropertiesPage';
 import TasksPage from './pages/TasksPage';
+import CalendarPage from './pages/CalendarPage';
 import HistoryPage from './pages/HistoryPage';
 import ConfigPage from './pages/ConfigPage';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -22,8 +24,9 @@ const AppContent: React.FC = () => {
 
   const selectedKey = useMemo(() => {
     if (location.pathname === '/tasks') return '2';
-    if (location.pathname === '/history') return '3';
-    if (location.pathname === '/config') return '4';
+    if (location.pathname === '/calendar') return '3';
+    if (location.pathname === '/history') return '4';
+    if (location.pathname === '/config') return '5';
     return '1';
   }, [location.pathname]);
 
@@ -42,10 +45,11 @@ const AppContent: React.FC = () => {
           selectedKeys={[selectedKey]}
           style={{ background: '#0a0e13', borderRight: 'none' }}
           items={[
-            { key: '1', icon: <HomeOutlined />, label: <Link to="/">Properties</Link> },
-            { key: '2', icon: <CalendarOutlined />, label: <Link to="/tasks">Tasks</Link> },
-            { key: '3', icon: <FileTextOutlined />, label: <Link to="/history">History</Link> },
-            { key: '4', icon: <SettingOutlined />, label: <Link to="/config">Config</Link> },
+            { key: '1', icon: <HomeOutlined />,          label: <Link to="/">Properties</Link> },
+            { key: '2', icon: <UnorderedListOutlined />,  label: <Link to="/tasks">Tasks</Link> },
+            { key: '3', icon: <CalendarOutlined />,       label: <Link to="/calendar">Calendar</Link> },
+            { key: '4', icon: <FileTextOutlined />,       label: <Link to="/history">History</Link> },
+            { key: '5', icon: <SettingOutlined />,        label: <Link to="/config">Config</Link> },
           ]}
         />
       </Sider>
@@ -93,6 +97,7 @@ const AppContent: React.FC = () => {
               <Routes>
                 <Route path="/" element={<PropertiesPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/config" element={<ConfigPage />} />
               </Routes>
