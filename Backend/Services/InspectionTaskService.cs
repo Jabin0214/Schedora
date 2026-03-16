@@ -18,6 +18,10 @@ namespace InspectionApi.Services
             _googleSync = googleSync;
         }
 
+        // Parse any ISO 8601 string to DateTimeOffset — no Kind issues, maps directly to timestamptz
+        private static DateTimeOffset ParseDate(string iso) =>
+            DateTimeOffset.Parse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind);
+
         private async Task<bool> ShouldChargeAsync(int propertyId, BillingPolicy billingPolicy)
         {
             if (billingPolicy == BillingPolicy.SixMonthFree)
@@ -60,8 +64,8 @@ namespace InspectionApi.Services
                 ?? throw new ArgumentException("指定的物业不存在");
 
             var scheduledAt = string.IsNullOrEmpty(dto.ScheduledAt)
-                ? (DateTime?)null
-                : DateTime.Parse(dto.ScheduledAt, null, System.Globalization.DateTimeStyles.RoundtripKind);
+                ? (DateTimeOffset?)null
+                : ParseDate(dto.ScheduledAt);
 
             var task = new InspectionTask
             {
@@ -94,8 +98,8 @@ namespace InspectionApi.Services
             }
 
             var scheduledAt = string.IsNullOrEmpty(dto.ScheduledAt)
-                ? (DateTime?)null
-                : DateTime.Parse(dto.ScheduledAt, null, System.Globalization.DateTimeStyles.RoundtripKind);
+                ? (DateTimeOffset?)null
+                : ParseDate(dto.ScheduledAt);
 
             existingTask.PropertyId = dto.PropertyId;
             existingTask.ScheduledAt = scheduledAt;
@@ -127,7 +131,7 @@ namespace InspectionApi.Services
                 .FirstOrDefaultAsync(t => t.Id == id)
                 ?? throw new ArgumentException($"未找到ID为{id}的任务");
 
-            var executionDate = DateTime.Parse(dto.ExecutionDate, null, System.Globalization.DateTimeStyles.RoundtripKind);
+            var executionDate = ParseDate(dto.ExecutionDate);
 
             _context.InspectionRecords.Add(new InspectionRecord
             {

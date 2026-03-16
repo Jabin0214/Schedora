@@ -76,8 +76,8 @@ namespace InspectionApi.Services
         {
             var label = TypeLabels.TryGetValue(task.Type, out var l) ? l : "检查";
             var address = task.Property?.Address ?? $"物业#{task.PropertyId}";
-            // 数据库存 UTC，转换为 NZ 本地时间后再推送给 Calendar
-            var startUtc = DateTime.SpecifyKind(task.ScheduledAt ?? DateTime.UtcNow, DateTimeKind.Utc);
+            // DateTimeOffset carries UTC offset directly — no SpecifyKind needed
+            var startUtc = (task.ScheduledAt ?? DateTimeOffset.UtcNow).UtcDateTime;
             var startNz = TimeZoneInfo.ConvertTimeFromUtc(startUtc, NzTimeZone);
             var nzOffset = NzTimeZone.GetUtcOffset(startNz);
 
@@ -215,7 +215,7 @@ namespace InspectionApi.Services
                 if (task.ScheduledAt.HasValue)
                 {
                     var nzTime = TimeZoneInfo.ConvertTimeFromUtc(
-                        DateTime.SpecifyKind(task.ScheduledAt.Value, DateTimeKind.Utc),
+                        task.ScheduledAt.Value.UtcDateTime,
                         NzTimeZone);
                     timeDisplay = nzTime.ToString("yyyy-MM-dd HH:mm");
                 }

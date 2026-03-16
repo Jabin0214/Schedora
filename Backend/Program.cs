@@ -69,6 +69,33 @@ using (var scope = app.Services.CreateScope())
                 ON CONFLICT (""Id"") DO NOTHING;
             ");
             logger.LogInformation("✅ TaskTypes table ready");
+
+            // Sync auto-increment sequences so INSERT never hits a PK conflict.
+            // Uses a DO block so each table is independent and NULL-safe
+            // (pg_get_serial_sequence returns NULL for IDENTITY columns on some PG versions;
+            // the IF guard prevents setval(NULL,...) from crashing).
+            await db.Database.ExecuteSqlRawAsync(@"
+                DO $$
+                DECLARE
+                    seq  text;
+                    nval bigint;
+                BEGIN
+                    -- InspectionRecords
+                    seq := pg_get_serial_sequence('""InspectionRecords""', 'Id');
+                    IF seq IS NOT NULL THEN
+                        SELECT COALESCE(MAX(""Id""), 0) + 1 INTO nval FROM ""InspectionRecords"";
+                        PERFORM setval(seq, nval, false);
+                    END IF;
+
+                    -- InspectionTasks
+                    seq := pg_get_serial_sequence('""InspectionTasks""', 'Id');
+                    IF seq IS NOT NULL THEN
+                        SELECT COALESCE(MAX(""Id""), 0) + 1 INTO nval FROM ""InspectionTasks"";
+                        PERFORM setval(seq, nval, false);
+                    END IF;
+                END $$;
+            ");
+            logger.LogInformation("✅ Sequences synced");
         }
         else
         {

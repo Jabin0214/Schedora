@@ -21,8 +21,8 @@ namespace InspectionApi.Controllers
         // GET: api/inspectionrecords
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetInspectionRecords(
-            [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime? endDate)
+            [FromQuery] DateTimeOffset? startDate,
+            [FromQuery] DateTimeOffset? endDate)
         {
             try
             {

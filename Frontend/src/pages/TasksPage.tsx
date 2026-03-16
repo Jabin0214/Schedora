@@ -119,16 +119,16 @@ const TasksPage: React.FC = () => {
     try {
       const values = await form.validateFields();
       setSubmitting(true);
-      await createInspectionTask({
+      const result = await createInspectionTask({
         propertyId:  values.propertyId,
         type:        values.type,
         isBillable:  values.isBillable ?? false,
         scheduledAt: values.scheduledAt ? values.scheduledAt.toISOString() : undefined,
         notes:       values.notes,
       });
-      closeModal();
+      if (result !== null) closeModal();
     } catch {
-      // Error handled by hook
+      // Form validation error
     } finally {
       setSubmitting(false);
     }
@@ -152,12 +152,12 @@ const TasksPage: React.FC = () => {
     try {
       const values = await completeForm.validateFields();
       if (!completingTask) return;
-      await completeInspectionTask(completingTask.id, {
+      const result = await completeInspectionTask(completingTask.id, {
         executionDate: values.executionDate.toISOString(),
       });
-      closeCompleteModal();
+      if (result !== null) closeCompleteModal();
     } catch {
-      // Error handled by hook
+      // Form validation error
     }
   }, [completeForm, completingTask, completeInspectionTask, closeCompleteModal]);
 

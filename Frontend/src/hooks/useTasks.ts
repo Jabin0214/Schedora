@@ -79,7 +79,7 @@ export function useTasks() {
       () => axios.post(`${API_ENDPOINTS.inspectionTasks}/${id}/complete`, data),
       'Task completed'
     );
-    if (result) await fetchTasks();
+    if (result !== null) await fetchTasks();  // 204 No Content → data="" (falsy), must check !== null
     return result;
   }, [executeApi, fetchTasks]);
 

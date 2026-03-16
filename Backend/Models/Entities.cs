@@ -42,7 +42,7 @@ namespace InspectionApi.Models
         public int PropertyId { get; set; }
         public Property? Property { get; set; }
 
-        public DateTime? ScheduledAt { get; set; }
+        public DateTimeOffset? ScheduledAt { get; set; }
         public InspectionType Type { get; set; }
         public bool IsBillable { get; set; }
 
@@ -55,7 +55,7 @@ namespace InspectionApi.Models
         public int Id { get; set; }
         public int PropertyId { get; set; }
         public Property? Property { get; set; }
-        public DateTime ExecutionDate { get; set; }
+        public DateTimeOffset ExecutionDate { get; set; }
         public InspectionType Type { get; set; }
         public bool IsCharged { get; set; }
     }
