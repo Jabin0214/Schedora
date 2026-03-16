@@ -34,7 +34,7 @@ const ModalTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const tagStyle: React.CSSProperties = { margin: 0, fontSize: '11px', letterSpacing: '0.3px' };
 
 const TasksPage: React.FC = () => {
-  const [syncing,             setSyncing]             = useState(false);
+  const [syncing,             setSyncing]             = useState<'calendar' | 'sheets' | null>(null);
   const [submitting,          setSubmitting]          = useState(false);
   const [isModalOpen,         setIsModalOpen]         = useState(false);
   const [recentRecords,       setRecentRecords]       = useState<InspectionRecordDto[]>([]);
@@ -72,7 +72,7 @@ const TasksPage: React.FC = () => {
 
   // ── Handlers ────────────────────────────────────────────────
   const handleSync = useCallback(async (target: 'all' | 'calendar' | 'sheets') => {
-    setSyncing(true);
+    if (target !== 'all') setSyncing(target);
     try {
       await axios.post(`${API_ENDPOINTS.googleSync}/${target}`);
       const label =
@@ -82,7 +82,7 @@ const TasksPage: React.FC = () => {
     } catch {
       message.error('Sync failed — check backend logs');
     } finally {
-      setSyncing(false);
+      setSyncing(null);
     }
   }, []);
 
@@ -393,8 +393,8 @@ const TasksPage: React.FC = () => {
         <IndTitle>Tasks</IndTitle>
         <Space size={4} wrap>
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
-          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncing}>Sync Calendar</Button>
-          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncing}>Sync Sheets</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncing === 'calendar'}>Sync Calendar</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncing === 'sheets'}>Sync Sheets</Button>
           <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>Add Task</Button>
         </Space>
       </div>
