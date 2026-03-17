@@ -34,7 +34,8 @@ const ModalTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const tagStyle: React.CSSProperties = { margin: 0, fontSize: '11px', letterSpacing: '0.3px' };
 
 const TasksPage: React.FC = () => {
-  const [syncing,             setSyncing]             = useState<'calendar' | 'sheets' | null>(null);
+  const [syncingCalendar,     setSyncingCalendar]     = useState(false);
+  const [syncingSheets,       setSyncingSheets]       = useState(false);
   const [submitting,          setSubmitting]          = useState(false);
   const [isModalOpen,         setIsModalOpen]         = useState(false);
   const [recentRecords,       setRecentRecords]       = useState<InspectionRecordDto[]>([]);
@@ -71,20 +72,20 @@ const TasksPage: React.FC = () => {
   );
 
   // ── Handlers ────────────────────────────────────────────────
-  const handleSync = useCallback(async (target: 'all' | 'calendar' | 'sheets') => {
-    if (target !== 'all') setSyncing(target);
+  const handleSync = useCallback(async (target: 'calendar' | 'sheets') => {
+    const setLoading = target === 'calendar' ? setSyncingCalendar : setSyncingSheets;
+    setLoading(true);
     try {
       await axios.post(`${API_ENDPOINTS.googleSync}/${target}`);
-      const label =
-        target === 'all'      ? 'Calendar + Sheets' :
-        target === 'calendar' ? 'Google Calendar'   : 'Google Sheets';
+      const label = target === 'calendar' ? 'Google Calendar' : 'Google Sheets';
       message.success(`${label} synced successfully`);
+      await fetchTasks();
     } catch {
       message.error('Sync failed — check backend logs');
     } finally {
-      setSyncing(null);
+      setLoading(false);
     }
-  }, []);
+  }, [fetchTasks]);
 
   const fetchRecentRecords = useCallback(async (propertyId: number) => {
     setRecordsLoading(true);
@@ -393,8 +394,8 @@ const TasksPage: React.FC = () => {
         <IndTitle>Tasks</IndTitle>
         <Space size={4} wrap>
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
-          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncing === 'calendar'}>Sync Calendar</Button>
-          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncing === 'sheets'}>Sync Sheets</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncingCalendar} disabled={syncingSheets}>Sync Calendar</Button>
+          <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncingSheets} disabled={syncingCalendar}>Sync Sheets</Button>
           <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>Add Task</Button>
         </Space>
       </div>
