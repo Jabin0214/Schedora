@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Table, Button, Modal, Form, Input, Select,
   message, Popconfirm, Spin, Empty, Space, Tag,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
+import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined, SearchOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
@@ -19,7 +19,14 @@ const PropertiesPage: React.FC = () => {
   const [submitting,      setSubmitting]      = useState(false);
   const [isModalOpen,     setIsModalOpen]     = useState(false);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
+  const [searchText,      setSearchText]      = useState('');
   const [form] = Form.useForm();
+
+  const filteredProperties = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    if (!q) return properties;
+    return properties.filter(p => p.address.toLowerCase().includes(q));
+  }, [properties, searchText]);
 
   const fetchProperties = useCallback(async () => {
     setLoading(true);
@@ -144,9 +151,34 @@ const PropertiesPage: React.FC = () => {
         </Space>
       </div>
 
+      {/* ── Search bar ── */}
+      <div style={{ marginBottom: 12 }}>
+        <Input
+          prefix={<SearchOutlined style={{ color: '#ACABA9', fontSize: 14 }} />}
+          suffix={
+            searchText
+              ? <CloseCircleOutlined
+                  style={{ color: '#ACABA9', fontSize: 13, cursor: 'pointer' }}
+                  onClick={() => setSearchText('')}
+                />
+              : null
+          }
+          placeholder="Search by address..."
+          value={searchText}
+          onChange={e => setSearchText(e.target.value)}
+          style={{ maxWidth: 320 }}
+          allowClear={false}
+        />
+        {searchText && (
+          <span style={{ marginLeft: 10, fontSize: '13px', color: '#787774' }}>
+            {filteredProperties.length} of {properties.length} properties
+          </span>
+        )}
+      </div>
+
       <Spin spinning={loading}>
         <Table
-          dataSource={properties}
+          dataSource={filteredProperties}
           columns={columns}
           rowKey="id"
           size="small"
