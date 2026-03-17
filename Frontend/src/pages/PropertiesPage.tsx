@@ -10,8 +10,8 @@ import { handleApiError } from '../utils/errorHandler';
 import type { Property } from '../types/api';
 import { IndTitle, modalStyles } from '../components/shared';
 
-// ── Billing policy tag styles (custom bg/border, keep borderRadius explicit) ──
-const policyTagStyle: React.CSSProperties = { fontSize: '11px', letterSpacing: '0.3px' };
+// ── Billing policy tag styles ──────────────────────────────────
+const policyTagStyle: React.CSSProperties = { fontSize: '12px', letterSpacing: '0.2px' };
 
 const PropertiesPage: React.FC = () => {
   const [properties,      setProperties]      = useState<Property[]>([]);
@@ -92,7 +92,7 @@ const PropertiesPage: React.FC = () => {
       key: 'id',
       width: 70,
       render: (id: number) => (
-        <span style={{ color: '#484f58', fontFamily: 'monospace', fontSize: '12px' }}>#{id}</span>
+        <span style={{ color: '#787774', fontSize: '13px' }}>#{id}</span>
       ),
     },
     {
@@ -101,7 +101,7 @@ const PropertiesPage: React.FC = () => {
       key: 'address',
       ellipsis: { showTitle: false },
       render: (text: string) => (
-        <span title={text} style={{ color: '#e6edf3', fontWeight: 500 }}>{text}</span>
+        <span title={text} style={{ color: '#37352F', fontWeight: 600, fontSize: '14px' }}>{text}</span>
       ),
     },
     {
@@ -111,10 +111,10 @@ const PropertiesPage: React.FC = () => {
       width: 180,
       render: (policy: unknown) => {
         if (policy === 0 || policy === 'SixMonthFree')
-          return <Tag style={{ ...policyTagStyle, background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.4)', color: '#22c55e' }}>6-Month Free</Tag>;
+          return <Tag style={{ ...policyTagStyle, background: 'rgba(15,123,108,0.08)', border: '1px solid rgba(15,123,108,0.3)', color: '#0F7B6C' }}>6-Month Free</Tag>;
         if (policy === 1 || policy === 'ThreeMonthToggle')
-          return <Tag style={{ ...policyTagStyle, background: 'rgba(240,165,0,0.08)', border: '1px solid rgba(240,165,0,0.4)', color: '#f0a500' }}>3-Month Toggle</Tag>;
-        return <Tag style={{ ...policyTagStyle, background: 'rgba(139,148,158,0.08)', border: '1px solid rgba(139,148,158,0.3)', color: '#8b949e' }}>{String(policy ?? 'Not set')}</Tag>;
+          return <Tag style={{ ...policyTagStyle, background: 'rgba(203,145,47,0.08)', border: '1px solid rgba(203,145,47,0.3)', color: '#CB912F' }}>3-Month Toggle</Tag>;
+        return <Tag style={{ ...policyTagStyle, background: 'rgba(172,171,169,0.08)', border: '1px solid rgba(172,171,169,0.3)', color: '#787774' }}>{String(policy ?? 'Not set')}</Tag>;
       },
     },
     {
@@ -136,7 +136,7 @@ const PropertiesPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
         <IndTitle>Properties</IndTitle>
         <Space size={4}>
           <Button icon={<ReloadOutlined />} size="small" onClick={fetchProperties} loading={loading}>Refresh</Button>
@@ -153,17 +153,17 @@ const PropertiesPage: React.FC = () => {
           pagination={{
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => <span style={{ color: '#8b949e', fontSize: '12px' }}>{total} records</span>,
+            showTotal: (total) => <span style={{ color: '#787774', fontSize: '13px' }}>{total} records</span>,
           }}
           locale={{
-            emptyText: <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No properties —</span>} />,
+            emptyText: <Empty description={<span style={{ color: '#ACABA9', fontSize: '13px' }}>No properties</span>} />,
           }}
         />
       </Spin>
 
       {/* ── Add / Edit modal ── */}
       <Modal
-        title={<span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#e6edf3' }}>{editingProperty ? 'Edit Property' : 'New Property'}</span>}
+        title={<span style={{ fontSize: '15px', fontWeight: 600, color: '#37352F' }}>{editingProperty ? 'Edit Property' : 'New Property'}</span>}
         open={isModalOpen} onOk={handleOk} onCancel={closeModal}
         confirmLoading={submitting} okText={editingProperty ? 'Save' : 'Add'} cancelText="Cancel"
         destroyOnHidden styles={modalStyles}

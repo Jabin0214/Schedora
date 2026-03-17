@@ -13,7 +13,7 @@ const { RangePicker } = DatePicker;
 
 const PARKING_RECEIPTS_URL = 'https://drive.google.com/drive/folders/16DCZ-7VOv5Xbaa4pNwQf3WCyVcHxG7wp?usp=drive_link';
 
-const tagStyle: React.CSSProperties = { fontSize: '11px', letterSpacing: '0.3px' };
+const tagStyle: React.CSSProperties = { fontSize: '12px', letterSpacing: '0.2px' };
 
 interface EditState {
   executionDate: Dayjs;
@@ -38,14 +38,14 @@ const StatCard: React.FC<{ label: string; value: React.ReactNode; sub?: React.Re
   <div style={{
     flex: 1,
     minWidth: 130,
-    background: '#161b22',
-    border: '1px solid #30363d',
-    borderRadius: 4,
+    background: '#FFFFFF',
+    border: '1px solid #E9E9E7',
+    borderRadius: 6,
     padding: '12px 16px',
   }}>
-    <div style={{ fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>{label}</div>
-    <div style={{ fontSize: '22px', fontWeight: 700, color: '#e6edf3', fontFamily: 'monospace', lineHeight: 1 }}>{value}</div>
-    {sub && <div style={{ fontSize: '10px', color: '#8b949e', marginTop: 4 }}>{sub}</div>}
+    <div style={{ fontSize: '11px', color: '#55534e', letterSpacing: '0.5px', textTransform: 'uppercase', fontWeight: 500, marginBottom: 6 }}>{label}</div>
+    <div style={{ fontSize: '24px', fontWeight: 700, color: '#37352F', lineHeight: 1 }}>{value}</div>
+    {sub && <div style={{ fontSize: '12px', color: '#787774', marginTop: 5 }}>{sub}</div>}
   </div>
 );
 
@@ -162,7 +162,7 @@ const HistoryPage: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
-          <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '12px', letterSpacing: '0.3px' }}>
+          <span style={{ color: '#2383E2', fontSize: '13px', fontWeight: 500, letterSpacing: '0.2px' }}>
             {dayjs(record.executionDate).format('YYYY-MM-DD HH:mm')}
           </span>
         );
@@ -174,7 +174,7 @@ const HistoryPage: React.FC = () => {
       ellipsis: { showTitle: false },
       render: (_: unknown, record: InspectionRecordDto) => (
         <Tooltip title={record.propertyAddress}>
-          <span style={{ color: '#e6edf3', fontWeight: 500 }}>{record.propertyAddress || '-'}</span>
+          <span style={{ color: '#37352F', fontWeight: 600, fontSize: '14px' }}>{record.propertyAddress || '-'}</span>
         </Tooltip>
       ),
     },
@@ -199,7 +199,7 @@ const HistoryPage: React.FC = () => {
         const cfg = getType(record.type);
         return cfg
           ? <Tag color={cfg.color} style={tagStyle}>{cfg.name}</Tag>
-          : <span style={{ color: '#ff4444', fontFamily: 'monospace', fontSize: '11px' }}>{String(record.type)}</span>;
+          : <span style={{ color: '#E03E3E', fontSize: '12px' }}>{String(record.type)}</span>;
       },
     },
     {
@@ -249,8 +249,8 @@ const HistoryPage: React.FC = () => {
           );
         }
         return record.parkingFee != null && record.parkingFee > 0
-          ? <span style={{ color: '#e6edf3', fontFamily: 'monospace', fontSize: '12px' }}>${record.parkingFee.toFixed(2)}</span>
-          : <span style={{ color: '#484f58', fontSize: '11px' }}>—</span>;
+          ? <span style={{ color: '#37352F', fontSize: '13px', fontWeight: 500 }}>${record.parkingFee.toFixed(2)}</span>
+          : <span style={{ color: '#ACABA9', fontSize: '13px' }}>—</span>;
       },
     },
     {
@@ -394,7 +394,7 @@ const HistoryPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
         <IndTitle>History</IndTitle>
         <Space size={4} wrap>
           <RangePicker
@@ -437,7 +437,7 @@ const HistoryPage: React.FC = () => {
           value={stats.totalParking > 0 ? `$${stats.totalParking.toFixed(2)}` : '—'}
           sub={
             stats.totalParking > 0
-              ? <a href={PARKING_RECEIPTS_URL} target="_blank" rel="noreferrer" style={{ color: '#58a6ff', fontSize: '10px' }}>View receipts ↗</a>
+              ? <a href={PARKING_RECEIPTS_URL} target="_blank" rel="noreferrer" style={{ color: '#2383E2', fontSize: '12px' }}>View receipts ↗</a>
               : 'No parking this period'
           }
         />
@@ -456,18 +456,18 @@ const HistoryPage: React.FC = () => {
             },
             style: {
               cursor: 'pointer',
-              background: editingId === record.id ? '#1a2535' : undefined,
-              borderLeft: editingId === record.id ? '3px solid #00d4ff' : '3px solid transparent',
+              background: editingId === record.id ? 'rgba(35, 131, 226, 0.05)' : undefined,
+              borderLeft: editingId === record.id ? '3px solid #2383E2' : '3px solid transparent',
             },
           })}
           pagination={{
             pageSize: 30,
             showSizeChanger: true,
             showQuickJumper: true,
-            showTotal: (total) => <span style={{ color: '#8b949e', fontSize: '12px' }}>{total} records</span>,
+            showTotal: (total) => <span style={{ color: '#787774', fontSize: '13px' }}>{total} records</span>,
           }}
           locale={{
-            emptyText: <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No records —</span>} />,
+            emptyText: <Empty description={<span style={{ color: '#ACABA9', fontSize: '13px' }}>No records</span>} />,
           }}
         />
       </Spin>

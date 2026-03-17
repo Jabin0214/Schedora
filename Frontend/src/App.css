@@ -1,93 +1,62 @@
 /* ═══════════════════════════════════════════════════════
-   SCHEDORA PMS — Industrial Control Console
+   SCHEDORA PMS — Notion Style
    App Layout & Component Styles
 ═══════════════════════════════════════════════════════ */
 
-/* ── Sidebar Logo — Metal Plate ───────────────── */
+/* ── Sidebar Logo ─────────────────────────────────── */
 .sidebar-logo {
   height: 40px;
-  margin: 12px 12px 8px;
-  background: linear-gradient(135deg, #1a2535 0%, #0d1520 100%);
-  text-align: center;
-  color: var(--ind-cyan, #00d4ff);
-  line-height: 40px;
-  font-weight: 700;
-  font-size: 11px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  border: 1px solid #30363d;
-  border-radius: 2px;
-  position: relative;
-  overflow: hidden;
-  white-space: nowrap;
+  margin: 4px 4px 2px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: var(--n-text-primary);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: -0.1px;
+  border-radius: 4px;
   user-select: none;
+  cursor: default;
 }
 
-.sidebar-logo::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 3px;
-  height: 100%;
-  background: #00d4ff;
-  box-shadow: 0 0 8px rgba(0, 212, 255, 0.7);
-}
-
-/* ── Page Container — Grid Background ────────── */
+/* ── Page Container ───────────────────────────────── */
 .page-container {
-  animation: slideIn 0.15s ease-out;
-  background-image:
-    linear-gradient(rgba(48, 54, 61, 0.22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(48, 54, 61, 0.22) 1px, transparent 1px) !important;
-  background-size: 24px 24px !important;
+  animation: slideIn 0.12s ease-out;
 }
 
 @keyframes slideIn {
-  from { opacity: 0; transform: translateY(3px); }
+  from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Industrial Table Hover ───────────────────── */
+/* ── Table Hover ──────────────────────────────────── */
 .ant-table-tbody > tr:hover > td {
-  background-color: #1c2128 !important;
+  background-color: var(--n-bg-hover) !important;
 }
 
-/* ── Card Header Height Fix ───────────────────── */
+/* ── Card Header Height Fix ───────────────────────── */
 .ant-card-head {
   min-height: 36px !important;
 }
 
-/* ── Ant Design Spin Indicator ────────────────── */
+/* ── Ant Design Spin ──────────────────────────────── */
 .ant-spin-dot-item {
-  background-color: #00d4ff !important;
+  background-color: var(--n-accent) !important;
 }
 
-/* ── Selection Text ───────────────────────────── */
+/* ── Selection Text ───────────────────────────────── */
 ::selection {
-  background: rgba(0, 212, 255, 0.25);
-  color: #e6edf3;
+  background: rgba(35, 131, 226, 0.2);
+  color: var(--n-text-primary);
 }
 
-/* ── Responsive Layout ────────────────────────── */
+/* ── Responsive Layout ────────────────────────────── */
 @media (max-width: 768px) {
   .ant-table {
-    font-size: 11px;
-  }
-
-  .ind-toolbar {
-    flex-wrap: wrap;
-    gap: 6px;
+    font-size: 12px;
   }
 
   .page-container {
     padding: 12px !important;
-  }
-}
-
-@media (max-width: 576px) {
-  .sidebar-logo {
-    font-size: 9px;
-    letter-spacing: 1px;
   }
 }

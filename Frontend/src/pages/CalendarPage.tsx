@@ -32,28 +32,28 @@ const TaskCard: React.FC<{
   const card = (
     <div
       style={{
-        background: dimmed ? '#0d1117' : '#1c2128',
-        border: `1px solid ${dimmed ? '#21262d' : '#30363d'}`,
-        borderLeft: `3px solid ${dimmed ? '#444d56' : typeColor || '#00d4ff'}`,
-        borderRadius: 2,
+        background: dimmed ? '#F7F7F5' : '#FFFFFF',
+        border: `1px solid ${dimmed ? '#F0F0EE' : '#E9E9E7'}`,
+        borderLeft: `3px solid ${dimmed ? '#ACABA9' : typeColor || '#2383E2'}`,
+        borderRadius: 4,
         padding: '5px 8px',
         marginBottom: 4,
         cursor: 'default',
         opacity: dimmed ? 0.6 : 1,
-        transition: 'background 0.15s',
+        transition: 'background 0.12s',
       }}
       onMouseEnter={e => {
-        if (!dimmed) (e.currentTarget as HTMLDivElement).style.background = '#21262d';
+        if (!dimmed) (e.currentTarget as HTMLDivElement).style.background = '#EBEBEA';
       }}
       onMouseLeave={e => {
-        if (!dimmed) (e.currentTarget as HTMLDivElement).style.background = '#1c2128';
+        if (!dimmed) (e.currentTarget as HTMLDivElement).style.background = '#FFFFFF';
       }}
     >
       {/* Address */}
       <div style={{
-        fontSize: '11px',
+        fontSize: '13px',
         fontWeight: 600,
-        color: dimmed ? '#484f58' : '#e6edf3',
+        color: dimmed ? '#ACABA9' : '#37352F',
         whiteSpace: 'nowrap',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -67,20 +67,20 @@ const TaskCard: React.FC<{
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
         <Tag
           color={typeColor || 'default'}
-          style={{ fontSize: '9px', lineHeight: '14px', padding: '0 4px', margin: 0, letterSpacing: '0.3px' }}
+          style={{ fontSize: '10px', lineHeight: '14px', padding: '0 4px', margin: 0, letterSpacing: '0.2px' }}
         >
           {typeName}
         </Tag>
 
         {time && (
-          <span style={{ fontSize: '10px', color: '#8b949e', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <span style={{ fontSize: '11px', color: '#787774', display: 'flex', alignItems: 'center', gap: 2 }}>
             <ClockCircleOutlined style={{ fontSize: 9 }} />
             {time}
           </span>
         )}
 
         {task.isBillable && (
-          <span style={{ fontSize: '10px', color: '#d29922', display: 'flex', alignItems: 'center', gap: 2 }}>
+          <span style={{ fontSize: '11px', color: '#CB912F', display: 'flex', alignItems: 'center', gap: 2 }}>
             <DollarOutlined style={{ fontSize: 9 }} />
             Charged
           </span>
@@ -89,8 +89,8 @@ const TaskCard: React.FC<{
 
       {task.notes && (
         <div style={{
-          fontSize: '10px',
-          color: '#484f58',
+          fontSize: '11px',
+          color: '#ACABA9',
           marginTop: 3,
           whiteSpace: 'nowrap',
           overflow: 'hidden',
@@ -106,11 +106,11 @@ const TaskCard: React.FC<{
   return (
     <Tooltip
       title={
-        <div style={{ fontSize: '11px' }}>
-          <div style={{ fontWeight: 600, marginBottom: 2 }}>{task.propertyAddress}</div>
-          <div style={{ color: '#8b949e' }}>{typeName} · {task.isBillable ? 'Charged' : 'Free'}</div>
-          {task.scheduledAt && <div style={{ color: '#8b949e' }}>{dayjs(task.scheduledAt).format('ddd MMM D, HH:mm')}</div>}
-          {task.notes && <div style={{ color: '#8b949e', marginTop: 2 }}>{task.notes}</div>}
+        <div style={{ fontSize: '12px' }}>
+          <div style={{ fontWeight: 500, marginBottom: 2 }}>{task.propertyAddress}</div>
+          <div style={{ color: '#787774' }}>{typeName} · {task.isBillable ? 'Charged' : 'Free'}</div>
+          {task.scheduledAt && <div style={{ color: '#787774' }}>{dayjs(task.scheduledAt).format('ddd MMM D, HH:mm')}</div>}
+          {task.notes && <div style={{ color: '#787774', marginTop: 2 }}>{task.notes}</div>}
         </div>
       }
       placement="right"
@@ -145,29 +145,29 @@ const DayColumn: React.FC<{
       minWidth: 0,
       display: 'flex',
       flexDirection: 'column',
-      borderRight: '1px solid #21262d',
+      borderRight: '1px solid #E9E9E7',
     }}>
       {/* Day header */}
       <div style={{
         padding: '8px 6px 6px',
-        borderBottom: `2px solid ${isToday ? '#00d4ff' : '#21262d'}`,
-        background: isToday ? 'rgba(0,212,255,0.04)' : '#0d1117',
+        borderBottom: `2px solid ${isToday ? '#2383E2' : '#E9E9E7'}`,
+        background: isToday ? 'rgba(35, 131, 226, 0.04)' : '#F7F7F5',
         textAlign: 'center',
         flexShrink: 0,
       }}>
         <div style={{
-          fontSize: '9px',
-          fontWeight: 700,
-          letterSpacing: '1.5px',
+          fontSize: '11px',
+          fontWeight: 600,
+          letterSpacing: '0.5px',
           textTransform: 'uppercase',
-          color: isToday ? '#00d4ff' : isPast ? '#30363d' : '#484f58',
+          color: isToday ? '#2383E2' : isPast ? '#ACABA9' : '#37352F',
         }}>
           {day.format('ddd')}
         </div>
         <div style={{
-          fontSize: '18px',
+          fontSize: '20px',
           fontWeight: 700,
-          color: isToday ? '#00d4ff' : isPast ? '#30363d' : '#8b949e',
+          color: isToday ? '#2383E2' : isPast ? '#ACABA9' : '#37352F',
           lineHeight: '1.2',
           marginTop: 2,
         }}>
@@ -177,9 +177,9 @@ const DayColumn: React.FC<{
           <Badge
             count={tasks.length}
             style={{
-              background: isToday ? '#00d4ff' : '#30363d',
-              color: isToday ? '#0d1117' : '#8b949e',
-              fontSize: '9px',
+              background: isToday ? '#2383E2' : '#E9E9E7',
+              color: isToday ? '#FFFFFF' : '#787774',
+              fontSize: '10px',
               boxShadow: 'none',
               minWidth: 16,
               height: 16,
@@ -196,12 +196,12 @@ const DayColumn: React.FC<{
       <div style={{
         flex: 1,
         padding: '6px 5px',
-        background: isToday ? 'rgba(0,212,255,0.02)' : 'transparent',
+        background: isToday ? 'rgba(35, 131, 226, 0.02)' : 'transparent',
         minHeight: 80,
         overflowY: 'auto',
       }}>
         {sorted.length === 0 ? (
-          <div style={{ fontSize: '10px', color: '#21262d', textAlign: 'center', paddingTop: 16, letterSpacing: '1px' }}>
+          <div style={{ fontSize: '11px', color: '#E9E9E7', textAlign: 'center', paddingTop: 16 }}>
             —
           </div>
         ) : (
@@ -271,7 +271,7 @@ const CalendarPage: React.FC = () => {
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingBottom: 12,
-        borderBottom: '1px solid #30363d',
+        borderBottom: '1px solid #E9E9E7',
         flexWrap: 'wrap',
         gap: 8,
       }}>
@@ -283,10 +283,9 @@ const CalendarPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Button size="small" icon={<LeftOutlined />} onClick={() => setWeekStart(d => d.subtract(7, 'day'))} />
             <span style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '1px',
-              color: isCurrentWeek ? '#00d4ff' : '#8b949e',
+              fontSize: '13px',
+              fontWeight: 500,
+              color: isCurrentWeek ? '#2383E2' : '#787774',
               minWidth: 160,
               textAlign: 'center',
               userSelect: 'none',
@@ -308,19 +307,19 @@ const CalendarPage: React.FC = () => {
         <div style={{
           marginBottom: 12,
           padding: '8px 12px',
-          background: 'rgba(248, 81, 73, 0.06)',
-          border: '1px solid #f85149',
-          borderLeft: '3px solid #f85149',
-          borderRadius: 2,
+          background: 'rgba(224, 62, 62, 0.05)',
+          border: '1px solid #E03E3E',
+          borderLeft: '3px solid #E03E3E',
+          borderRadius: 4,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
         }}>
-          <WarningOutlined style={{ color: '#f85149', fontSize: 12 }} />
-          <span style={{ fontSize: '11px', color: '#f85149', fontWeight: 600, letterSpacing: '0.5px' }}>
+          <WarningOutlined style={{ color: '#E03E3E', fontSize: 13 }} />
+          <span style={{ fontSize: '13px', color: '#E03E3E', fontWeight: 500 }}>
             {overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}
           </span>
-          <span style={{ fontSize: '11px', color: '#8b949e' }}>
+          <span style={{ fontSize: '13px', color: '#787774' }}>
             — {overdueTasks.map(t => t.propertyAddress ?? `#${t.propertyId}`).join(' · ')}
           </span>
         </div>
@@ -331,19 +330,17 @@ const CalendarPage: React.FC = () => {
         display: 'flex',
         gap: 16,
         marginBottom: 10,
-        fontSize: '10px',
-        color: '#484f58',
-        letterSpacing: '1px',
-        textTransform: 'uppercase',
+        fontSize: '12px',
+        color: '#787774',
       }}>
         <span>
-          Week: <span style={{ color: weekTaskCount > 0 ? '#e6edf3' : '#484f58', fontWeight: 600 }}>
+          Week: <span style={{ color: weekTaskCount > 0 ? '#37352F' : '#ACABA9', fontWeight: 500 }}>
             {weekTaskCount}
           </span> task{weekTaskCount !== 1 ? 's' : ''}
         </span>
         {unscheduledTasks.length > 0 && (
           <span>
-            Unscheduled: <span style={{ color: '#d29922', fontWeight: 600 }}>{unscheduledTasks.length}</span>
+            Unscheduled: <span style={{ color: '#CB912F', fontWeight: 500 }}>{unscheduledTasks.length}</span>
           </span>
         )}
       </div>
@@ -351,10 +348,10 @@ const CalendarPage: React.FC = () => {
       {/* ── Week grid ── */}
       <div style={{
         display: 'flex',
-        border: '1px solid #21262d',
-        borderRadius: 2,
+        border: '1px solid #E9E9E7',
+        borderRadius: 6,
         overflow: 'hidden',
-        background: '#161b22',
+        background: '#FFFFFF',
         minHeight: 320,
       }}>
         {weekDays.map(day => {
@@ -379,11 +376,11 @@ const CalendarPage: React.FC = () => {
       {unscheduledTasks.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{
-            fontSize: '10px',
-            fontWeight: 700,
-            letterSpacing: '2px',
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
             textTransform: 'uppercase',
-            color: '#484f58',
+            color: '#787774',
             marginBottom: 8,
           }}>
             Unscheduled
@@ -397,28 +394,28 @@ const CalendarPage: React.FC = () => {
               <div
                 key={t.id}
                 style={{
-                  background: '#0d1117',
-                  border: '1px solid #30363d',
+                  background: '#F7F7F5',
+                  border: '1px solid #E9E9E7',
                   borderLeft: `3px solid ${getTypeColor(t.type)}`,
-                  borderRadius: 2,
+                  borderRadius: 4,
                   padding: '5px 10px',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   minWidth: 140,
                   maxWidth: 220,
                 }}
               >
-                <div style={{ fontWeight: 600, color: '#e6edf3', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: '#37352F', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {t.propertyAddress ?? `Property #${t.propertyId}`}
                 </div>
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                   <Tag
                     color={getTypeColor(t.type)}
-                    style={{ fontSize: '9px', lineHeight: '14px', padding: '0 4px', margin: 0 }}
+                    style={{ fontSize: '10px', lineHeight: '14px', padding: '0 4px', margin: 0 }}
                   >
                     {getTypeName(t.type)}
                   </Tag>
                   {t.isBillable && (
-                    <span style={{ fontSize: '10px', color: '#d29922' }}>
+                    <span style={{ fontSize: '11px', color: '#CB912F' }}>
                       <DollarOutlined style={{ fontSize: 9 }} /> Charged
                     </span>
                   )}

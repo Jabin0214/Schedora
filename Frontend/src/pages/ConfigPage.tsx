@@ -17,13 +17,13 @@ const COLOR_OPTIONS = [
 ];
 
 const ModalTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#e6edf3' }}>
+  <span style={{ fontSize: '15px', fontWeight: 600, color: '#37352F' }}>
     {children}
   </span>
 );
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#484f58', marginBottom: 10 }}>
+  <div style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#787774', marginBottom: 10 }}>
     {children}
   </div>
 );
@@ -102,7 +102,7 @@ const TaskTypesSection: React.FC = () => {
     alignItems: 'center',
     gap: 12,
     padding: '10px 16px',
-    borderBottom: '1px solid #30363d',
+    borderBottom: '1px solid #E9E9E7',
   };
 
   return (
@@ -115,8 +115,8 @@ const TaskTypesSection: React.FC = () => {
       </div>
 
       <Spin spinning={loading}>
-        <div style={{ border: '1px solid #30363d', borderTop: '2px solid #00d4ff', borderRadius: 2, background: '#0d1117' }}>
-          <div style={{ ...rowStyle, fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+        <div style={{ border: '1px solid #E9E9E7', borderTop: '2px solid #2383E2', borderRadius: 6, background: '#FFFFFF' }}>
+          <div style={{ ...rowStyle, fontSize: '11px', color: '#787774', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
             <div>ID</div>
             <div>Name</div>
             <div>Color</div>
@@ -124,8 +124,8 @@ const TaskTypesSection: React.FC = () => {
           </div>
 
           {types.length === 0 && !loading && (
-            <div style={{ padding: '24px 16px', textAlign: 'center', color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>
-              — No types —
+            <div style={{ padding: '24px 16px', textAlign: 'center', color: '#ACABA9', fontSize: '13px' }}>
+              No types
             </div>
           )}
 
@@ -133,13 +133,13 @@ const TaskTypesSection: React.FC = () => {
             <div
               key={t.id}
               style={rowStyle}
-              onMouseEnter={e => (e.currentTarget.style.background = '#1c2128')}
+              onMouseEnter={e => (e.currentTarget.style.background = '#EBEBEA')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              <span style={{ color: '#484f58', fontFamily: 'monospace', fontSize: '12px' }}>{t.id}</span>
-              <span style={{ fontWeight: 600, color: '#e6edf3', fontSize: '13px' }}>{t.name}</span>
+              <span style={{ color: '#787774', fontSize: '13px' }}>{t.id}</span>
+              <span style={{ fontWeight: 600, color: '#37352F', fontSize: '14px' }}>{t.name}</span>
               <div>
-                <Tag color={t.color} style={{ fontSize: '11px' }}>{t.color}</Tag>
+                <Tag color={t.color} style={{ fontSize: '12px' }}>{t.color}</Tag>
               </div>
               <Space size={4}>
                 <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} />
@@ -178,7 +178,7 @@ const TaskTypesSection: React.FC = () => {
             <Select>
               {COLOR_OPTIONS.map(c => (
                 <Select.Option key={c} value={c}>
-                  <Tag color={c} style={{ fontSize: '11px', marginRight: 6 }}>{c}</Tag>
+                  <Tag color={c} style={{ fontSize: '12px', marginRight: 6 }}>{c}</Tag>
                 </Select.Option>
               ))}
             </Select>
@@ -192,7 +192,7 @@ const TaskTypesSection: React.FC = () => {
 // ── Config page ───────────────────────────────────────────────
 const ConfigPage: React.FC = () => (
   <div>
-    <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #30363d' }}>
+    <div style={{ marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid #E9E9E7' }}>
       <IndTitle>Config</IndTitle>
     </div>
 

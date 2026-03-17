@@ -1,35 +1,26 @@
 import React from 'react';
 import type { TaskTypeConfig } from '../types/api';
 
-// ── Page section title (cyan left bar + uppercase label) ───────
+// ── Page section title (Notion-style bold heading) ─────────────
 export const IndTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+  <div style={{ display: 'flex', alignItems: 'center' }}>
     <span style={{
-      display: 'inline-block',
-      width: 3,
-      height: 18,
-      background: '#00d4ff',
-      boxShadow: '0 0 6px rgba(0,212,255,0.55)',
-      flexShrink: 0,
-    }} />
-    <span style={{
-      fontSize: '13px',
+      fontSize: '20px',
       fontWeight: 700,
-      letterSpacing: '3px',
-      textTransform: 'uppercase',
-      color: '#e6edf3',
+      color: '#37352F',
+      letterSpacing: '-0.3px',
     }}>
       {children}
     </span>
   </div>
 );
 
-// ── Shared dark modal styles ───────────────────────────────────
+// ── Shared modal styles ────────────────────────────────────────
 export const modalStyles = {
-  content: { background: '#161b22', padding: 0 },
-  header:  { background: '#0d1117', borderBottom: '1px solid #30363d', padding: '10px 16px' },
-  body:    { padding: '16px 24px', background: '#161b22' },
-  footer:  { background: '#161b22', borderTop: '1px solid #30363d', padding: '8px 16px' },
+  content: { background: '#FFFFFF', padding: 0 },
+  header:  { background: '#FFFFFF', borderBottom: '1px solid #E9E9E7', padding: '12px 20px' },
+  body:    { padding: '16px 24px', background: '#FFFFFF' },
+  footer:  { background: '#FFFFFF', borderTop: '1px solid #E9E9E7', padding: '8px 16px' },
 };
 
 // ── Lookup helper for dynamic task types ──────────────────────

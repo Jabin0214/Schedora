@@ -26,12 +26,12 @@ const formattedDate = (dateStr?: string): string => {
 };
 
 const ModalTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#e6edf3' }}>
+  <span style={{ fontSize: '15px', fontWeight: 600, color: '#37352F' }}>
     {children}
   </span>
 );
 
-const tagStyle: React.CSSProperties = { margin: 0, fontSize: '11px', letterSpacing: '0.3px' };
+const tagStyle: React.CSSProperties = { margin: 0, fontSize: '12px', letterSpacing: '0.2px' };
 
 const TasksPage: React.FC = () => {
   const [syncingCalendar,     setSyncingCalendar]     = useState(false);
@@ -215,8 +215,8 @@ const TasksPage: React.FC = () => {
     gridTemplateColumns: '130px 1fr',
     alignItems: 'center',
     gap: 6,
-    fontSize: '11px',
-    color: '#484f58',
+    fontSize: '13px',
+    color: '#787774',
   };
 
   const cellText: React.CSSProperties = {
@@ -236,14 +236,14 @@ const TasksPage: React.FC = () => {
         key={rowKey}
         style={{
           padding:         '7px 10px 7px 13px',
-          borderBottom:    '1px solid #30363d',
-          borderLeft:      isEditing ? '3px solid #00d4ff' : '3px solid transparent',
-          backgroundColor: isEditing ? '#1a2535' : 'transparent',
+          borderBottom:    '1px solid #E9E9E7',
+          borderLeft:      isEditing ? '3px solid #2383E2' : '3px solid transparent',
+          backgroundColor: isEditing ? 'rgba(35, 131, 226, 0.05)' : 'transparent',
           cursor:          isEditing ? 'default' : 'pointer',
-          transition:      'background-color 0.12s ease-out, border-left-color 0.12s ease-out',
+          transition:      'background-color 0.1s ease-out, border-left-color 0.1s ease-out',
         }}
         onClick={() => { if (!isEditing) startEdit(record); }}
-        onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLElement).style.backgroundColor = '#1c2128'; }}
+        onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLElement).style.backgroundColor = '#EBEBEA'; }}
         onMouseLeave={(e) => { if (!isEditing) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
       >
         <div style={firstRowStyle}>
@@ -254,7 +254,7 @@ const TasksPage: React.FC = () => {
                 <DatePicker showTime format={['MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']} style={{ width: '100%' }} placeholder="03/02 10am" size="small" />
               </Form.Item>
             ) : (
-              <span style={{ fontSize: '12px', color: record.scheduledAt ? '#00d4ff' : '#484f58', fontFamily: 'monospace', letterSpacing: '0.3px' }}>
+              <span style={{ fontSize: '13px', fontWeight: 500, color: record.scheduledAt ? '#2383E2' : '#ACABA9', letterSpacing: '0.1px' }}>
                 {formattedDate(record.scheduledAt)}
               </span>
             )}
@@ -268,7 +268,7 @@ const TasksPage: React.FC = () => {
               </Form.Item>
             ) : (
               <Tooltip title={record.propertyAddress}>
-                <span style={{ fontWeight: 600, fontSize: '13px', color: '#e6edf3' }}>
+                <span style={{ fontWeight: 600, fontSize: '14px', color: '#37352F' }}>
                   {record.propertyAddress || 'No address'}
                 </span>
               </Tooltip>
@@ -340,7 +340,7 @@ const TasksPage: React.FC = () => {
                 </Form.Item>
               ) : record.notes ? (
                 <Tooltip title={record.notes}>
-                  <span style={{ color: '#8b949e', fontSize: '12px', fontStyle: 'italic', letterSpacing: '0.3px' }}>▸ {record.notes}</span>
+                  <span style={{ color: '#787774', fontSize: '13px', fontStyle: 'italic' }}>▸ {record.notes}</span>
                 </Tooltip>
               ) : null}
             </div>
@@ -351,7 +351,7 @@ const TasksPage: React.FC = () => {
   };
 
   // ── Section renderer ─────────────────────────────────────────
-  const renderSection = (title: string, data: CombinedTask[], accentColor = '#00d4ff', groupByWeek = false) => {
+  const renderSection = (title: string, data: CombinedTask[], accentColor = '#2383E2', groupByWeek = false) => {
     const rows: React.ReactNode[] = [];
     if (groupByWeek) {
       let lastWeekKey = '';
@@ -362,13 +362,13 @@ const TasksPage: React.FC = () => {
           if (lastWeekKey !== '') {
             rows.push(
               <div key={`divider-${weekKey}`} style={{ display: 'flex', alignItems: 'center', padding: '0 12px', height: 20 }}>
-                <div style={{ flex: 1, borderTop: '1px dashed #30363d' }} />
+                <div style={{ flex: 1, borderTop: '1px dashed #E9E9E7' }} />
                 {d && (
-                  <span style={{ margin: '0 10px', fontSize: '10px', color: '#484f58', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
+                  <span style={{ margin: '0 10px', fontSize: '11px', color: '#787774', whiteSpace: 'nowrap' }}>
                     {d.startOf('week').format('MMM D')} – {d.endOf('week').format('MMM D')}
                   </span>
                 )}
-                <div style={{ flex: 1, borderTop: '1px dashed #30363d' }} />
+                <div style={{ flex: 1, borderTop: '1px dashed #E9E9E7' }} />
               </div>
             );
           }
@@ -382,21 +382,21 @@ const TasksPage: React.FC = () => {
       <Card
         size="small"
         title={
-          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#8b949e' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: '#37352F', letterSpacing: '0.1px' }}>
             <span style={{ color: accentColor, marginRight: 6 }}>▶</span>
             {title}
-            <span style={{ color: '#484f58', marginLeft: 8, fontWeight: 400 }}>[{data.length}]</span>
+            <span style={{ color: '#ACABA9', marginLeft: 8, fontWeight: 400, fontSize: '12px' }}>{data.length}</span>
           </span>
         }
         styles={{
           body:   { padding: 0 },
-          header: { background: '#0d1117', borderBottom: '1px solid #30363d', minHeight: 36, padding: '0 10px' },
+          header: { background: '#F7F7F5', borderBottom: '1px solid #E9E9E7', minHeight: 36, padding: '0 10px' },
         }}
-        style={{ marginBottom: 8, border: '1px solid #30363d', borderTop: `2px solid ${accentColor}`, borderRadius: 2, background: '#161b22' }}
+        style={{ marginBottom: 8, border: '1px solid #E9E9E7', borderTop: `2px solid ${accentColor}`, borderRadius: 6, background: '#FFFFFF' }}
       >
         <div style={{ overflowX: 'auto' }}>
           <div style={{ minWidth: 620 }}>
-            <div style={{ padding: '4px 10px 4px 16px', background: '#0d1117', borderBottom: '1px solid #30363d', fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+            <div style={{ padding: '4px 10px 4px 16px', background: '#F7F7F5', borderBottom: '1px solid #E9E9E7', fontSize: '11px', color: '#787774', letterSpacing: '0.5px', textTransform: 'uppercase', fontWeight: 500 }}>
               <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, alignItems: 'center', gap: 6 }}>
                 <div>Time</div><div>Address</div><div>Type</div><div>Charge</div><div>Actions</div>
               </div>
@@ -404,7 +404,7 @@ const TasksPage: React.FC = () => {
 
             {data.length === 0 ? (
               <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-                <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No tasks —</span>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description={<span style={{ color: '#ACABA9', fontSize: '13px' }}>No tasks</span>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
               </div>
             ) : (
               <Form form={rowForm} component={false}>
@@ -420,7 +420,7 @@ const TasksPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #30363d', flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
         <IndTitle>Tasks</IndTitle>
         <Space size={4} wrap>
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
@@ -431,9 +431,9 @@ const TasksPage: React.FC = () => {
       </div>
 
       <Spin spinning={loading}>
-        {overdueTasks.length > 0 && renderSection('Overdue', overdueTasks, '#f85149')}
+        {overdueTasks.length > 0 && renderSection('Overdue', overdueTasks, '#E03E3E')}
         {renderSection('Today', todayTasks)}
-        {renderSection('Upcoming', upcomingTasks, '#00d4ff', true)}
+        {renderSection('Upcoming', upcomingTasks, '#2383E2', true)}
         {renderSection('Unscheduled', unscheduledTasks)}
       </Spin>
 
@@ -463,11 +463,11 @@ const TasksPage: React.FC = () => {
             const prop = properties.find(p => p.id === selectedPropertyId);
             const isSixMonth = prop?.billingPolicy === 'SixMonthFree';
             return (
-              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#0d1117', border: '1px solid #30363d', borderLeft: `3px solid ${isSixMonth ? '#3fb950' : '#d29922'}`, borderRadius: 2 }}>
-                <span style={{ fontSize: '11px', color: isSixMonth ? '#3fb950' : '#d29922', fontWeight: 600 }}>
+              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: `3px solid ${isSixMonth ? '#0F7B6C' : '#CB912F'}`, borderRadius: 4 }}>
+                <span style={{ fontSize: '13px', color: isSixMonth ? '#0F7B6C' : '#CB912F', fontWeight: 500 }}>
                   {isSixMonth ? '6-Month Cycle' : '3-Month Cycle'}
                 </span>
-                <span style={{ fontSize: '11px', color: '#8b949e' }}>
+                <span style={{ fontSize: '13px', color: '#787774' }}>
                   {isSixMonth
                     ? '— inspection every 6 months, always free'
                     : '— inspection every 3 months, alternates Charged / Free'}
@@ -479,13 +479,13 @@ const TasksPage: React.FC = () => {
           {/* ── Recent records ── */}
           {selectedPropertyId && (
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ fontSize: '11px', color: '#787774', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
                 Recent Records
               </div>
               <Spin spinning={recordsLoading} size="small">
-                <div style={{ background: '#0d1117', border: '1px solid #30363d', borderLeft: '3px solid #444d56', borderRadius: 2, padding: '6px 10px', minHeight: 32 }}>
+                <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: '3px solid #ACABA9', borderRadius: 4, padding: '6px 10px', minHeight: 32 }}>
                   {!recordsLoading && recentRecords.length === 0 ? (
-                    <span style={{ color: '#484f58', fontSize: '11px' }}>No history</span>
+                    <span style={{ color: '#ACABA9', fontSize: '13px' }}>No history</span>
                   ) : (
                     recentRecords.map((r, idx) => {
                       const tc = getType(r.type);
@@ -493,9 +493,9 @@ const TasksPage: React.FC = () => {
                         <div key={r.id} style={{
                           display: 'flex', alignItems: 'center', gap: 10,
                           padding: '3px 0',
-                          borderBottom: idx < recentRecords.length - 1 ? '1px solid #30363d' : 'none',
+                          borderBottom: idx < recentRecords.length - 1 ? '1px solid #E9E9E7' : 'none',
                         }}>
-                          <span style={{ color: '#00d4ff', fontFamily: 'monospace', fontSize: '11px', minWidth: 115 }}>
+                          <span style={{ color: '#2383E2', fontSize: '12px', minWidth: 115 }}>
                             {dayjs(r.executionDate).format('YYYY-MM-DD HH:mm')}
                           </span>
                           <Tag color={tc?.color ?? 'default'} style={tagStyle}>

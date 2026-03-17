@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Layout, Menu, theme, ConfigProvider } from 'antd';
+import { Layout, Menu, ConfigProvider } from 'antd';
 import {
   HomeOutlined,
   CalendarOutlined,
@@ -31,65 +31,62 @@ const AppContent: React.FC = () => {
   }, [location.pathname]);
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#0d1117' }}>
+    <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
       {/* ── Sidebar ── */}
       <Sider
         breakpoint="lg"
         collapsedWidth="0"
-        style={{ background: '#0a0e13', borderRight: '1px solid #30363d' }}
+        style={{ background: '#F7F7F5', borderRight: '1px solid #E9E9E7' }}
       >
-        <div className="sidebar-logo">Schedora PMS</div>
+        <div className="sidebar-logo">Schedora</div>
         <Menu
-          theme="dark"
           mode="inline"
           selectedKeys={[selectedKey]}
-          style={{ background: '#0a0e13', borderRight: 'none' }}
+          style={{ background: '#F7F7F5', borderRight: 'none', fontSize: '14px' }}
           items={[
-            { key: '1', icon: <HomeOutlined />,          label: <Link to="/">Properties</Link> },
-            { key: '2', icon: <UnorderedListOutlined />,  label: <Link to="/tasks">Tasks</Link> },
-            { key: '3', icon: <CalendarOutlined />,       label: <Link to="/calendar">Calendar</Link> },
-            { key: '4', icon: <FileTextOutlined />,       label: <Link to="/history">History</Link> },
-            { key: '5', icon: <SettingOutlined />,        label: <Link to="/config">Config</Link> },
+            { key: '1', icon: <HomeOutlined />,         label: <Link to="/">Properties</Link> },
+            { key: '2', icon: <UnorderedListOutlined />, label: <Link to="/tasks">Tasks</Link> },
+            { key: '3', icon: <CalendarOutlined />,      label: <Link to="/calendar">Calendar</Link> },
+            { key: '4', icon: <FileTextOutlined />,      label: <Link to="/history">History</Link> },
+            { key: '5', icon: <SettingOutlined />,       label: <Link to="/config">Config</Link> },
           ]}
         />
       </Sider>
 
       {/* ── Main Area ── */}
-      <Layout style={{ background: '#0d1117' }}>
+      <Layout style={{ background: '#FFFFFF' }}>
         <Header
           style={{
-            padding: '0 20px',
-            background: '#0a0e13',
-            borderBottom: '1px solid #30363d',
-            height: 44,
+            padding: '0 24px',
+            background: '#FFFFFF',
+            borderBottom: '1px solid #E9E9E7',
+            height: 45,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
         >
           <span style={{
-            color: '#484f58',
-            fontSize: '10px',
-            letterSpacing: '2px',
-            textTransform: 'uppercase',
-            fontWeight: 600,
+            color: '#ACABA9',
+            fontSize: '13px',
+            fontWeight: 500,
           }}>
-            PROPERTY MANAGEMENT SYSTEM
+            Property Management System
           </span>
-          <span style={{ color: '#30363d', fontSize: '10px', letterSpacing: '1px' }}>
-            SYS:ONLINE ■
+          <span style={{ color: '#E9E9E7', fontSize: '12px' }}>
+            ●
           </span>
         </Header>
 
-        <Content style={{ margin: '12px' }}>
+        <Content style={{ margin: '16px' }}>
           <div
             className="page-container"
             style={{
-              padding: 20,
+              padding: 24,
               minHeight: 360,
-              background: '#161b22',
-              borderRadius: 2,
-              border: '1px solid #30363d',
+              background: '#FFFFFF',
+              borderRadius: 6,
+              border: '1px solid #E9E9E7',
               overflow: 'auto',
             }}
           >
@@ -108,16 +105,14 @@ const AppContent: React.FC = () => {
         <Footer
           style={{
             textAlign: 'center',
-            color: '#484f58',
-            background: '#0a0e13',
-            borderTop: '1px solid #30363d',
-            padding: '7px 20px',
-            fontSize: '10px',
-            letterSpacing: '1.5px',
-            textTransform: 'uppercase',
+            color: '#ACABA9',
+            background: '#F7F7F5',
+            borderTop: '1px solid #E9E9E7',
+            padding: '8px 24px',
+            fontSize: '12px',
           }}
         >
-          SCHEDORA PMS © 2026 — Created by Jabin
+          Schedora PMS © 2026 — Created by Jabin
         </Footer>
       </Layout>
     </Layout>
@@ -128,61 +123,65 @@ const App: React.FC = () => {
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.darkAlgorithm,
         token: {
-          colorPrimary:      '#00d4ff',
-          colorBgBase:       '#0d1117',
-          colorBgContainer:  '#161b22',
-          colorBgElevated:   '#1c2128',
-          colorBorder:       '#30363d',
-          colorText:         '#e6edf3',
-          colorTextSecondary:'#8b949e',
-          borderRadius:      2,
-          borderRadiusLG:    4,
-          colorSuccess:      '#22c55e',
-          colorWarning:      '#f0a500',
-          colorError:        '#ff4444',
-          fontFamily:        "'JetBrains Mono', 'Consolas', 'SF Mono', ui-monospace, monospace",
+          colorPrimary:       '#2383E2',
+          colorBgBase:        '#FFFFFF',
+          colorBgContainer:   '#FFFFFF',
+          colorBgElevated:    '#FFFFFF',
+          colorBorder:        '#E9E9E7',
+          colorText:          '#37352F',
+          colorTextSecondary: '#787774',
+          borderRadius:       4,
+          borderRadiusLG:     6,
+          colorSuccess:       '#0F7B6C',
+          colorWarning:       '#CB912F',
+          colorError:         '#E03E3E',
+          fontFamily:         '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+          boxShadow:          'none',
+          boxShadowSecondary: 'none',
         },
         components: {
           Layout: {
-            siderBg:    '#0a0e13',
-            headerBg:   '#0a0e13',
-
-            footerBg:   '#0a0e13',
+            siderBg:  '#F7F7F5',
+            headerBg: '#FFFFFF',
+            footerBg: '#F7F7F5',
           },
           Menu: {
-            darkItemBg:            '#0a0e13',
-            darkItemSelectedBg:    'rgba(0, 212, 255, 0.08)',
-            darkItemHoverBg:       'rgba(0, 212, 255, 0.04)',
-            darkItemColor:         '#8b949e',
-            darkItemSelectedColor: '#00d4ff',
-            darkItemHoverColor:    '#c6cdd5',
+            itemBg:            '#F7F7F5',
+            itemSelectedBg:    '#E3E2E0',
+            itemHoverBg:       '#EBEBEA',
+            itemColor:         '#37352F',
+            itemSelectedColor: '#37352F',
+            itemHoverColor:    '#37352F',
+            itemSelectedFontWeight: 600,
           },
           Card: {
-            headerBg: '#0d1117',
+            headerBg: '#F7F7F5',
           },
           Table: {
-            headerBg:   '#0d1117',
-            rowHoverBg: '#1c2128',
+            headerBg:   '#F7F7F5',
+            rowHoverBg: '#EBEBEA',
           },
           Button: {
-            defaultBg:              'transparent',
-            defaultBorderColor:     '#30363d',
-            defaultColor:           '#8b949e',
-            defaultHoverBg:         'rgba(255,255,255,0.04)',
-            defaultHoverBorderColor:'#444d56',
-            defaultHoverColor:      '#e6edf3',
+            defaultBg:               '#FFFFFF',
+            defaultBorderColor:      '#E9E9E7',
+            defaultColor:            '#37352F',
+            defaultHoverBg:          '#EBEBEA',
+            defaultHoverBorderColor: '#ACABA9',
+            defaultHoverColor:       '#37352F',
+            boxShadow:               'none',
+            primaryShadow:           'none',
+            dangerShadow:            'none',
           },
           Modal: {
-            contentBg: '#161b22',
-            headerBg:  '#0d1117',
+            contentBg: '#FFFFFF',
+            headerBg:  '#FFFFFF',
           },
           Select: {
-            optionSelectedBg: 'rgba(0, 212, 255, 0.1)',
+            optionSelectedBg: '#EBEBEA',
           },
           DatePicker: {
-            cellHoverBg: 'rgba(0, 212, 255, 0.08)',
+            cellHoverBg: '#EBEBEA',
           },
         },
       }}
