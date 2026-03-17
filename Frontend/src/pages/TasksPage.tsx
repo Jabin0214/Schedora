@@ -9,6 +9,8 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
@@ -357,7 +359,7 @@ const TasksPage: React.FC = () => {
       let lastWeekKey = '';
       data.forEach((task) => {
         const d = task.scheduledAt ? dayjs(task.scheduledAt) : null;
-        const weekKey = d ? d.startOf('week').format('YYYYWW') : '__unscheduled__';
+        const weekKey = d ? `${d.isoWeekYear()}-W${d.isoWeek()}` : '__unscheduled__';
         if (weekKey !== lastWeekKey) {
           if (lastWeekKey !== '') {
             rows.push(
@@ -365,7 +367,7 @@ const TasksPage: React.FC = () => {
                 <div style={{ flex: 1, borderTop: '1px dashed #E9E9E7' }} />
                 {d && (
                   <span style={{ margin: '0 10px', fontSize: '11px', color: '#787774', whiteSpace: 'nowrap' }}>
-                    {d.startOf('week').format('MMM D')} – {d.endOf('week').format('MMM D')}
+                    {d.isoWeekday(1).format('MMM D')} – {d.isoWeekday(7).format('MMM D')}
                   </span>
                 )}
                 <div style={{ flex: 1, borderTop: '1px dashed #E9E9E7' }} />
