@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber, Tooltip, message } from 'antd';
-import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber, Tooltip, message, Input } from 'antd';
+import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined, SearchOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
 import { API_ENDPOINTS } from '../config/api';
@@ -60,11 +60,20 @@ const HistoryPage: React.FC = () => {
     dayjs().subtract(13, 'day'),
     dayjs(),
   ]);
+  const [searchText, setSearchText] = useState('');
 
   const typeOptions = useMemo(
     () => types.map(t => ({ value: t.id, label: t.name })),
     [types]
   );
+
+  const filteredRecords = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    if (!q) return records;
+    return records.filter(r =>
+      (r.propertyAddress ?? '').toLowerCase().includes(q)
+    );
+  }, [records, searchText]);
 
   const fetchHistoryTasks = useCallback(async () => {
     setLoading(true);
@@ -443,11 +452,36 @@ const HistoryPage: React.FC = () => {
         />
       </div>
 
+      {/* ── Search bar ── */}
+      <div style={{ marginBottom: 12 }}>
+        <Input
+          prefix={<SearchOutlined style={{ color: '#ACABA9', fontSize: 14 }} />}
+          suffix={
+            searchText
+              ? <CloseCircleOutlined
+                  style={{ color: '#ACABA9', fontSize: 13, cursor: 'pointer' }}
+                  onClick={() => setSearchText('')}
+                />
+              : null
+          }
+          placeholder="Search by address..."
+          value={searchText}
+          onChange={e => setSearchText(e.target.value)}
+          style={{ maxWidth: 320 }}
+          allowClear={false}
+        />
+        {searchText && (
+          <span style={{ marginLeft: 10, fontSize: '13px', color: '#787774' }}>
+            {filteredRecords.length} of {records.length} records
+          </span>
+        )}
+      </div>
+
       {/* ── Table ── */}
       <Spin spinning={loading}>
         <Table
           size="small"
-          dataSource={records}
+          dataSource={filteredRecords}
           columns={columns}
           rowKey="id"
           onRow={(record) => ({
