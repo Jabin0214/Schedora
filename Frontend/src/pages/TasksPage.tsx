@@ -351,41 +351,71 @@ const TasksPage: React.FC = () => {
   };
 
   // ── Section renderer ─────────────────────────────────────────
-  const renderSection = (title: string, data: CombinedTask[], accentColor = '#00d4ff') => (
-    <Card
-      size="small"
-      title={
-        <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#8b949e' }}>
-          <span style={{ color: accentColor, marginRight: 6 }}>▶</span>
-          {title}
-          <span style={{ color: '#484f58', marginLeft: 8, fontWeight: 400 }}>[{data.length}]</span>
-        </span>
-      }
-      styles={{
-        body:   { padding: 0 },
-        header: { background: '#0d1117', borderBottom: '1px solid #30363d', minHeight: 36, padding: '0 10px' },
-      }}
-      style={{ marginBottom: 8, border: '1px solid #30363d', borderTop: `2px solid ${accentColor}`, borderRadius: 2, background: '#161b22' }}
-    >
-      <div style={{ overflowX: 'auto' }}>
-        <div style={{ minWidth: 620 }}>
-          <div style={{ padding: '4px 10px 4px 16px', background: '#0d1117', borderBottom: '1px solid #30363d', fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, alignItems: 'center', gap: 6 }}>
-              <div>Time</div><div>Address</div><div>Type</div><div>Charge</div><div>Actions</div>
-            </div>
-          </div>
+  const renderSection = (title: string, data: CombinedTask[], accentColor = '#00d4ff', groupByWeek = false) => {
+    const rows: React.ReactNode[] = [];
+    if (groupByWeek) {
+      let lastWeekKey = '';
+      data.forEach((task) => {
+        const d = task.scheduledAt ? dayjs(task.scheduledAt) : null;
+        const weekKey = d ? d.startOf('week').format('YYYYWW') : '__unscheduled__';
+        if (weekKey !== lastWeekKey) {
+          if (lastWeekKey !== '') {
+            rows.push(
+              <div key={`divider-${weekKey}`} style={{ display: 'flex', alignItems: 'center', padding: '0 12px', height: 20 }}>
+                <div style={{ flex: 1, borderTop: '1px dashed #30363d' }} />
+                {d && (
+                  <span style={{ margin: '0 10px', fontSize: '10px', color: '#484f58', letterSpacing: '1px', whiteSpace: 'nowrap' }}>
+                    {d.startOf('week').format('MMM D')} – {d.endOf('week').format('MMM D')}
+                  </span>
+                )}
+                <div style={{ flex: 1, borderTop: '1px dashed #30363d' }} />
+              </div>
+            );
+          }
+          lastWeekKey = weekKey;
+        }
+        rows.push(renderRow(task));
+      });
+    }
 
-          {data.length === 0 ? (
-            <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No tasks —</span>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+    return (
+      <Card
+        size="small"
+        title={
+          <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '2px', textTransform: 'uppercase', color: '#8b949e' }}>
+            <span style={{ color: accentColor, marginRight: 6 }}>▶</span>
+            {title}
+            <span style={{ color: '#484f58', marginLeft: 8, fontWeight: 400 }}>[{data.length}]</span>
+          </span>
+        }
+        styles={{
+          body:   { padding: 0 },
+          header: { background: '#0d1117', borderBottom: '1px solid #30363d', minHeight: 36, padding: '0 10px' },
+        }}
+        style={{ marginBottom: 8, border: '1px solid #30363d', borderTop: `2px solid ${accentColor}`, borderRadius: 2, background: '#161b22' }}
+      >
+        <div style={{ overflowX: 'auto' }}>
+          <div style={{ minWidth: 620 }}>
+            <div style={{ padding: '4px 10px 4px 16px', background: '#0d1117', borderBottom: '1px solid #30363d', fontSize: '10px', color: '#484f58', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, alignItems: 'center', gap: 6 }}>
+                <div>Time</div><div>Address</div><div>Type</div><div>Charge</div><div>Actions</div>
+              </div>
             </div>
-          ) : (
-            <Form form={rowForm} component={false}>{data.map(renderRow)}</Form>
-          )}
+
+            {data.length === 0 ? (
+              <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+                <Empty description={<span style={{ color: '#484f58', fontSize: '11px', letterSpacing: '2px' }}>— No tasks —</span>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+              </div>
+            ) : (
+              <Form form={rowForm} component={false}>
+                {groupByWeek ? rows : data.map(renderRow)}
+              </Form>
+            )}
+          </div>
         </div>
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+  };
 
   return (
     <div>
@@ -403,7 +433,7 @@ const TasksPage: React.FC = () => {
       <Spin spinning={loading}>
         {overdueTasks.length > 0 && renderSection('Overdue', overdueTasks, '#f85149')}
         {renderSection('Today', todayTasks)}
-        {renderSection('Upcoming', upcomingTasks)}
+        {renderSection('Upcoming', upcomingTasks, '#00d4ff', true)}
         {renderSection('Unscheduled', unscheduledTasks)}
       </Spin>
 
