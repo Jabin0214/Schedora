@@ -31,6 +31,9 @@ Thumbs.db
 # Google 凭证文件（敏感，禁止提交）
 Backend/google-credentials.json
 
+# 本地敏感配置（含数据库密码、Google ID，禁止提交）
+Backend/appsettings.local.json
+
 # 日志文件
 *.log
 

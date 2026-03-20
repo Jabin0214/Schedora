@@ -13,3 +13,9 @@ export const API_ENDPOINTS = {
   taskTypes: `${API_BASE_URL}/tasktypes`,
 } as const;
 
+// 外部资源链接（集中管理，方便变更）
+export const EXTERNAL_LINKS = {
+  parkingReceipts: import.meta.env.VITE_PARKING_RECEIPTS_URL ||
+    'https://drive.google.com/drive/folders/16DCZ-7VOv5Xbaa4pNwQf3WCyVcHxG7wp?usp=drive_link',
+} as const;
+

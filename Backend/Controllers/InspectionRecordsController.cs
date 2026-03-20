@@ -26,6 +26,15 @@ namespace InspectionApi.Controllers
             [FromQuery] DateTimeOffset? startDate,
             [FromQuery] DateTimeOffset? endDate)
         {
+            // 日期范围校验
+            if (startDate.HasValue && endDate.HasValue)
+            {
+                if (startDate.Value > endDate.Value)
+                    return BadRequest(new { message = "开始日期不能晚于结束日期" });
+                if ((endDate.Value - startDate.Value).TotalDays > 365)
+                    return BadRequest(new { message = "查询范围不能超过365天" });
+            }
+
             try
             {
                 var query = _context.InspectionRecords
@@ -75,7 +84,9 @@ namespace InspectionApi.Controllers
                 if (record == null)
                     return NotFound(new { message = $"未找到ID为{id}的记录" });
 
-                record.ExecutionDate = DateTimeOffset.Parse(dto.ExecutionDate, null, DateTimeStyles.RoundtripKind);
+                if (!DateTimeOffset.TryParse(dto.ExecutionDate, null, DateTimeStyles.RoundtripKind, out var parsedDate))
+                    return BadRequest(new { message = "日期格式无效，请使用 ISO 8601 格式" });
+                record.ExecutionDate = parsedDate;
                 record.Type          = (InspectionType)dto.Type;
                 record.IsCharged     = dto.IsCharged;
                 record.ParkingFee    = dto.ParkingFee;

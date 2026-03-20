@@ -119,6 +119,7 @@ const TasksPage: React.FC = () => {
   }, [form]);
 
   const handleOk = useCallback(async () => {
+    if (submitting) return;
     try {
       const values = await form.validateFields();
       setSubmitting(true);
@@ -135,7 +136,7 @@ const TasksPage: React.FC = () => {
     } finally {
       setSubmitting(false);
     }
-  }, [form, createInspectionTask, closeModal]);
+  }, [submitting, form, createInspectionTask, closeModal]);
 
   const closeCompleteModal = useCallback(() => {
     setIsCompleteModalOpen(false);

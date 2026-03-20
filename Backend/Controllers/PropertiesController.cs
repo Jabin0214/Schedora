@@ -31,10 +31,13 @@ namespace InspectionApi.Controllers
         [HttpPost]
         public async Task<ActionResult<Property>> PostProperty([FromBody] PropertyCreateDto dto)
         {
+            if (!Enum.TryParse<BillingPolicy>(dto.BillingPolicy, out var billingPolicy))
+                return BadRequest(new { message = $"无效的计费策略: {dto.BillingPolicy}" });
+
             var property = new Property
             {
                 Address = dto.Address,
-                BillingPolicy = Enum.Parse<BillingPolicy>(dto.BillingPolicy)
+                BillingPolicy = billingPolicy
             };
             _context.Properties.Add(property);
             await _context.SaveChangesAsync();
@@ -46,12 +49,15 @@ namespace InspectionApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProperty(int id, [FromBody] PropertyUpdateDto dto)
         {
+            if (!Enum.TryParse<BillingPolicy>(dto.BillingPolicy, out var billingPolicy))
+                return BadRequest(new { message = $"无效的计费策略: {dto.BillingPolicy}" });
+
             var existing = await _context.Properties.FindAsync(id);
             if (existing == null)
                 return NotFound(new { message = $"未找到ID为{id}的物业" });
 
             existing.Address = dto.Address;
-            existing.BillingPolicy = Enum.Parse<BillingPolicy>(dto.BillingPolicy);
+            existing.BillingPolicy = billingPolicy;
             await _context.SaveChangesAsync();
             _logger.LogInformation("更新物业成功, ID: {Id}", id);
             return NoContent();

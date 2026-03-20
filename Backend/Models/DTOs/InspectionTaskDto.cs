@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace InspectionApi.Models.DTOs
 {
     public class InspectionTaskDto
@@ -14,19 +16,35 @@ namespace InspectionApi.Models.DTOs
 
     public class InspectionTaskCreateDto
     {
+        [Range(1, int.MaxValue, ErrorMessage = "PropertyId 必须为正整数")]
         public int PropertyId { get; set; }
+
+        [StringLength(50)]
         public string? ScheduledAt { get; set; }
+
+        [Range(0, 100)]
         public int Type { get; set; }
+
         public bool IsBillable { get; set; }
+
+        [StringLength(500)]
         public string? Notes { get; set; }
     }
 
     public class InspectionTaskUpdateDto
     {
+        [Range(1, int.MaxValue, ErrorMessage = "PropertyId 必须为正整数")]
         public int PropertyId { get; set; }
+
+        [StringLength(50)]
         public string? ScheduledAt { get; set; }
+
+        [StringLength(500)]
         public string? Notes { get; set; }
+
+        [Range(0, 100)]
         public int Type { get; set; }
+
         public bool IsBillable { get; set; }
     }
 }

@@ -81,7 +81,9 @@ namespace InspectionApi.Services
             _logger.LogInformation("新增任务成功, ID: {Id}", task.Id);
 
             task.Property = property;
-            _ = _googleSync.SyncTaskToCalendarAsync(task, "create");
+            _googleSync.SyncTaskToCalendarAsync(task, "create")
+                .ContinueWith(t => _logger.LogError(t.Exception, "Google 同步未预期失败, 任务 ID: {Id}", task.Id),
+                    TaskContinuationOptions.OnlyOnFaulted);
             return ToDto(task, property.BillingPolicy.ToString());
         }
 
@@ -109,7 +111,9 @@ namespace InspectionApi.Services
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("更新任务成功, ID: {Id}", id);
-            _ = _googleSync.SyncTaskToCalendarAsync(existingTask, "update");
+            _googleSync.SyncTaskToCalendarAsync(existingTask, "update")
+                .ContinueWith(t => _logger.LogError(t.Exception, "Google 同步未预期失败, 任务 ID: {Id}", id),
+                    TaskContinuationOptions.OnlyOnFaulted);
             return true;
         }
 
@@ -121,7 +125,9 @@ namespace InspectionApi.Services
             _context.InspectionTasks.Remove(task);
             await _context.SaveChangesAsync();
             _logger.LogInformation("删除任务成功, ID: {Id}", id);
-            _ = _googleSync.SyncTaskToCalendarAsync(task, "delete");
+            _googleSync.SyncTaskToCalendarAsync(task, "delete")
+                .ContinueWith(t => _logger.LogError(t.Exception, "Google 同步未预期失败, 任务 ID: {Id}", id),
+                    TaskContinuationOptions.OnlyOnFaulted);
             return true;
         }
 

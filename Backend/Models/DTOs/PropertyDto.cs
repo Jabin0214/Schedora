@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace InspectionApi.Models.DTOs
 {
     public class PropertyDto
@@ -12,13 +14,23 @@ namespace InspectionApi.Models.DTOs
 
     public class PropertyCreateDto
     {
+        [Required]
+        [StringLength(200, MinimumLength = 2)]
         public string Address { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(50)]
         public string BillingPolicy { get; set; } = string.Empty;
     }
 
     public class PropertyUpdateDto
     {
+        [Required]
+        [StringLength(200, MinimumLength = 2)]
         public string Address { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(50)]
         public string BillingPolicy { get; set; } = string.Empty;
     }
 }

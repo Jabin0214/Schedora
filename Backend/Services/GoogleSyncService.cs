@@ -118,12 +118,13 @@ namespace InspectionApi.Services
                         else
                         {
                             var updatedEvent = BuildEvent(task);
-                            // 尝试更新，如事件不存在则改为插入
+                            // 仅在事件不存在（404）时改为插入，其余错误向上抛出
                             try
                             {
                                 await service.Events.Update(updatedEvent, calendarId, eventId).ExecuteAsync();
                             }
-                            catch
+                            catch (Google.GoogleApiException gae)
+                                when (gae.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
                             {
                                 await service.Events.Insert(updatedEvent, calendarId).ExecuteAsync();
                             }
@@ -164,7 +165,8 @@ namespace InspectionApi.Services
                         await service.Events.Update(ev, calendarId, eventId).ExecuteAsync();
                         updated++;
                     }
-                    catch
+                    catch (Google.GoogleApiException gae)
+                        when (gae.HttpStatusCode == System.Net.HttpStatusCode.NotFound)
                     {
                         await service.Events.Insert(ev, calendarId).ExecuteAsync();
                         created++;

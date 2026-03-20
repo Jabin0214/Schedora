@@ -5,6 +5,9 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// 加载本地敏感配置（不提交到 git，优先级高于 appsettings.json）
+builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: false);
+
 // 1. 注入 PostgreSQL 数据库连接 (Supabase)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("数据库连接字符串未配置");

@@ -3,7 +3,7 @@ import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber
 import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined, SearchOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, EXTERNAL_LINKS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import type { InspectionRecordDto } from '../types/api';
 import { IndTitle } from '../components/shared';
@@ -11,7 +11,7 @@ import { useInspectionTypes } from '../hooks/useInspectionTypes';
 
 const { RangePicker } = DatePicker;
 
-const PARKING_RECEIPTS_URL = 'https://drive.google.com/drive/folders/16DCZ-7VOv5Xbaa4pNwQf3WCyVcHxG7wp?usp=drive_link';
+const PARKING_RECEIPTS_URL = EXTERNAL_LINKS.parkingReceipts;
 
 const tagStyle: React.CSSProperties = { fontSize: '12px', letterSpacing: '0.2px' };
 
