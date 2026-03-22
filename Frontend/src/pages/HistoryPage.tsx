@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber, Tooltip, message, Input } from 'antd';
-import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined, SearchOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined, SearchOutlined, CloseCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
 import { API_ENDPOINTS, EXTERNAL_LINKS } from '../config/api';
@@ -268,12 +268,27 @@ const HistoryPage: React.FC = () => {
       width: 80,
       render: (_: unknown, record: InspectionRecordDto) => {
         const isEditing = editingId === record.id;
-        if (!isEditing) return null;
+        if (isEditing) {
+          return (
+            <Space size={4} onClick={(e) => e.stopPropagation()}>
+              <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => saveEdit(record)} />
+              <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit} />
+            </Space>
+          );
+        }
         return (
-          <Space size={4} onClick={(e) => e.stopPropagation()}>
-            <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => saveEdit(record)} />
-            <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit} />
-          </Space>
+          <Tooltip title="Copy">
+            <Button
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                const formatted = `${dayjs(record.executionDate).format('DMMMYYYY')}:${record.propertyAddress ?? ''}`;
+                navigator.clipboard.writeText(formatted);
+                message.success('Copied');
+              }}
+            />
+          </Tooltip>
         );
       },
     },
