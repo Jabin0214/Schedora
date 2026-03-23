@@ -153,7 +153,7 @@ const App: React.FC = () => {
             itemColor:         '#37352F',
             itemSelectedColor: '#37352F',
             itemHoverColor:    '#37352F',
-            itemSelectedFontWeight: 600,
+            fontWeightStrong: 600,
           },
           Card: {
             headerBg: '#F7F7F5',
