@@ -41,8 +41,8 @@ Backend/appsettings.local.json
 *.tmp
 *.temp
 
+.runtime/
 
 .fake
 
 .claude/
-

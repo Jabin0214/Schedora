@@ -174,6 +174,29 @@ npm run dev
 
 The frontend reads the API base URL from the `VITE_API_BASE_URL` environment variable (defaults to `http://localhost:5097/api`).
 
+### 4. Run It In The Background
+
+If you want the app to stay running in the background on your Mac, use the helper script in this repo:
+
+```bash
+./scripts/schedora.sh status
+./scripts/schedora.sh start
+```
+
+What it does:
+
+- Starts the backend with `dotnet watch run --project Backend --launch-profile http --non-interactive`
+- Starts the frontend with `npm run build -- --watch`
+- Builds the frontend into `Backend/wwwroot`, so the app is served from `http://localhost:5097`
+- Writes logs to `~/Library/Logs/schedora-backend.log` and `~/Library/Logs/schedora-frontend.log`
+
+Extra commands:
+
+```bash
+./scripts/schedora.sh stop
+./scripts/schedora.sh restart
+```
+
 ---
 
 ## API Reference
