@@ -95,7 +95,7 @@ const TasksPage: React.FC = () => {
       const res = await axios.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
         params: {
           propertyId,
-          startDate: dayjs().subtract(2, 'year').toISOString(),
+          startDate: dayjs().subtract(364, 'day').toISOString(),
           endDate: dayjs().toISOString(),
         },
       });
