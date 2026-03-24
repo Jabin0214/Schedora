@@ -24,10 +24,11 @@ namespace InspectionApi.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetInspectionRecords(
             [FromQuery] DateTimeOffset? startDate,
-            [FromQuery] DateTimeOffset? endDate)
+            [FromQuery] DateTimeOffset? endDate,
+            [FromQuery] string? address)
         {
-            // 日期范围校验
-            if (startDate.HasValue && endDate.HasValue)
+            // 日期范围校验（按地址搜索时跳过）
+            if (string.IsNullOrWhiteSpace(address) && startDate.HasValue && endDate.HasValue)
             {
                 if (startDate.Value > endDate.Value)
                     return BadRequest(new { message = "开始日期不能晚于结束日期" });
@@ -41,14 +42,18 @@ namespace InspectionApi.Controllers
                     .Include(r => r.Property)
                     .AsQueryable();
 
-                // 日期范围过滤
-                if (startDate.HasValue)
+                // 按地址搜索（忽略日期范围）
+                if (!string.IsNullOrWhiteSpace(address))
                 {
-                    query = query.Where(r => r.ExecutionDate >= startDate.Value);
+                    query = query.Where(r => r.Property != null && r.Property.Address.ToLower().Contains(address.ToLower()));
                 }
-                if (endDate.HasValue)
+                else
                 {
-                    query = query.Where(r => r.ExecutionDate <= endDate.Value);
+                    // 日期范围过滤
+                    if (startDate.HasValue)
+                        query = query.Where(r => r.ExecutionDate >= startDate.Value);
+                    if (endDate.HasValue)
+                        query = query.Where(r => r.ExecutionDate <= endDate.Value);
                 }
 
                 var records = await query

@@ -60,20 +60,35 @@ const HistoryPage: React.FC = () => {
     dayjs().subtract(13, 'day'),
     dayjs(),
   ]);
-  const [searchText, setSearchText] = useState('');
+  const [searchText,    setSearchText]    = useState('');
+  const [searchResults, setSearchResults] = useState<InspectionRecordDto[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const typeOptions = useMemo(
     () => types.map(t => ({ value: t.id, label: t.name })),
     [types]
   );
 
-  const filteredRecords = useMemo(() => {
-    const q = searchText.trim().toLowerCase();
-    if (!q) return records;
-    return records.filter(r =>
-      (r.propertyAddress ?? '').toLowerCase().includes(q)
-    );
-  }, [records, searchText]);
+  const displayRecords = searchText.trim() ? searchResults : records;
+
+  useEffect(() => {
+    const q = searchText.trim();
+    if (!q) { setSearchResults([]); return; }
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await axios.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
+          params: { address: q },
+        });
+        setSearchResults(res.data);
+      } catch (error) {
+        handleApiError(error, 'Failed to search');
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchText]);
 
   const fetchHistoryTasks = useCallback(async () => {
     setLoading(true);
@@ -487,16 +502,16 @@ const HistoryPage: React.FC = () => {
         />
         {searchText && (
           <span style={{ marginLeft: 10, fontSize: '13px', color: '#787774' }}>
-            {filteredRecords.length} of {records.length} records
+            {searchLoading ? 'Searching...' : `${searchResults.length} records found`}
           </span>
         )}
       </div>
 
       {/* ── Table ── */}
-      <Spin spinning={loading}>
+      <Spin spinning={loading || searchLoading}>
         <Table
           size="small"
-          dataSource={filteredRecords}
+          dataSource={displayRecords}
           columns={columns}
           rowKey="id"
           onRow={(record) => ({
