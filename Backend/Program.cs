@@ -5,6 +5,8 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.AddSimpleConsole(o => o.TimestampFormat = "yyyy-MM-dd HH:mm:ss ");
+
 // 加载本地敏感配置（不提交到 git，优先级高于 appsettings.json）
 builder.Configuration.AddJsonFile("appsettings.local.json", optional: true, reloadOnChange: false);
 
