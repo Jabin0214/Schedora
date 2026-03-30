@@ -3,6 +3,8 @@ import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber
 import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined, SearchOutlined, CloseCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs, { Dayjs } from 'dayjs';
+import isoWeek from 'dayjs/plugin/isoWeek';
+dayjs.extend(isoWeek);
 import { API_ENDPOINTS, EXTERNAL_LINKS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import type { InspectionRecordDto } from '../types/api';
@@ -442,8 +444,9 @@ const HistoryPage: React.FC = () => {
             allowClear={false}
             size="small"
             presets={[
-              { label: 'This pay period (14 days)', value: [dayjs().subtract(13, 'day'), dayjs()] },
-              { label: 'Last 30 days',              value: [dayjs().subtract(29, 'day'), dayjs()] },
+              { label: 'This week',       value: [dayjs().isoWeekday(1).startOf('day'), dayjs().isoWeekday(7).endOf('day')] },
+              { label: 'This + last week', value: [dayjs().subtract(1, 'week').isoWeekday(1).startOf('day'), dayjs().isoWeekday(7).endOf('day')] },
+              { label: 'Prev two weeks',  value: [dayjs().subtract(2, 'week').isoWeekday(1).startOf('day'), dayjs().subtract(1, 'week').isoWeekday(7).endOf('day')] },
             ]}
           />
           <Button icon={<ReloadOutlined />} size="small" onClick={fetchHistoryTasks} loading={loading}>Refresh</Button>
