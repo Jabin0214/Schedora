@@ -7,6 +7,7 @@ import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined, SearchOutli
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
+import { normalizeBillingPolicy } from '../utils/billingPolicy';
 import type { Property } from '../types/api';
 import { IndTitle, modalStyles } from '../components/shared';
 
@@ -46,7 +47,10 @@ const PropertiesPage: React.FC = () => {
 
   const openEditModal = (property: Property) => {
     setEditingProperty(property);
-    form.setFieldsValue({ ...property, billingPolicy: property.billingPolicy || 'ThreeMonthToggle' });
+    form.setFieldsValue({
+      ...property,
+      billingPolicy: normalizeBillingPolicy(property.billingPolicy),
+    });
     setIsModalOpen(true);
   };
 
@@ -117,11 +121,9 @@ const PropertiesPage: React.FC = () => {
       key: 'billingPolicy',
       width: 180,
       render: (policy: unknown) => {
-        if (policy === 0 || policy === 'SixMonthFree')
+        if (normalizeBillingPolicy(policy as Property['billingPolicy']) === 'SixMonthFree')
           return <Tag style={{ ...policyTagStyle, background: 'rgba(15,123,108,0.08)', border: '1px solid rgba(15,123,108,0.3)', color: '#0F7B6C' }}>6-Month Free</Tag>;
-        if (policy === 1 || policy === 'ThreeMonthToggle')
-          return <Tag style={{ ...policyTagStyle, background: 'rgba(203,145,47,0.08)', border: '1px solid rgba(203,145,47,0.3)', color: '#CB912F' }}>3-Month Toggle</Tag>;
-        return <Tag style={{ ...policyTagStyle, background: 'rgba(172,171,169,0.08)', border: '1px solid rgba(172,171,169,0.3)', color: '#787774' }}>{String(policy ?? 'Not set')}</Tag>;
+        return <Tag style={{ ...policyTagStyle, background: 'rgba(203,145,47,0.08)', border: '1px solid rgba(203,145,47,0.3)', color: '#CB912F' }}>3-Month Toggle</Tag>;
       },
     },
     {

@@ -13,11 +13,12 @@ export const InspectionType = {
 } as const;
 export type InspectionType = typeof InspectionType[keyof typeof InspectionType];
 export type BillingPolicy = 'SixMonthFree' | 'ThreeMonthToggle';
+export type BillingPolicyValue = BillingPolicy | 0 | 1;
 
 export interface Property {
   id: number;
   address: string;
-  billingPolicy?: BillingPolicy;
+  billingPolicy?: BillingPolicyValue;
 }
 
 export interface CombinedTask {
@@ -25,7 +26,7 @@ export interface CombinedTask {
   taskType: 'inspection';
   propertyId?: number;
   propertyAddress?: string;
-  propertyBillingPolicy?: BillingPolicy;
+  propertyBillingPolicy?: BillingPolicyValue;
   scheduledAt?: string;
   type?: InspectionType;
   isBillable?: boolean;

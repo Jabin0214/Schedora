@@ -17,6 +17,7 @@ import { useInspectionTypes } from '../hooks/useInspectionTypes';
 import type { CombinedTask, InspectionRecordDto } from '../types/api';
 import { API_ENDPOINTS } from '../config/api';
 import { IndTitle, modalStyles } from '../components/shared';
+import { getSuggestedBillable, isSixMonthFreePolicy } from '../utils/billingPolicy';
 
 const { TextArea } = Input;
 
@@ -104,12 +105,17 @@ const TasksPage: React.FC = () => {
         .sort((a, b) => dayjs(b.executionDate).valueOf() - dayjs(a.executionDate).valueOf())
         .slice(0, 2);
       setRecentRecords(sorted);
+
+      const property = properties.find(p => p.id === propertyId);
+      form.setFieldValue('isBillable', getSuggestedBillable(property?.billingPolicy, sorted));
     } catch {
       setRecentRecords([]);
+      const property = properties.find(p => p.id === propertyId);
+      form.setFieldValue('isBillable', getSuggestedBillable(property?.billingPolicy, []));
     } finally {
       setRecordsLoading(false);
     }
-  }, []);
+  }, [form, properties]);
 
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
@@ -451,7 +457,10 @@ const TasksPage: React.FC = () => {
               const pid = changed.propertyId as number | undefined;
               setSelectedPropertyId(pid ?? null);
               if (pid) fetchRecentRecords(pid);
-              else setRecentRecords([]);
+              else {
+                setRecentRecords([]);
+                form.setFieldValue('isBillable', false);
+              }
             }
           }}
         >
@@ -464,7 +473,7 @@ const TasksPage: React.FC = () => {
           {/* ── Billing policy badge ── */}
           {selectedPropertyId && (() => {
             const prop = properties.find(p => p.id === selectedPropertyId);
-            const isSixMonth = prop?.billingPolicy === 'SixMonthFree';
+            const isSixMonth = isSixMonthFreePolicy(prop?.billingPolicy);
             return (
               <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: `3px solid ${isSixMonth ? '#0F7B6C' : '#CB912F'}`, borderRadius: 4 }}>
                 <span style={{ fontSize: '13px', color: isSixMonth ? '#0F7B6C' : '#CB912F', fontWeight: 500 }}>
