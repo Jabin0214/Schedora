@@ -41,6 +41,7 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
       isBillable: task.isBillable ?? false,
     };
     try {
+      // Direct PUT (not useTasks.updateInspectionTask) to avoid its success toast + full refetch on every keystroke.
       await axios.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
       if (mySeq !== saveSeqRef.current) return;
       lastSavedRef.current = value;
@@ -166,25 +167,5 @@ const InspectPage: React.FC = () => {
     </div>
   );
 };
-
-const styles = `
-  .inspect-page {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 0 4px;
-  }
-  @media (max-width: 768px) {
-    .inspect-page {
-      padding: 0;
-    }
-  }
-`;
-
-if (typeof document !== 'undefined' && !document.getElementById('inspect-page-styles')) {
-  const styleEl = document.createElement('style');
-  styleEl.id = 'inspect-page-styles';
-  styleEl.textContent = styles;
-  document.head.appendChild(styleEl);
-}
 
 export default InspectPage;
