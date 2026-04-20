@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { Card, Tag, Typography, Spin, Empty, Input } from 'antd';
+import { Card, Tag, Typography, Spin, Empty, Input, message } from 'antd';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
@@ -95,7 +95,20 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
         </Tag>
         {isOverdue && <Text type="secondary" style={{ fontSize: 12 }}>Overdue</Text>}
       </div>
-      <Text strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>
+      <Text
+        strong
+        style={{ fontSize: 16, display: 'block', marginBottom: 8, cursor: 'pointer' }}
+        onClick={async () => {
+          const addr = task.propertyAddress;
+          if (!addr) return;
+          try {
+            await navigator.clipboard.writeText(addr);
+            message.success('地址已复制');
+          } catch {
+            message.error('复制失败');
+          }
+        }}
+      >
         {task.propertyAddress ?? '(no address)'}
       </Text>
       <Input.TextArea
@@ -134,7 +147,7 @@ const InspectPage: React.FC = () => {
   }, [overdueTasks, todayTasks]);
 
   return (
-    <div style={{ maxWidth: 720, margin: '0 auto', padding: '0 4px' }}>
+    <div className="inspect-page">
       <Title level={4} style={{ marginTop: 0 }}>Inspect</Title>
 
       {loading && items.length === 0 ? (
@@ -153,5 +166,25 @@ const InspectPage: React.FC = () => {
     </div>
   );
 };
+
+const styles = `
+  .inspect-page {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 4px;
+  }
+  @media (max-width: 768px) {
+    .inspect-page {
+      padding: 0;
+    }
+  }
+`;
+
+if (typeof document !== 'undefined' && !document.getElementById('inspect-page-styles')) {
+  const styleEl = document.createElement('style');
+  styleEl.id = 'inspect-page-styles';
+  styleEl.textContent = styles;
+  document.head.appendChild(styleEl);
+}
 
 export default InspectPage;
