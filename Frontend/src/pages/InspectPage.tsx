@@ -1,18 +1,85 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { Card, Tag, Typography, Spin, Empty, Input } from 'antd';
+import axios from 'axios';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
-import type { CombinedTask } from '../types/api';
+import { API_ENDPOINTS } from '../config/api';
+import type { CombinedTask, InspectionType, InspectionTaskUpdateRequest } from '../types/api';
 
 const { Text, Title } = Typography;
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 interface InspectCardProps {
   task: CombinedTask;
   isOverdue: boolean;
 }
 
+const DEBOUNCE_MS = 800;
+const SAVED_CLEAR_MS = 3000;
+
 const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
-  const [notes, setNotes] = React.useState<string>(task.notes ?? '');
+  const [notes, setNotes] = useState<string>(task.notes ?? '');
+  const [status, setStatus] = useState<SaveStatus>('idle');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestNotesRef = useRef<string>(task.notes ?? '');
+  const lastSavedRef = useRef<string>(task.notes ?? '');
+
+  const save = useCallback(async (value: string) => {
+    if (value === lastSavedRef.current) {
+      return;
+    }
+    setStatus('saving');
+    const payload: InspectionTaskUpdateRequest = {
+      propertyId: task.propertyId!,
+      scheduledAt: task.scheduledAt,
+      notes: value,
+      type: (task.type ?? 0) as InspectionType,
+      isBillable: task.isBillable ?? false,
+    };
+    try {
+      await axios.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
+      lastSavedRef.current = value;
+      setStatus('saved');
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = setTimeout(() => setStatus('idle'), SAVED_CLEAR_MS);
+    } catch {
+      setStatus('error');
+    }
+  }, [task.id, task.propertyId, task.scheduledAt, task.type, task.isBillable]);
+
+  const scheduleSave = useCallback((value: string) => {
+    latestNotesRef.current = value;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      save(value);
+    }, DEBOUNCE_MS);
+  }, [save]);
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        if (latestNotesRef.current !== lastSavedRef.current) {
+          save(latestNotesRef.current);
+        }
+      }
+      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+    };
+  }, [save]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const v = e.target.value;
+    setNotes(v);
+    scheduleSave(v);
+  };
+
+  const handleRetry = () => {
+    save(latestNotesRef.current);
+  };
+
   const dateLabel = task.scheduledAt ? dayjs(task.scheduledAt).format('MM-DD') : '';
 
   return (
@@ -28,12 +95,22 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
       </Text>
       <Input.TextArea
         value={notes}
-        onChange={e => setNotes(e.target.value)}
+        onChange={handleChange}
         autoSize={{ minRows: 4, maxRows: 10 }}
         maxLength={500}
         showCount
         placeholder="记录检查情况…"
       />
+      <div style={{ marginTop: 6, minHeight: 18, fontSize: 12, textAlign: 'right' }}>
+        {status === 'saving' && <Text type="secondary">保存中…</Text>}
+        {status === 'saved' && <Text type="success">已保存 ✓</Text>}
+        {status === 'error' && (
+          <>
+            <Text type="danger">保存失败 </Text>
+            <a onClick={handleRetry}>重试</a>
+          </>
+        )}
+      </div>
     </Card>
   );
 };
