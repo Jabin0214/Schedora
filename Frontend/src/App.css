@@ -60,3 +60,15 @@
     padding: 12px !important;
   }
 }
+
+/* Inspect page — mobile-first container */
+.inspect-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 4px;
+}
+@media (max-width: 768px) {
+  .inspect-page {
+    padding: 0;
+  }
+}
