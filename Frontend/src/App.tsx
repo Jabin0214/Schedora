@@ -6,6 +6,7 @@ import {
   UnorderedListOutlined,
   FileTextOutlined,
   SettingOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
@@ -15,6 +16,7 @@ import TasksPage from './pages/TasksPage';
 import CalendarPage from './pages/CalendarPage';
 import HistoryPage from './pages/HistoryPage';
 import ConfigPage from './pages/ConfigPage';
+import InspectPage from './pages/InspectPage';
 import ErrorBoundary from './components/ErrorBoundary';
 
 const { Header, Content, Footer, Sider } = Layout;
@@ -24,6 +26,7 @@ const AppContent: React.FC = () => {
 
   const selectedKey = useMemo(() => {
     if (location.pathname === '/tasks') return '2';
+    if (location.pathname === '/inspect') return '6';
     if (location.pathname === '/calendar') return '3';
     if (location.pathname === '/history') return '4';
     if (location.pathname === '/config') return '5';
@@ -46,6 +49,7 @@ const AppContent: React.FC = () => {
           items={[
             { key: '1', icon: <HomeOutlined />,         label: <Link to="/">Properties</Link> },
             { key: '2', icon: <UnorderedListOutlined />, label: <Link to="/tasks">Tasks</Link> },
+            { key: '6', icon: <EditOutlined />,          label: <Link to="/inspect">Inspect</Link> },
             { key: '3', icon: <CalendarOutlined />,      label: <Link to="/calendar">Calendar</Link> },
             { key: '4', icon: <FileTextOutlined />,      label: <Link to="/history">History</Link> },
             { key: '5', icon: <SettingOutlined />,       label: <Link to="/config">Config</Link> },
@@ -94,6 +98,7 @@ const AppContent: React.FC = () => {
               <Routes>
                 <Route path="/" element={<PropertiesPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/inspect" element={<InspectPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/config" element={<ConfigPage />} />
