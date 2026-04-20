@@ -25,11 +25,13 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestNotesRef = useRef<string>(task.notes ?? '');
   const lastSavedRef = useRef<string>(task.notes ?? '');
+  const saveSeqRef = useRef<number>(0);
 
   const save = useCallback(async (value: string) => {
     if (value === lastSavedRef.current) {
       return;
     }
+    const mySeq = ++saveSeqRef.current;
     setStatus('saving');
     const payload: InspectionTaskUpdateRequest = {
       propertyId: task.propertyId!,
@@ -40,11 +42,14 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
     };
     try {
       await axios.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
+      if (mySeq !== saveSeqRef.current) return;
       lastSavedRef.current = value;
       setStatus('saved');
       if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
       savedTimerRef.current = setTimeout(() => setStatus('idle'), SAVED_CLEAR_MS);
-    } catch {
+    } catch (err) {
+      if (mySeq !== saveSeqRef.current) return;
+      console.warn('[InspectPage] save failed', err);
       setStatus('error');
     }
   }, [task.id, task.propertyId, task.scheduledAt, task.type, task.isBillable]);
@@ -107,7 +112,7 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
         {status === 'error' && (
           <>
             <Text type="danger">保存失败 </Text>
-            <a onClick={handleRetry}>重试</a>
+            <Typography.Link onClick={handleRetry}>重试</Typography.Link>
           </>
         )}
       </div>
