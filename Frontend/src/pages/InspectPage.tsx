@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Card, Tag, Typography, Spin, Empty } from 'antd';
+import { Card, Tag, Typography, Spin, Empty, Input } from 'antd';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import type { CombinedTask } from '../types/api';
@@ -12,6 +12,7 @@ interface InspectCardProps {
 }
 
 const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
+  const [notes, setNotes] = React.useState<string>(task.notes ?? '');
   const dateLabel = task.scheduledAt ? dayjs(task.scheduledAt).format('MM-DD') : '';
 
   return (
@@ -22,9 +23,17 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
         </Tag>
         {isOverdue && <Text type="secondary" style={{ fontSize: 12 }}>Overdue</Text>}
       </div>
-      <Text strong style={{ fontSize: 16, display: 'block' }}>
+      <Text strong style={{ fontSize: 16, display: 'block', marginBottom: 8 }}>
         {task.propertyAddress ?? '(no address)'}
       </Text>
+      <Input.TextArea
+        value={notes}
+        onChange={e => setNotes(e.target.value)}
+        autoSize={{ minRows: 4, maxRows: 10 }}
+        maxLength={500}
+        showCount
+        placeholder="记录检查情况…"
+      />
     </Card>
   );
 };
