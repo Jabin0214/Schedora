@@ -1,6 +1,8 @@
 # .NET / C# 编译输出
 Backend/bin/
 Backend/obj/
+Backend.Tests/bin/
+Backend.Tests/obj/
 Backend/*.db
 Backend/*.db-shm
 Backend/*.db-wal
