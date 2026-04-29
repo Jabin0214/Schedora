@@ -128,6 +128,7 @@ app.UseCors("AllowReactApp"); // 启用跨域
 app.UseDefaultFiles();       // 托管前端静态文件（/ → index.html）
 app.UseStaticFiles();
 app.UseAuthorization();
+app.MapGet("/api/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }));
 app.MapControllers();
 app.MapFallbackToFile("index.html"); // SPA 路由回退
 

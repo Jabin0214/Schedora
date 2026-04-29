@@ -36,30 +36,31 @@ namespace InspectionApi.Services
 
         // ── 认证 ──────────────────────────────────────────────────────────────
 
+        private GoogleCredential LoadCredential(string[] scopes)
+        {
+            // 优先读环境变量里的 JSON 字符串（生产环境用，避免把凭据文件打进部署包）
+            var credJson = _config["Google:CredentialsJson"];
+            if (!string.IsNullOrWhiteSpace(credJson))
+                return GoogleCredential.FromJson(credJson).CreateScoped(scopes);
+
+            var credPath = _config["Google:CredentialsPath"] ?? "google-credentials.json";
+            return GoogleCredential.FromFile(credPath).CreateScoped(scopes);
+        }
+
         private CalendarService BuildCalendarService()
         {
-            var credPath = _config["Google:CredentialsPath"] ?? "google-credentials.json";
-            var credential = GoogleCredential
-                .FromFile(credPath)
-                .CreateScoped(CalendarScopes);
-
             return new CalendarService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = LoadCredential(CalendarScopes),
                 ApplicationName = "Schedora"
             });
         }
 
         private SheetsService BuildSheetsService()
         {
-            var credPath = _config["Google:CredentialsPath"] ?? "google-credentials.json";
-            var credential = GoogleCredential
-                .FromFile(credPath)
-                .CreateScoped(SheetsScopes);
-
             return new SheetsService(new BaseClientService.Initializer
             {
-                HttpClientInitializer = credential,
+                HttpClientInitializer = LoadCredential(SheetsScopes),
                 ApplicationName = "Schedora"
             });
         }
