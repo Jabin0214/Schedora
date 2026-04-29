@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: schedora-app-anehb3hee7e0hkb8
+  AZURE_WEBAPP_NAME: schedora-app
   DOTNET_VERSION: '9.0.x'
   NODE_VERSION: '20.x'
 
@@ -42,10 +42,24 @@ jobs:
         working-directory: Backend
         run: dotnet publish InspectionApi.csproj -c Release -o ${{ github.workspace }}/publish
 
-      # ── 部署到 Azure ──
+      # ── 打 zip 包 ──
+      - name: Zip artifact
+        working-directory: ${{ github.workspace }}/publish
+        run: zip -r ${{ github.workspace }}/app.zip .
+
+      # ── Azure 登录 ──
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # ── 部署 zip 到 App Service ──
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: ${{ github.workspace }}/publish
+          package: ${{ github.workspace }}/app.zip
+
+      - name: Logout
+        if: always()
+        run: az logout
