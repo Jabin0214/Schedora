@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
   reports: `${API_BASE_URL}/reports`,
   googleSync: `${API_BASE_URL}/googlesync`,
   taskTypes: `${API_BASE_URL}/tasktypes`,
+  templates: `${API_BASE_URL}/templates`,
 } as const;
 
 // 外部资源链接（集中管理，方便变更）
