@@ -75,6 +75,10 @@ using (var scope = app.Services.CreateScope())
             ");
             logger.LogInformation("✅ TaskTypes table ready");
 
+            // Create template feature tables and seed defaults if not present
+            await db.Database.ExecuteSqlRawAsync(TemplatesStartupSql.Sql);
+            logger.LogInformation("✅ Template tables ready");
+
             // Add ParkingFee column if it doesn't exist yet
             await db.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""InspectionRecords""
