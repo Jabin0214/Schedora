@@ -35,7 +35,7 @@ Today the user copies different snippets from notes manually for each report. Th
 
 ## Data Model
 
-Five new SQLite tables, EF Core entities under `Backend/Models/`. All names below are EF entity names.
+Five new PostgreSQL tables (Supabase), EF Core entities under `Backend/Models/`. Tables and seed rows are created on app startup via raw SQL in `Program.cs` (matching the existing `TaskTypes` pattern), using `CREATE TABLE IF NOT EXISTS` + `INSERT ... ON CONFLICT DO NOTHING`. All names below are EF entity names.
 
 ### `TemplateInspectionType`
 
@@ -155,7 +155,7 @@ New `TemplatesController` at `Backend/Controllers/TemplatesController.cs`.
 | PUT | `/api/templates/general/{id}` | Update text only (rows are auto-managed) |
 | PUT | `/api/templates/audience/{id}` | Update text only (rows are auto-managed) |
 
-EF migration creates the 5 tables. Seed defaults (3 inspection types, 5 cleanliness areas, 12 GeneralTemplate rows with empty text, 6 AudienceTemplate rows with empty text) are inserted by the migration's `Up` method.
+Tables are created and seeded by raw SQL added to `Program.cs` startup (matching the `TaskTypes` pattern). On every app boot the SQL runs as `CREATE TABLE IF NOT EXISTS` + `INSERT ... ON CONFLICT DO NOTHING`, so it's idempotent. Defaults seeded: 3 inspection types (搬入/搬出/例行检查), 5 cleanliness areas (卫生间/厨房/卧室/客厅/阳台) with empty `DirtyText`, 12 GeneralTemplate rows with empty text, 6 AudienceTemplate rows with empty text.
 
 ## Frontend UI
 
@@ -214,9 +214,8 @@ A `useTemplates()` hook (in `Frontend/src/hooks/useTemplates.ts`) calls `/api/te
 
 ## Testing
 
-- **Backend:** integration tests for `TemplatesController` covering: create inspection-type auto-creates 6 child rows; delete cascades correctly; CRUD round-trip on each entity. File: `Backend.Tests/TemplatesControllerTests.cs`.
-- **Frontend:** unit tests for `assemble()` covering all 4 issue-state combinations and the empty-templates edge case. File: `Frontend/src/utils/templateAssembly.test.ts`.
-- **Manual:** open the page, verify each copy button, switch between inspection types, edit a template in management view and confirm daily-use view picks it up.
+- **Backend:** xUnit test verifying `TemplatesStartupSql.Sql` contains expected `CREATE TABLE IF NOT EXISTS` clauses and seed rows. (Mirrors existing `DatabaseStartupSqlTests` pattern — full controller integration tests are out of scope; the Frontend project has no test runner.)
+- **Manual:** open the page, verify each copy button, switch between inspection types, edit a template in management view and confirm daily-use view picks it up. Add a custom inspection type and confirm the 4+2 child rows are auto-created.
 
 ## Open Questions Deferred
 
@@ -227,17 +226,21 @@ A `useTemplates()` hook (in `Frontend/src/hooks/useTemplates.ts`) calls `/api/te
 
 **New:**
 - `Backend/Controllers/TemplatesController.cs`
-- `Backend/Migrations/<timestamp>_AddTemplateTables.cs` (auto-generated)
+- `Backend/Models/DTOs/TemplateDtos.cs`
+- `Backend/Data/TemplatesStartupSql.cs` (the `CREATE TABLE` + seed SQL string)
 - `Frontend/src/pages/TemplatesPage.tsx`
 - `Frontend/src/components/TemplatesManager.tsx` (management modal)
 - `Frontend/src/hooks/useTemplates.ts`
 - `Frontend/src/utils/templateAssembly.ts`
-- `Frontend/src/utils/templateAssembly.test.ts`
 - `Frontend/src/types/templates.ts` (TS types matching backend DTOs)
-- `Backend.Tests/TemplatesControllerTests.cs`
+- `Backend.Tests/TemplateAssemblyTests.cs` (or split between assembly/controller as the plan dictates)
 
 **Modified:**
 - `Backend/Models/Entities.cs` — add 5 new entity classes.
-- `Backend/Data/AppDbContext.cs` — add `DbSet`s + relationships + seed data.
-- `Backend/Data/DatabaseStartupSql.cs` — seed defaults if needed.
+- `Backend/Data/AppDbContext.cs` — add `DbSet`s + entity configuration.
+- `Backend/Program.cs` — invoke `TemplatesStartupSql.Sql` during startup.
+- `Backend/Data/DatabaseStartupSql.cs` — extend `IdentitySequenceSyncSql` to cover new tables.
+- `Frontend/src/config/api.ts` — add `templates` endpoint.
 - `Frontend/src/App.tsx` — register `/templates` route + nav link.
+
+Frontend unit tests for `assemble()` are deferred — the Frontend project has no test runner installed yet, and adding vitest is out of scope for this feature. The function is small and tested manually via the browser; if it gets more complex later, set up vitest as its own task.
