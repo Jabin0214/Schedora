@@ -47,14 +47,15 @@ namespace InspectionApi.Controllers
                 DisplayOrder = count,
             };
             _context.TemplateInspectionTypes.Add(type);
-            await _context.SaveChangesAsync();
 
-            // Auto-create the 4 GeneralTemplate + 2 AudienceTemplate rows.
+            // Auto-create the 4 GeneralTemplate + 2 AudienceTemplate rows in the same transaction.
+            // Using the navigation property (InspectionType = type) lets EF resolve the generated
+            // PK and order the inserts correctly within a single SaveChangesAsync call.
             for (int i = 0; i < 4; i++)
             {
                 _context.GeneralTemplates.Add(new GeneralTemplate
                 {
-                    InspectionTypeId = type.Id,
+                    InspectionType = type,
                     HasCleanlinessIssue = (i & 1) != 0,
                     HasDamageIssue = (i & 2) != 0,
                     Text = string.Empty,
@@ -64,7 +65,7 @@ namespace InspectionApi.Controllers
             {
                 _context.AudienceTemplates.Add(new AudienceTemplate
                 {
-                    InspectionTypeId = type.Id,
+                    InspectionType = type,
                     Audience = aud,
                 });
             }
