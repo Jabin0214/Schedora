@@ -60,4 +60,80 @@ namespace InspectionApi.Models
         public bool IsCharged { get; set; }
         public decimal? ParkingFee { get; set; }
     }
+
+    // ─── Quick-Templates feature ────────────────────────────────
+
+    public class TemplateInspectionType
+    {
+        public int Id { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string Name { get; set; } = string.Empty;
+
+        public int DisplayOrder { get; set; }
+    }
+
+    public class CleanlinessArea
+    {
+        public int Id { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string DirtyText { get; set; } = string.Empty;
+
+        public int DisplayOrder { get; set; }
+    }
+
+    public class DamageItem
+    {
+        public int Id { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string Text { get; set; } = string.Empty;
+
+        public int DisplayOrder { get; set; }
+    }
+
+    public class GeneralTemplate
+    {
+        public int Id { get; set; }
+
+        public int InspectionTypeId { get; set; }
+        public TemplateInspectionType? InspectionType { get; set; }
+
+        public bool HasCleanlinessIssue { get; set; }
+        public bool HasDamageIssue { get; set; }
+
+        [StringLength(2000)]
+        public string Text { get; set; } = string.Empty;
+    }
+
+    public enum TemplateAudience { Tenant = 0, Landlord = 1 }
+
+    public class AudienceTemplate
+    {
+        public int Id { get; set; }
+
+        public int InspectionTypeId { get; set; }
+        public TemplateInspectionType? InspectionType { get; set; }
+
+        public TemplateAudience Audience { get; set; }
+
+        [StringLength(2000)]
+        public string NoIssueText { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string IssuePrefix { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string IssueSuffix { get; set; } = string.Empty;
+    }
 }
