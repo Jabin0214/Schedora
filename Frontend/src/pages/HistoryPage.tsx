@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Table, DatePicker, Button, Space, Spin, Empty, Tag, Select, InputNumber, Tooltip, message, Input } from 'antd';
 import { ReloadOutlined, FilePdfOutlined, SaveOutlined, CloseOutlined, SearchOutlined, CloseCircleOutlined, CopyOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../api';
 import dayjs, { Dayjs } from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 dayjs.extend(isoWeek);
@@ -79,7 +79,7 @@ const HistoryPage: React.FC = () => {
     const timer = setTimeout(async () => {
       setSearchLoading(true);
       try {
-        const res = await axios.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
+        const res = await api.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
           params: { address: q },
         });
         setSearchResults(res.data);
@@ -96,7 +96,7 @@ const HistoryPage: React.FC = () => {
     setLoading(true);
     try {
       const [start, end] = dateRange;
-      const res = await axios.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
+      const res = await api.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
         params: {
           startDate: start.startOf('day').toISOString(),
           endDate:   end.endOf('day').toISOString(),
@@ -143,7 +143,7 @@ const HistoryPage: React.FC = () => {
     if (!editState) return;
     setSaving(true);
     try {
-      await axios.put(`${API_ENDPOINTS.inspectionRecords}/${record.id}`, {
+      await api.put(`${API_ENDPOINTS.inspectionRecords}/${record.id}`, {
         executionDate: editState.executionDate.toISOString(),
         type:          editState.type,
         isCharged:     editState.isCharged,

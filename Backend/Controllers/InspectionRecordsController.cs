@@ -4,11 +4,13 @@ using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
 using System.Globalization;
+using Microsoft.AspNetCore.Authorization;
 
 namespace InspectionApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class InspectionRecordsController : ControllerBase
     {
         private readonly AppDbContext _context;
@@ -25,10 +27,11 @@ namespace InspectionApi.Controllers
         public async Task<ActionResult<IEnumerable<object>>> GetInspectionRecords(
             [FromQuery] DateTimeOffset? startDate,
             [FromQuery] DateTimeOffset? endDate,
-            [FromQuery] string? address)
+            [FromQuery] string? address,
+            [FromQuery] int? propertyId)
         {
-            // 日期范围校验（按地址搜索时跳过）
-            if (string.IsNullOrWhiteSpace(address) && startDate.HasValue && endDate.HasValue)
+            // 日期范围校验（按地址或属性ID搜索时跳过）
+            if (string.IsNullOrWhiteSpace(address) && !propertyId.HasValue && startDate.HasValue && endDate.HasValue)
             {
                 if (startDate.Value > endDate.Value)
                     return BadRequest(new { message = "开始日期不能晚于结束日期" });
@@ -42,9 +45,17 @@ namespace InspectionApi.Controllers
                     .Include(r => r.Property)
                     .AsQueryable();
 
-                // 按地址搜索（忽略日期范围）
-                if (!string.IsNullOrWhiteSpace(address))
+                if (propertyId.HasValue)
                 {
+                    query = query.Where(r => r.PropertyId == propertyId.Value);
+                    if (startDate.HasValue)
+                        query = query.Where(r => r.ExecutionDate >= startDate.Value);
+                    if (endDate.HasValue)
+                        query = query.Where(r => r.ExecutionDate <= endDate.Value);
+                }
+                else if (!string.IsNullOrWhiteSpace(address))
+                {
+                    // 按地址搜索（忽略日期范围）
                     query = query.Where(r => r.Property != null && r.Property.Address.ToLower().Contains(address.ToLower()));
                 }
                 else

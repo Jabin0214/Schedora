@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import type { TaskTypeConfig } from '../types/api';
 
@@ -20,7 +20,7 @@ export function invalidateTypeCache() {
 async function loadTypes(): Promise<TaskTypeConfig[]> {
   if (cache) return cache;
   if (!inflightPromise) {
-    inflightPromise = axios
+    inflightPromise = api
       .get<TaskTypeConfig[]>(API_ENDPOINTS.taskTypes)
       .then(r => {
         cache = r.data;

@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using InspectionApi.Services;
 using InspectionApi.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace InspectionApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ReportsController : ControllerBase
     {
         private readonly IReportService _reportService;

@@ -4,7 +4,7 @@ import {
   message, Popconfirm, Spin, Empty, Space, Tag,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined, SearchOutlined, CloseCircleOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api, { isAxiosError } from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import { normalizeBillingPolicy } from '../utils/billingPolicy';
@@ -32,7 +32,7 @@ const PropertiesPage: React.FC = () => {
   const fetchProperties = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get<Property[]>(API_ENDPOINTS.properties);
+      const res = await api.get<Property[]>(API_ENDPOINTS.properties);
       setProperties(res.data);
     } catch (error) {
       handleApiError(error, 'Failed to fetch properties');
@@ -71,16 +71,16 @@ const PropertiesPage: React.FC = () => {
       const values = await form.validateFields();
       setSubmitting(true);
       if (editingProperty) {
-        await axios.put(`${API_ENDPOINTS.properties}/${editingProperty.id}`, { ...values, id: editingProperty.id });
+        await api.put(`${API_ENDPOINTS.properties}/${editingProperty.id}`, { ...values, id: editingProperty.id });
         message.success('Property updated');
       } else {
-        await axios.post(API_ENDPOINTS.properties, values);
+        await api.post(API_ENDPOINTS.properties, values);
         message.success('Property added');
       }
       closeModal();
       fetchProperties();
     } catch (error) {
-      if (axios.isAxiosError(error)) handleApiError(error, editingProperty ? 'Update failed' : 'Add failed');
+      if (isAxiosError(error)) handleApiError(error, editingProperty ? 'Update failed' : 'Add failed');
     } finally {
       setSubmitting(false);
     }
@@ -88,7 +88,7 @@ const PropertiesPage: React.FC = () => {
 
   const handleDelete = async (id: number) => {
     try {
-      await axios.delete(`${API_ENDPOINTS.properties}/${id}`);
+      await api.delete(`${API_ENDPOINTS.properties}/${id}`);
       message.success('Property deleted');
       setProperties(prev => prev.filter(p => p.id !== id));
     } catch (error) {

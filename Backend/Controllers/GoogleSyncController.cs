@@ -1,10 +1,12 @@
 using InspectionApi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InspectionApi.Controllers
 {
     [ApiController]
     [Route("api/googlesync")]
+    [Authorize]
     public class GoogleSyncController : ControllerBase
     {
         private readonly IGoogleSyncService _googleSync;

@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace InspectionApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PropertiesController : ControllerBase
     {
         private readonly AppDbContext _context;

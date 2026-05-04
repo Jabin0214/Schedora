@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
@@ -8,6 +9,7 @@ namespace InspectionApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TemplatesController : ControllerBase
     {
         private readonly AppDbContext _context;

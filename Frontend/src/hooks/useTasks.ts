@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import api from '../api';
 import dayjs from 'dayjs';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
@@ -36,7 +36,7 @@ export function useTasks() {
   const fetchTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get<InspectionTaskDto[]>(API_ENDPOINTS.inspectionTasks);
+      const res = await api.get<InspectionTaskDto[]>(API_ENDPOINTS.inspectionTasks);
       setCombinedTasks(res.data.map(toTask));
     } catch (error) {
       handleApiError(error, 'Failed to fetch tasks');
@@ -47,7 +47,7 @@ export function useTasks() {
 
   const createInspectionTask = useCallback(async (data: InspectionTaskCreateRequest) => {
     const result = await executeApi(
-      () => axios.post<InspectionTaskDto>(API_ENDPOINTS.inspectionTasks, data),
+      () => api.post<InspectionTaskDto>(API_ENDPOINTS.inspectionTasks, data),
       'Task created'
     );
     if (result) await fetchTasks();
@@ -56,7 +56,7 @@ export function useTasks() {
 
   const updateInspectionTask = useCallback(async (id: number, data: InspectionTaskUpdateRequest) => {
     const success = await executeApi(
-      () => axios.put(`${API_ENDPOINTS.inspectionTasks}/${id}`, data),
+      () => api.put(`${API_ENDPOINTS.inspectionTasks}/${id}`, data),
       'Task updated'
     );
     if (success !== null) await fetchTasks();
@@ -65,7 +65,7 @@ export function useTasks() {
 
   const deleteInspectionTask = useCallback(async (id: number) => {
     const success = await executeApi(
-      () => axios.delete(`${API_ENDPOINTS.inspectionTasks}/${id}`),
+      () => api.delete(`${API_ENDPOINTS.inspectionTasks}/${id}`),
       'Task deleted'
     );
     if (success !== null) {
@@ -76,7 +76,7 @@ export function useTasks() {
 
   const completeInspectionTask = useCallback(async (id: number, data: TaskCompletionRequest) => {
     const result = await executeApi(
-      () => axios.post(`${API_ENDPOINTS.inspectionTasks}/${id}/complete`, data),
+      () => api.post(`${API_ENDPOINTS.inspectionTasks}/${id}/complete`, data),
       'Task completed'
     );
     if (result !== null) await fetchTasks();  // 204 No Content → data="" (falsy), must check !== null

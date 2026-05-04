@@ -9,13 +9,32 @@ namespace InspectionApi.Services
     {
         private readonly AppDbContext _context;
         private readonly ILogger<InspectionTaskService> _logger;
-        private readonly IGoogleSyncService _googleSync;
+        private readonly IServiceScopeFactory _scopeFactory;
 
-        public InspectionTaskService(AppDbContext context, ILogger<InspectionTaskService> logger, IGoogleSyncService googleSync)
+        public InspectionTaskService(AppDbContext context, ILogger<InspectionTaskService> logger, IServiceScopeFactory scopeFactory)
         {
             _context = context;
             _logger = logger;
-            _googleSync = googleSync;
+            _scopeFactory = scopeFactory;
+        }
+
+        // Run Google sync in a fresh DI scope so its scoped DbContext outlives the HTTP request
+        private void FireAndForgetSync(InspectionTask task, string action)
+        {
+            var taskId = task.Id;
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var sync = scope.ServiceProvider.GetRequiredService<IGoogleSyncService>();
+                    await sync.SyncTaskToCalendarAsync(task, action);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Google 同步未预期失败, 任务 ID: {Id}", taskId);
+                }
+            });
         }
 
         // Parse any ISO 8601 string to DateTimeOffset — no Kind issues, maps directly to timestamptz
@@ -81,9 +100,7 @@ namespace InspectionApi.Services
             _logger.LogInformation("新增任务成功, ID: {Id}", task.Id);
 
             task.Property = property;
-            _ = _googleSync.SyncTaskToCalendarAsync(task, "create")
-                .ContinueWith(t => _logger.LogError(t.Exception, "Google 同步未预期失败, 任务 ID: {Id}", task.Id),
-                    TaskContinuationOptions.OnlyOnFaulted);
+            FireAndForgetSync(task, "create");
             return ToDto(task, property.BillingPolicy.ToString());
         }
 
@@ -111,9 +128,7 @@ namespace InspectionApi.Services
 
             await _context.SaveChangesAsync();
             _logger.LogInformation("更新任务成功, ID: {Id}", id);
-            _ = _googleSync.SyncTaskToCalendarAsync(existingTask, "update")
-                .ContinueWith(t => _logger.LogError(t.Exception, "Google 同步未预期失败, 任务 ID: {Id}", id),
-                    TaskContinuationOptions.OnlyOnFaulted);
+            FireAndForgetSync(existingTask, "update");
             return true;
         }
 
@@ -125,9 +140,7 @@ namespace InspectionApi.Services
             _context.InspectionTasks.Remove(task);
             await _context.SaveChangesAsync();
             _logger.LogInformation("删除任务成功, ID: {Id}", id);
-            _ = _googleSync.SyncTaskToCalendarAsync(task, "delete")
-                .ContinueWith(t => _logger.LogError(t.Exception, "Google 同步未预期失败, 任务 ID: {Id}", id),
-                    TaskContinuationOptions.OnlyOnFaulted);
+            FireAndForgetSync(task, "delete");
             return true;
         }
 

@@ -1,6 +1,5 @@
 import { message } from 'antd';
-import axios from 'axios';
-import type { AxiosError } from 'axios';
+import { isAxiosError, type AxiosError } from '../api';
 
 // API 错误响应类型
 interface ApiError {
@@ -14,7 +13,7 @@ interface ApiError {
  * @param defaultMessage - 默认错误消息
  */
 export const handleApiError = (error: unknown, defaultMessage: string): void => {
-  if (axios.isAxiosError(error)) {
+  if (isAxiosError(error)) {
     const axiosError = error as AxiosError<ApiError>;
     const responseData = axiosError.response?.data;
 

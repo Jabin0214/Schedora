@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import type { TemplatesAll } from '../types/templates';
 
@@ -9,7 +9,7 @@ let inflight: Promise<TemplatesAll> | null = null;
 async function load(): Promise<TemplatesAll> {
   if (cache) return cache;
   if (!inflight) {
-    inflight = axios
+    inflight = api
       .get<TemplatesAll>(`${API_ENDPOINTS.templates}/all`)
       .then(r => {
         cache = r.data;

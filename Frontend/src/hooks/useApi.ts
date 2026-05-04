@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { AxiosResponse } from 'axios';
+import type { AxiosResponse } from '../api';
 import { message } from 'antd';
 import { handleApiError } from '../utils/errorHandler';
 

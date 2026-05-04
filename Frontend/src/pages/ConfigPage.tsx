@@ -4,7 +4,7 @@ import {
   Popconfirm, Spin, message,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api, { isAxiosError } from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
 import type { TaskTypeConfig } from '../types/api';
@@ -60,14 +60,14 @@ const TaskTypesSection: React.FC = () => {
       const values = await form.validateFields();
       setSubmitting(true);
       if (editingType) {
-        await axios.put(`${API_ENDPOINTS.taskTypes}/${editingType.id}`, {
+        await api.put(`${API_ENDPOINTS.taskTypes}/${editingType.id}`, {
           name: values.name,
           color: values.color,
           displayOrder: editingType.displayOrder,
         });
         message.success('Type updated');
       } else {
-        await axios.post(API_ENDPOINTS.taskTypes, {
+        await api.post(API_ENDPOINTS.taskTypes, {
           name: values.name,
           color: values.color,
         });
@@ -76,7 +76,7 @@ const TaskTypesSection: React.FC = () => {
       closeModal();
       refresh();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         message.error(err.response?.data?.message ?? (editingType ? 'Update failed' : 'Create failed'));
       }
     } finally {
@@ -86,11 +86,11 @@ const TaskTypesSection: React.FC = () => {
 
   const handleDelete = async (t: TaskTypeConfig) => {
     try {
-      await axios.delete(`${API_ENDPOINTS.taskTypes}/${t.id}`);
+      await api.delete(`${API_ENDPOINTS.taskTypes}/${t.id}`);
       message.success('Type deleted');
       refresh();
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (isAxiosError(err)) {
         message.error(err.response?.data?.message ?? 'Delete failed');
       }
     }

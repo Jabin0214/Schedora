@@ -3,15 +3,22 @@ using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
+using Microsoft.AspNetCore.Authorization;
 
 namespace InspectionApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class TaskTypesController : ControllerBase
     {
         private readonly AppDbContext _context;
         private readonly ILogger<TaskTypesController> _logger;
+
+        // Serializes ID assignment in POST so concurrent inserts don't collide on the
+        // non-identity TaskTypes.Id column. Single-instance guard — for multi-instance
+        // deployments, swap to a DB-side identity/sequence migration.
+        private static readonly SemaphoreSlim CreateLock = new(1, 1);
 
         public TaskTypesController(AppDbContext context, ILogger<TaskTypesController> logger)
         {
@@ -30,21 +37,29 @@ namespace InspectionApi.Controllers
         [HttpPost]
         public async Task<ActionResult<TaskType>> PostTaskType([FromBody] TaskTypeCreateDto dto)
         {
-            var maxId = await _context.TaskTypes.MaxAsync(t => (int?)t.Id) ?? -1;
-            var count = await _context.TaskTypes.CountAsync();
-
-            var taskType = new TaskType
+            await CreateLock.WaitAsync();
+            try
             {
-                Id = maxId + 1,
-                Name = dto.Name.Trim(),
-                Color = dto.Color,
-                DisplayOrder = count,
-            };
+                var maxId = await _context.TaskTypes.MaxAsync(t => (int?)t.Id) ?? -1;
+                var count = await _context.TaskTypes.CountAsync();
 
-            _context.TaskTypes.Add(taskType);
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Task type created: {Name} (Id={Id})", taskType.Name, taskType.Id);
-            return Ok(taskType);
+                var taskType = new TaskType
+                {
+                    Id = maxId + 1,
+                    Name = dto.Name.Trim(),
+                    Color = dto.Color,
+                    DisplayOrder = count,
+                };
+
+                _context.TaskTypes.Add(taskType);
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Task type created: {Name} (Id={Id})", taskType.Name, taskType.Id);
+                return Ok(taskType);
+            }
+            finally
+            {
+                CreateLock.Release();
+            }
         }
 
         // PUT: api/tasktypes/{id}

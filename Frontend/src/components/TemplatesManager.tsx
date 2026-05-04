@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Modal, Tabs, List, Button, Input, Popconfirm, message, Collapse, Space } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { modalStyles } from './shared';
 import type {
@@ -107,7 +107,7 @@ const TemplatesManager: React.FC<Props> = ({ data, onClose, onChanged }) => {
       if (!t) continue;
       const merged = { ...t, ...patch };
       requests.push(
-        axios.put(`${API_ENDPOINTS.templates}/inspection-types/${id}`, {
+        api.put(`${API_ENDPOINTS.templates}/inspection-types/${id}`, {
           name: merged.name,
           displayOrder: merged.displayOrder,
         }),
@@ -119,7 +119,7 @@ const TemplatesManager: React.FC<Props> = ({ data, onClose, onChanged }) => {
       if (!a) continue;
       const merged = { ...a, ...patch };
       requests.push(
-        axios.put(`${API_ENDPOINTS.templates}/cleanliness-areas/${id}`, {
+        api.put(`${API_ENDPOINTS.templates}/cleanliness-areas/${id}`, {
           name: merged.name,
           dirtyText: merged.dirtyText,
           displayOrder: merged.displayOrder,
@@ -132,7 +132,7 @@ const TemplatesManager: React.FC<Props> = ({ data, onClose, onChanged }) => {
       if (!d) continue;
       const merged = { ...d, ...patch };
       requests.push(
-        axios.put(`${API_ENDPOINTS.templates}/damage-items/${id}`, {
+        api.put(`${API_ENDPOINTS.templates}/damage-items/${id}`, {
           name: merged.name,
           text: merged.text,
           displayOrder: merged.displayOrder,
@@ -145,7 +145,7 @@ const TemplatesManager: React.FC<Props> = ({ data, onClose, onChanged }) => {
       if (!g) continue;
       const merged = { ...g, ...patch };
       requests.push(
-        axios.put(`${API_ENDPOINTS.templates}/general/${id}`, { text: merged.text }),
+        api.put(`${API_ENDPOINTS.templates}/general/${id}`, { text: merged.text }),
       );
     }
     for (const [idStr, patch] of Object.entries(edits.audienceTemplates)) {
@@ -154,7 +154,7 @@ const TemplatesManager: React.FC<Props> = ({ data, onClose, onChanged }) => {
       if (!a) continue;
       const merged = { ...a, ...patch };
       requests.push(
-        axios.put(`${API_ENDPOINTS.templates}/audience/${id}`, {
+        api.put(`${API_ENDPOINTS.templates}/audience/${id}`, {
           noIssueText: merged.noIssueText,
           issuePrefix: merged.issuePrefix,
           issueSuffix: merged.issueSuffix,
@@ -265,7 +265,7 @@ const InspectionTypesTab: React.FC<TabProps> = ({ data, edits, updateField, onCh
     const v = newName.trim();
     if (!v) return;
     try {
-      await axios.post(`${API_ENDPOINTS.templates}/inspection-types`, { name: v });
+      await api.post(`${API_ENDPOINTS.templates}/inspection-types`, { name: v });
       setNewName('');
       message.success('已添加');
       onChanged();
@@ -276,7 +276,7 @@ const InspectionTypesTab: React.FC<TabProps> = ({ data, edits, updateField, onCh
 
   const remove = async (id: number) => {
     try {
-      await axios.delete(`${API_ENDPOINTS.templates}/inspection-types/${id}`);
+      await api.delete(`${API_ENDPOINTS.templates}/inspection-types/${id}`);
       message.success('已删除');
       onChanged();
     } catch {
@@ -338,7 +338,7 @@ const AreasTab: React.FC<TabProps> = ({ data, edits, updateField, onChanged }) =
     const v = newName.trim();
     if (!v) return;
     try {
-      await axios.post(`${API_ENDPOINTS.templates}/cleanliness-areas`, {
+      await api.post(`${API_ENDPOINTS.templates}/cleanliness-areas`, {
         name: v,
         dirtyText: '',
       });
@@ -351,7 +351,7 @@ const AreasTab: React.FC<TabProps> = ({ data, edits, updateField, onChanged }) =
 
   const remove = async (id: number) => {
     try {
-      await axios.delete(`${API_ENDPOINTS.templates}/cleanliness-areas/${id}`);
+      await api.delete(`${API_ENDPOINTS.templates}/cleanliness-areas/${id}`);
       onChanged();
     } catch {
       message.error('删除失败');
@@ -416,7 +416,7 @@ const DamageTab: React.FC<TabProps> = ({ data, edits, updateField, onChanged }) 
     const v = newName.trim();
     if (!v) return;
     try {
-      await axios.post(`${API_ENDPOINTS.templates}/damage-items`, { name: v, text: '' });
+      await api.post(`${API_ENDPOINTS.templates}/damage-items`, { name: v, text: '' });
       setNewName('');
       onChanged();
     } catch {
@@ -426,7 +426,7 @@ const DamageTab: React.FC<TabProps> = ({ data, edits, updateField, onChanged }) 
 
   const remove = async (id: number) => {
     try {
-      await axios.delete(`${API_ENDPOINTS.templates}/damage-items/${id}`);
+      await api.delete(`${API_ENDPOINTS.templates}/damage-items/${id}`);
       onChanged();
     } catch {
       message.error('删除失败');

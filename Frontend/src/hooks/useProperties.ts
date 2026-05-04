@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import type { Property } from '../types/api';
@@ -11,7 +11,7 @@ export function useProperties() {
   const fetchProperties = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get<Property[]>(API_ENDPOINTS.properties);
+      const response = await api.get<Property[]>(API_ENDPOINTS.properties);
       setProperties(response.data);
     } catch (error) {
       handleApiError(error, 'Failed to fetch properties');

@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { Card, Tag, Typography, Spin, Empty, Input, message } from 'antd';
-import axios from 'axios';
+import api from '../api';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import { API_ENDPOINTS } from '../config/api';
@@ -42,7 +42,7 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
     };
     try {
       // Direct PUT (not useTasks.updateInspectionTask) to avoid its success toast + full refetch on every keystroke.
-      await axios.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
+      await api.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
       if (mySeq !== saveSeqRef.current) return;
       lastSavedRef.current = value;
       setStatus('saved');

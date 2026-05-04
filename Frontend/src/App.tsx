@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Layout, Menu, ConfigProvider } from 'antd';
+import { Layout, Menu, ConfigProvider, Button, Spin } from 'antd';
 import {
   HomeOutlined,
   CalendarOutlined,
@@ -8,8 +8,9 @@ import {
   SettingOutlined,
   EditOutlined,
   CopyOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 
 import PropertiesPage from './pages/PropertiesPage';
@@ -19,12 +20,32 @@ import HistoryPage from './pages/HistoryPage';
 import ConfigPage from './pages/ConfigPage';
 import InspectPage from './pages/InspectPage';
 import TemplatesPage from './pages/TemplatesPage';
+import LoginPage from './pages/LoginPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const { Header, Content, Footer, Sider } = Layout;
 
-const AppContent: React.FC = () => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F7F7F5' }}>
+        <Spin />
+      </div>
+    );
+  }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return <>{children}</>;
+};
+
+const AppShell: React.FC = () => {
+  const location = useLocation();
+  const { username, logout } = useAuth();
 
   const selectedKey = useMemo(() => {
     if (location.pathname === '/tasks') return '2';
@@ -81,9 +102,20 @@ const AppContent: React.FC = () => {
           }}>
             Property Management System
           </span>
-          <span style={{ color: '#E9E9E7', fontSize: '12px' }}>
-            ●
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {username && (
+              <span style={{ color: '#787774', fontSize: 13 }}>{username}</span>
+            )}
+            <Button
+              type="text"
+              size="small"
+              icon={<LogoutOutlined />}
+              onClick={logout}
+              style={{ color: '#787774' }}
+            >
+              Sign out
+            </Button>
+          </div>
         </Header>
 
         <Content style={{ margin: '16px' }}>
@@ -197,7 +229,19 @@ const App: React.FC = () => {
       }}
     >
       <Router>
-        <AppContent />
+        <AuthProvider>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </AuthProvider>
       </Router>
     </ConfigProvider>
   );

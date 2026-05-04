@@ -101,7 +101,6 @@ const TasksPage: React.FC = () => {
         },
       });
       const sorted = res.data
-        .filter(r => r.propertyId === propertyId)
         .sort((a, b) => dayjs(b.executionDate).valueOf() - dayjs(a.executionDate).valueOf())
         .slice(0, 2);
       setRecentRecords(sorted);
