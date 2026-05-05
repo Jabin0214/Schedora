@@ -1,7 +1,8 @@
 // API 配置文件
-// 开发环境使用环境变量，生产环境可以配置为相对路径或实际API地址
+// 默认使用同源 /api，避免生产环境请求用户本机 localhost。
+// 本地开发由 Vite proxy 转发到 ASP.NET 后端。
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5097/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 // API 端点
 export const API_ENDPOINTS = {
@@ -19,4 +20,3 @@ export const EXTERNAL_LINKS = {
   parkingReceipts: import.meta.env.VITE_PARKING_RECEIPTS_URL ||
     'https://drive.google.com/drive/folders/16DCZ-7VOv5Xbaa4pNwQf3WCyVcHxG7wp?usp=drive_link',
 } as const;
-
