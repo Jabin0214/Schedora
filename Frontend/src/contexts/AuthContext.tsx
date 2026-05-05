@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let cancelled = false;
     (async () => {
       try {
-        const res = await api.get('/auth/verify');
+        const res = await api.get('/api/auth/verify');
         if (cancelled) return;
         if (res.data?.valid) {
           setToken(stored);
@@ -56,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = useCallback(async (user: string, password: string) => {
-    const res = await api.post('/auth/login', { username: user, password });
+    const res = await api.post('/api/auth/login', { username: user, password });
     const newToken: string = res.data.token;
     localStorage.setItem(TOKEN_KEY, newToken);
     localStorage.setItem(USERNAME_KEY, user);
