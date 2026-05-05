@@ -73,8 +73,30 @@ Create `Backend/appsettings.local.json` for local development:
 Notes:
 
 - `appsettings.local.json` is loaded by the backend and is intended for local secrets.
+- `appsettings.local.json` and `google-credentials.json` are excluded from publish output; production secrets must be configured through hosting environment settings.
 - If Google sync is enabled, place the credential file in `Backend/` unless you configure a different path.
 - The frontend uses `VITE_API_BASE_URL` and defaults to `http://localhost:5097/api`.
+
+### Azure App Service settings
+
+When deploying to Azure App Service, configure these app settings in Azure instead of relying on local files:
+
+```text
+ConnectionStrings__DefaultConnection
+Jwt__Secret
+Jwt__Issuer
+Jwt__Audience
+Jwt__ExpiryHours
+Auth__Credentials__Username
+Auth__Credentials__Password
+Google__CredentialsJson
+Google__CalendarId
+Google__SheetId
+Google__DailySyncHour
+WEBSITE_TIME_ZONE
+```
+
+`Jwt__Secret` is required at startup. If it is missing, the app exits during boot and Azure Free tier can quickly exhaust its worker stop quota.
 
 ## Run Locally
 
