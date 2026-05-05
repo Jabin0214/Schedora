@@ -7,7 +7,7 @@ import {
   PlusOutlined, DeleteOutlined, ReloadOutlined, CopyOutlined,
   SaveOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined,
 } from '@ant-design/icons';
-import axios from 'axios';
+import api from '../api';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 dayjs.extend(isoWeek);
@@ -79,7 +79,7 @@ const TasksPage: React.FC = () => {
     const setLoading = target === 'calendar' ? setSyncingCalendar : setSyncingSheets;
     setLoading(true);
     try {
-      await axios.post(`${API_ENDPOINTS.googleSync}/${target}`);
+      await api.post(`${API_ENDPOINTS.googleSync}/${target}`);
       const label = target === 'calendar' ? 'Google Calendar' : 'Google Sheets';
       message.success(`${label} synced successfully`);
       await fetchTasks();
@@ -93,7 +93,7 @@ const TasksPage: React.FC = () => {
   const fetchRecentRecords = useCallback(async (propertyId: number) => {
     setRecordsLoading(true);
     try {
-      const res = await axios.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
+      const res = await api.get<InspectionRecordDto[]>(API_ENDPOINTS.inspectionRecords, {
         params: {
           propertyId,
           startDate: dayjs().subtract(364, 'day').toISOString(),
