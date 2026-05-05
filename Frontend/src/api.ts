@@ -3,9 +3,11 @@ import axios from 'axios';
 export { isAxiosError } from 'axios';
 export type { AxiosError, AxiosResponse, AxiosRequestConfig, AxiosInstance } from 'axios';
 
-const api = axios.create({
-  baseURL: 'http://localhost:5097/api',
-});
+// No baseURL: API_ENDPOINTS already includes the "/api" prefix.
+// Setting baseURL would double-prepend it (→ "/api/api/foo") which
+// silently falls through to the SPA fallback and returns HTML,
+// causing antd Table to fail with "fe.some is not a function".
+const api = axios.create();
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('schedora_token');
