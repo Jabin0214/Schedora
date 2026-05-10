@@ -74,3 +74,17 @@ export interface InspectionRecordDto {
   isCharged: boolean;
   parkingFee?: number;
 }
+
+export interface AiInspectionPolishRequest {
+  address?: string;
+  inspectionType?: string;
+  notes: string;
+  isBillable: boolean;
+}
+
+export interface AiInspectionPolishResponse {
+  generalText: string;
+  tenantText: string;
+  landlordText: string;
+  summary: string;
+}

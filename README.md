@@ -8,7 +8,7 @@ Schedora is a property inspection management system built with ASP.NET Core and 
 - Frontend: React 19 + TypeScript + Vite
 - Database: PostgreSQL
 - Hosting model: the backend can serve the built frontend from `Backend/wwwroot`
-- Optional integrations: Google Calendar, Google Sheets, scheduled daily sync
+- Optional integrations: Google Calendar, Google Sheets, scheduled daily sync, AI inspection wording via a DeepSeek-compatible chat model
 
 ## Main Features
 
@@ -19,6 +19,7 @@ Schedora is a property inspection management system built with ASP.NET Core and 
 - Calendar-style task view in the frontend
 - Sync tasks to Google Calendar and Google Sheets
 - Run a daily background sync job
+- Generate professional AI inspection wording from rough site notes, with tenant tasks and landlord maintenance notifications separated
 
 ## Project Structure
 
@@ -66,6 +67,11 @@ Create `Backend/appsettings.local.json` for local development:
     "CalendarId": "",
     "SheetId": "",
     "DailySyncHour": 8
+  },
+  "Ai": {
+    "BaseUrl": "https://api.deepseek.com",
+    "Model": "deepseek-chat",
+    "ApiKey": "<deepseek-api-key>"
   }
 }
 ```
@@ -75,7 +81,18 @@ Notes:
 - `appsettings.local.json` is loaded by the backend and is intended for local secrets.
 - `appsettings.local.json` and `google-credentials.json` are excluded from publish output; production secrets must be configured through hosting environment settings.
 - If Google sync is enabled, place the credential file in `Backend/` unless you configure a different path.
-- The frontend uses `VITE_API_BASE_URL` and defaults to `http://localhost:5097/api`.
+- The AI inspection feature uses an OpenAI-compatible chat completions endpoint. The defaults are set for DeepSeek, and only `Ai:ApiKey` is required for local use.
+- The frontend uses `VITE_API_BASE_URL` and defaults to same-origin `/api`. Local Vite development proxies `/api` to the ASP.NET backend.
+
+### AI inspection wording
+
+On the Inspect page, enter rough inspection notes and choose `AI 润色`. The backend sends the notes, property address, inspection type, and billable flag to the configured AI provider, then returns three text blocks:
+
+- `General`: a bilingual English official record and Chinese proofreading version, structured as General Notes and Specific Advice
+- `Tenant`: tenant-facing tasks, including a two-week photo follow-up requirement for cleaning or minor-care issues
+- `Landlord`: owner-facing maintenance, hazard, leak, mould, or damage notifications
+
+The prompt is written for a professional New Zealand property inspector/property manager voice. It tells the model to stay objective, separate tenant responsibilities from landlord maintenance, avoid legal advice, and avoid inventing facts not present in the rough notes.
 
 ### Azure App Service settings
 
@@ -93,6 +110,9 @@ Google__CredentialsJson
 Google__CalendarId
 Google__SheetId
 Google__DailySyncHour
+Ai__BaseUrl
+Ai__Model
+Ai__ApiKey
 WEBSITE_TIME_ZONE
 ```
 
@@ -207,6 +227,7 @@ Main backend controllers currently include:
 - `/api/tasktypes`
 - `/api/reports`
 - `/api/googlesync`
+- `/api/ai/inspection-polish`
 
 For request and response details, use Swagger locally in development:
 
@@ -227,6 +248,24 @@ Manual sync endpoints:
 - `POST /api/googlesync/all`
 
 If Google credentials or IDs are missing, related features will not work correctly.
+
+## AI Provider
+
+The AI inspection endpoint is configured under `Ai` in ASP.NET configuration:
+
+```json
+{
+  "Ai": {
+    "BaseUrl": "https://api.deepseek.com",
+    "Model": "deepseek-chat",
+    "ApiKey": "<secret>"
+  }
+}
+```
+
+`BaseUrl` should point to the provider root that exposes `/chat/completions`. The backend adds the `/chat/completions` path itself. The API key must stay on the backend; do not expose it through Vite environment variables or frontend code.
+
+If AI configuration is missing or the provider is unavailable, the Inspect page will show an error message and the original note remains unchanged.
 
 ## Troubleshooting
 

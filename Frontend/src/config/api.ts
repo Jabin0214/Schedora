@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
   googleSync: `${API_BASE_URL}/googlesync`,
   taskTypes: `${API_BASE_URL}/tasktypes`,
   templates: `${API_BASE_URL}/templates`,
+  aiInspectionPolish: `${API_BASE_URL}/ai/inspection-polish`,
 } as const;
 
 // 外部资源链接（集中管理，方便变更）

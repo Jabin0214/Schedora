@@ -1,10 +1,17 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { Card, Tag, Typography, Spin, Empty, Input, message } from 'antd';
+import { Button, Card, Modal, Space, Tag, Typography, Spin, Empty, Input, message } from 'antd';
+import { CopyOutlined, RobotOutlined, SwapOutlined } from '@ant-design/icons';
 import api from '../api';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
+import { useInspectionTypes } from '../hooks/useInspectionTypes';
 import { API_ENDPOINTS } from '../config/api';
-import type { CombinedTask, InspectionType, InspectionTaskUpdateRequest } from '../types/api';
+import type {
+  AiInspectionPolishResponse,
+  CombinedTask,
+  InspectionType,
+  InspectionTaskUpdateRequest,
+} from '../types/api';
 
 const { Text, Title } = Typography;
 
@@ -13,14 +20,17 @@ type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 interface InspectCardProps {
   task: CombinedTask;
   isOverdue: boolean;
+  typeName: string;
 }
 
 const DEBOUNCE_MS = 800;
 const SAVED_CLEAR_MS = 3000;
 
-const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
+const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) => {
   const [notes, setNotes] = useState<string>(task.notes ?? '');
   const [status, setStatus] = useState<SaveStatus>('idle');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiResult, setAiResult] = useState<AiInspectionPolishResponse | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestNotesRef = useRef<string>(task.notes ?? '');
@@ -86,7 +96,64 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
     save(latestNotesRef.current);
   };
 
+  const copy = async (label: string, text: string) => {
+    if (!text.trim()) {
+      message.warning('内容为空');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      message.success(`${label} 已复制`);
+    } catch {
+      message.error('复制失败');
+    }
+  };
+
+  const handleAiPolish = async () => {
+    const rawNotes = notes.trim();
+    if (rawNotes.length < 2) {
+      message.warning('先输入一些检查备注');
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const res = await api.post<AiInspectionPolishResponse>(API_ENDPOINTS.aiInspectionPolish, {
+        address: task.propertyAddress,
+        inspectionType: typeName,
+        notes: rawNotes,
+        isBillable: task.isBillable ?? false,
+      });
+      setAiResult(res.data);
+    } catch {
+      message.error('AI 润色失败，请检查后端 AI 配置');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const replaceWithGeneral = () => {
+    if (!aiResult?.generalText) return;
+    setNotes(aiResult.generalText);
+    latestNotesRef.current = aiResult.generalText;
+    scheduleSave(aiResult.generalText);
+    message.success('已填入 General 文案');
+  };
+
   const dateLabel = task.scheduledAt ? dayjs(task.scheduledAt).format('MM-DD') : '';
+
+  const aiTextBlock = (label: string, text: string) => (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <Text strong style={{ fontSize: 13 }}>{label}</Text>
+        <Button size="small" icon={<CopyOutlined />} onClick={() => copy(label, text)}>
+          复制
+        </Button>
+      </div>
+      <div style={{ whiteSpace: 'pre-wrap', background: '#F7F7F5', border: '1px solid #E9E9E7', borderRadius: 4, padding: 10, fontSize: 13 }}>
+        {text || <Text type="secondary">（无内容）</Text>}
+      </div>
+    </div>
+  );
 
   return (
     <Card size="small" style={{ width: '100%' }}>
@@ -130,12 +197,46 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue }) => {
           </>
         )}
       </div>
+      <Space size={8}>
+        <Button
+          size="small"
+          icon={<RobotOutlined />}
+          loading={aiLoading}
+          onClick={handleAiPolish}
+        >
+          AI 润色
+        </Button>
+        {aiResult?.summary && <Text type="secondary" style={{ fontSize: 12 }}>{aiResult.summary}</Text>}
+      </Space>
+      <Modal
+        open={aiResult !== null}
+        title="AI 正式话术"
+        onCancel={() => setAiResult(null)}
+        width={760}
+        footer={
+          <Space>
+            <Button onClick={() => setAiResult(null)}>关闭</Button>
+            <Button type="primary" icon={<SwapOutlined />} onClick={replaceWithGeneral}>
+              填入 General
+            </Button>
+          </Space>
+        }
+      >
+        {aiResult && (
+          <>
+            {aiTextBlock('General 整体描述', aiResult.generalText)}
+            {aiTextBlock('给房客', aiResult.tenantText)}
+            {aiTextBlock('给房东', aiResult.landlordText)}
+          </>
+        )}
+      </Modal>
     </Card>
   );
 };
 
 const InspectPage: React.FC = () => {
   const { overdueTasks, todayTasks, loading } = useTasks();
+  const { getType } = useInspectionTypes();
 
   const items = useMemo(() => {
     const overdue = overdueTasks.map(t => ({ task: t, isOverdue: true }));
@@ -160,7 +261,12 @@ const InspectPage: React.FC = () => {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {items.map(({ task, isOverdue }) => (
-            <InspectCard key={task.id} task={task} isOverdue={isOverdue} />
+            <InspectCard
+              key={task.id}
+              task={task}
+              isOverdue={isOverdue}
+              typeName={getType(task.type)?.name ?? `Type ${task.type ?? '?'}`}
+            />
           ))}
         </div>
       )}
