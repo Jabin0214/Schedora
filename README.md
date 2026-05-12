@@ -86,11 +86,12 @@ Notes:
 
 ### AI inspection wording
 
-On the Inspect page, enter rough inspection notes and choose `AI 润色`. The backend sends the notes, property address, inspection type, and billable flag to the configured AI provider, then returns three text blocks:
+On the Inspect page, enter rough inspection notes and choose `AI 润色`. The backend sends the notes, property address, inspection type, and billable flag to the configured AI provider, then returns English text for use and Chinese text for review:
 
-- `General`: a bilingual English official record and Chinese proofreading version, structured as General Notes and Specific Advice
-- `Tenant`: tenant-facing tasks, including a two-week photo follow-up requirement for cleaning or minor-care issues
-- `Landlord`: owner-facing maintenance, hazard, leak, mould, or damage notifications
+- `English General`: official record wording, structured as General Notes and Specific Advice
+- `English Tenant`: tenant-facing tasks, including a two-week photo follow-up requirement for cleaning or minor-care issues
+- `English Landlord`: owner-facing maintenance, hazard, leak, mould, or damage notifications
+- `Chinese reference`: proofreading-only text to help the inspector quickly catch issues before using the English wording
 
 The prompt is written for a professional New Zealand property inspector/property manager voice. It tells the model to stay objective, separate tenant responsibilities from landlord maintenance, avoid legal advice, and avoid inventing facts not present in the rough notes.
 

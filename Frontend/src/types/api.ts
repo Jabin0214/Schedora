@@ -83,8 +83,9 @@ export interface AiInspectionPolishRequest {
 }
 
 export interface AiInspectionPolishResponse {
-  generalText: string;
-  tenantText: string;
-  landlordText: string;
+  englishGeneralText: string;
+  englishTenantText: string;
+  englishLandlordText: string;
+  chineseReferenceText: string;
   summary: string;
 }

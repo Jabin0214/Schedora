@@ -19,9 +19,10 @@ namespace InspectionApi.Models.DTOs
 
     public class AiInspectionPolishResponseDto
     {
-        public string GeneralText { get; set; } = string.Empty;
-        public string TenantText { get; set; } = string.Empty;
-        public string LandlordText { get; set; } = string.Empty;
+        public string EnglishGeneralText { get; set; } = string.Empty;
+        public string EnglishTenantText { get; set; } = string.Empty;
+        public string EnglishLandlordText { get; set; } = string.Empty;
+        public string ChineseReferenceText { get; set; } = string.Empty;
         public string Summary { get; set; } = string.Empty;
     }
 }

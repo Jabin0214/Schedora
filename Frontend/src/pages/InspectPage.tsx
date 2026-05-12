@@ -132,11 +132,11 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) 
   };
 
   const replaceWithGeneral = () => {
-    if (!aiResult?.generalText) return;
-    setNotes(aiResult.generalText);
-    latestNotesRef.current = aiResult.generalText;
-    scheduleSave(aiResult.generalText);
-    message.success('已填入 General 文案');
+    if (!aiResult?.englishGeneralText) return;
+    setNotes(aiResult.englishGeneralText);
+    latestNotesRef.current = aiResult.englishGeneralText;
+    scheduleSave(aiResult.englishGeneralText);
+    message.success('已填入 English General');
   };
 
   const dateLabel = task.scheduledAt ? dayjs(task.scheduledAt).format('MM-DD') : '';
@@ -217,16 +217,22 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) 
           <Space>
             <Button onClick={() => setAiResult(null)}>关闭</Button>
             <Button type="primary" icon={<SwapOutlined />} onClick={replaceWithGeneral}>
-              填入 General
+              填入 English General
             </Button>
           </Space>
         }
       >
         {aiResult && (
           <>
-            {aiTextBlock('General 整体描述', aiResult.generalText)}
-            {aiTextBlock('给房客', aiResult.tenantText)}
-            {aiTextBlock('给房东', aiResult.landlordText)}
+            {aiTextBlock('English General（正式记录）', aiResult.englishGeneralText)}
+            {aiTextBlock('English Tenant（发给房客）', aiResult.englishTenantText)}
+            {aiTextBlock('English Landlord（发给房东）', aiResult.englishLandlordText)}
+            <div style={{ marginTop: 4, paddingTop: 12, borderTop: '1px solid #E9E9E7' }}>
+              <Text strong style={{ fontSize: 13 }}>中文参考（仅校对）</Text>
+              <div style={{ whiteSpace: 'pre-wrap', background: '#FAFAF9', border: '1px dashed #D9D9D6', borderRadius: 4, padding: 10, fontSize: 13, marginTop: 6, color: '#55534E' }}>
+                {aiResult.chineseReferenceText || <Text type="secondary">（无内容）</Text>}
+              </div>
+            </div>
           </>
         )}
       </Modal>

@@ -28,7 +28,7 @@ public class AiInspectionPromptBuilderTests
     }
 
     [Fact]
-    public void BuildsPromptWithJsonOnlyOutputContractAndBilingualReportSections()
+    public void BuildsPromptWithJsonOnlyOutputContractAndSeparatedEnglishChineseFields()
     {
         var request = new AiInspectionPolishRequestDto
         {
@@ -42,12 +42,15 @@ public class AiInspectionPromptBuilderTests
 
         Assert.Contains("Return JSON only", prompt);
         Assert.Contains("English official record", prompt);
-        Assert.Contains("Chinese proofreading version", prompt);
+        Assert.Contains("Chinese proofreading reference", prompt);
+        Assert.Contains("English is the usable final text", prompt);
+        Assert.Contains("Do not mix Chinese into the English fields", prompt);
         Assert.Contains("General Notes", prompt);
         Assert.Contains("Specific Advice", prompt);
-        Assert.Contains("\"generalText\"", prompt);
-        Assert.Contains("\"tenantText\"", prompt);
-        Assert.Contains("\"landlordText\"", prompt);
+        Assert.Contains("\"englishGeneralText\"", prompt);
+        Assert.Contains("\"englishTenantText\"", prompt);
+        Assert.Contains("\"englishLandlordText\"", prompt);
+        Assert.Contains("\"chineseReferenceText\"", prompt);
         Assert.Contains("\"summary\"", prompt);
     }
 

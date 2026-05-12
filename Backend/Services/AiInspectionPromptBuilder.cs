@@ -36,7 +36,10 @@ namespace InspectionApi.Services
             Report structure rules:
             - The output must clearly separate General Notes from Specific Advice.
             - Do not include content outside those two sections inside each generated report.
-            - Provide an English official record version and a Chinese proofreading version.
+            - English is the usable final text for copying into official records and communications.
+            - Chinese is only a Chinese proofreading reference for the inspector to quickly catch mistakes.
+            - Do not mix Chinese into the English fields.
+            - Do not mix English into the Chinese proofreading reference except unavoidable property names or technical terms.
 
             General Notes must cover the Five Pillars:
             a) Overall Presentation: cleanliness and tidiness.
@@ -50,16 +53,18 @@ namespace InspectionApi.Services
             b) Owner Notifications: maintenance or hazards that are the owner's responsibility. Record the situation and potential hazard clearly, but do not request tenant action for owner-responsibility items.
 
             Field meanings:
-            - generalText: full bilingual report for the official record. Include "English official record" and "Chinese proofreading version"; each version must contain only "General Notes" and "Specific Advice" sections.
-            - tenantText: bilingual tenant-facing advice. Include only tenant-responsibility items and the 2-week photographic evidence requirement where cleaning action is needed. If no tenant task is supported by the notes, say no tenant action is required based on the notes.
-            - landlordText: bilingual owner notification. Include only maintenance, hazard, leak, mould, or damage items that should be recorded for the owner. If no owner item is supported by the notes, say no owner maintenance notification is required based on the notes.
+            - englishGeneralText: English official record. It must contain only "General Notes" and "Specific Advice" sections.
+            - englishTenantText: English tenant-facing advice. Include only tenant-responsibility items and the 2-week photographic evidence requirement where cleaning action is needed. If no tenant task is supported by the notes, say no tenant action is required based on the notes.
+            - englishLandlordText: English owner notification. Include only maintenance, hazard, leak, mould, or damage items that should be recorded for the owner. If no owner item is supported by the notes, say no owner maintenance notification is required based on the notes.
+            - chineseReferenceText: Chinese proofreading reference for the inspector. Summarise the same classification and content in Chinese so a native Chinese speaker can quickly spot problems before using the English text.
             - summary: one short sentence describing the classification of the notes into tenant tasks and/or owner notifications.
 
             Return JSON only with this exact shape:
             {
-              "generalText": "string",
-              "tenantText": "string",
-              "landlordText": "string",
+              "englishGeneralText": "string",
+              "englishTenantText": "string",
+              "englishLandlordText": "string",
+              "chineseReferenceText": "string",
               "summary": "string"
             }
             """;
