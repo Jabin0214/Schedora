@@ -57,54 +57,44 @@ const AppShell: React.FC = () => {
     return '1';
   }, [location.pathname]);
 
+  const navItems = [
+    { key: '1', icon: <HomeOutlined />,          label: <Link to="/">Properties</Link> },
+    { key: '2', icon: <UnorderedListOutlined />, label: <Link to="/tasks">Tasks</Link> },
+    { key: '6', icon: <EditOutlined />,          label: <Link to="/inspect">Inspect</Link> },
+    { key: '7', icon: <CopyOutlined />,          label: <Link to="/templates">Templates</Link> },
+    { key: '3', icon: <CalendarOutlined />,      label: <Link to="/calendar">Calendar</Link> },
+    { key: '4', icon: <FileTextOutlined />,      label: <Link to="/history">History</Link> },
+    { key: '5', icon: <SettingOutlined />,       label: <Link to="/config">Config</Link> },
+  ];
+
   return (
-    <Layout style={{ minHeight: '100vh', background: '#FFFFFF' }}>
+    <Layout className="app-shell">
       {/* ── Sidebar ── */}
       <Sider
         breakpoint="lg"
         collapsedWidth="0"
-        style={{ background: '#F7F7F5', borderRight: '1px solid #E9E9E7' }}
+        className="app-sider"
+        trigger={null}
       >
         <div className="sidebar-logo">Schedora</div>
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
           style={{ background: '#F7F7F5', borderRight: 'none', fontSize: '14px' }}
-          items={[
-            { key: '1', icon: <HomeOutlined />,         label: <Link to="/">Properties</Link> },
-            { key: '2', icon: <UnorderedListOutlined />, label: <Link to="/tasks">Tasks</Link> },
-            { key: '6', icon: <EditOutlined />,          label: <Link to="/inspect">Inspect</Link> },
-            { key: '7', icon: <CopyOutlined />,          label: <Link to="/templates">Templates</Link> },
-            { key: '3', icon: <CalendarOutlined />,      label: <Link to="/calendar">Calendar</Link> },
-            { key: '4', icon: <FileTextOutlined />,      label: <Link to="/history">History</Link> },
-            { key: '5', icon: <SettingOutlined />,       label: <Link to="/config">Config</Link> },
-          ]}
+          items={navItems}
         />
       </Sider>
 
       {/* ── Main Area ── */}
       <Layout style={{ background: '#FFFFFF' }}>
-        <Header
-          style={{
-            padding: '0 24px',
-            background: '#FFFFFF',
-            borderBottom: '1px solid #E9E9E7',
-            height: 45,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <span style={{
-            color: '#ACABA9',
-            fontSize: '13px',
-            fontWeight: 500,
-          }}>
+        <Header className="app-header">
+          <span className="app-mobile-brand">Schedora</span>
+          <span className="app-header-title">
             Property Management System
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="app-header-actions">
             {username && (
-              <span style={{ color: '#787774', fontSize: 13 }}>{username}</span>
+              <span className="app-username">{username}</span>
             )}
             <Button
               type="text"
@@ -118,18 +108,16 @@ const AppShell: React.FC = () => {
           </div>
         </Header>
 
-        <Content style={{ margin: '16px' }}>
-          <div
-            className="page-container"
-            style={{
-              padding: 24,
-              minHeight: 360,
-              background: '#FFFFFF',
-              borderRadius: 6,
-              border: '1px solid #E9E9E7',
-              overflow: 'auto',
-            }}
-          >
+        <nav className="mobile-nav" aria-label="Primary navigation">
+          <Menu
+            mode="horizontal"
+            selectedKeys={[selectedKey]}
+            items={navItems}
+          />
+        </nav>
+
+        <Content className="app-content">
+          <div className="page-container">
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<PropertiesPage />} />
@@ -144,16 +132,7 @@ const AppShell: React.FC = () => {
           </div>
         </Content>
 
-        <Footer
-          style={{
-            textAlign: 'center',
-            color: '#ACABA9',
-            background: '#F7F7F5',
-            borderTop: '1px solid #E9E9E7',
-            padding: '8px 24px',
-            fontSize: '12px',
-          }}
-        >
+        <Footer className="app-footer">
           Schedora PMS © 2026 — Created by Jabin
         </Footer>
       </Layout>

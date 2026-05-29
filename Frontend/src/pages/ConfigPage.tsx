@@ -96,18 +96,9 @@ const TaskTypesSection: React.FC = () => {
     }
   };
 
-  const rowStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '48px 1fr 140px 100px',
-    alignItems: 'center',
-    gap: 12,
-    padding: '10px 16px',
-    borderBottom: '1px solid #E9E9E7',
-  };
-
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div className="config-section-header">
         <SectionTitle>Task Types</SectionTitle>
         <Button size="small" type="primary" icon={<PlusOutlined />} onClick={openAdd}>
           Add Type
@@ -116,7 +107,7 @@ const TaskTypesSection: React.FC = () => {
 
       <Spin spinning={loading}>
         <div style={{ border: '1px solid #E9E9E7', borderTop: '2px solid #2383E2', borderRadius: 6, background: '#FFFFFF' }}>
-          <div style={{ ...rowStyle, fontSize: '11px', color: '#787774', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+          <div className="config-row config-row-header" style={{ fontSize: '11px', color: '#787774', fontWeight: 500, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
             <div>ID</div>
             <div>Name</div>
             <div>Color</div>
@@ -132,7 +123,7 @@ const TaskTypesSection: React.FC = () => {
           {types.map(t => (
             <div
               key={t.id}
-              style={rowStyle}
+              className="config-row"
               onMouseEnter={e => (e.currentTarget.style.background = '#EBEBEA')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
@@ -142,7 +133,7 @@ const TaskTypesSection: React.FC = () => {
                 <Tag color={t.color} style={{ fontSize: '12px' }}>{t.color}</Tag>
               </div>
               <Space size={4}>
-                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} />
+                <Button size="small" icon={<EditOutlined />} onClick={() => openEdit(t)} aria-label="Edit type" />
                 <Popconfirm
                   title={`Delete "${t.name}"?`}
                   description="Types in use by existing tasks cannot be deleted."
@@ -150,7 +141,7 @@ const TaskTypesSection: React.FC = () => {
                   okText="Delete"
                   cancelText="Cancel"
                 >
-                  <Button danger size="small" icon={<DeleteOutlined />} />
+                  <Button danger size="small" icon={<DeleteOutlined />} aria-label="Delete type" />
                 </Popconfirm>
               </Space>
             </div>

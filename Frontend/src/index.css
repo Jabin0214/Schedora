@@ -49,6 +49,19 @@ body {
 
 #root {
   min-height: 100vh;
+  min-width: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.ant-layout,
+.ant-layout-content {
+  min-width: 0;
 }
 
 /* ── Scrollbars ───────────────────────────────────── */

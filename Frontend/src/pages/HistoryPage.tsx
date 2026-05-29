@@ -288,8 +288,8 @@ const HistoryPage: React.FC = () => {
         if (isEditing) {
           return (
             <Space size={4} onClick={(e) => e.stopPropagation()}>
-              <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => saveEdit(record)} />
-              <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit} />
+              <Button size="small" type="primary" icon={<SaveOutlined />} loading={saving} onClick={() => saveEdit(record)} aria-label="Save record" />
+              <Button size="small" icon={<CloseOutlined />} onClick={cancelEdit} aria-label="Cancel edit" />
             </Space>
           );
         }
@@ -298,6 +298,7 @@ const HistoryPage: React.FC = () => {
             <Button
               size="small"
               icon={<CopyOutlined />}
+              aria-label="Copy record"
               onClick={(e) => {
                 e.stopPropagation();
                 const formatted = `${dayjs(record.executionDate).format('DMMMYYYY')}:${record.propertyAddress ?? ''}`;
@@ -435,9 +436,9 @@ const HistoryPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
+      <div className="page-toolbar" style={{ marginBottom: 12 }}>
         <IndTitle>History</IndTitle>
-        <Space size={4} wrap>
+        <Space className="page-toolbar-actions" size={4} wrap>
           <RangePicker
             value={dateRange}
             onChange={(dates) => { if (dates?.[0] && dates[1]) setDateRange([dates[0], dates[1]]); }}
@@ -486,7 +487,7 @@ const HistoryPage: React.FC = () => {
       </div>
 
       {/* ── Search bar ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div className="responsive-search">
         <Input
           prefix={<SearchOutlined style={{ color: '#ACABA9', fontSize: 14 }} />}
           suffix={
@@ -500,11 +501,10 @@ const HistoryPage: React.FC = () => {
           placeholder="Search by address..."
           value={searchText}
           onChange={e => setSearchText(e.target.value)}
-          style={{ maxWidth: 320 }}
           allowClear={false}
         />
         {searchText && (
-          <span style={{ marginLeft: 10, fontSize: '13px', color: '#787774' }}>
+          <span className="responsive-search-meta">
             {searchLoading ? 'Searching...' : `${searchResults.length} records found`}
           </span>
         )}
@@ -513,10 +513,12 @@ const HistoryPage: React.FC = () => {
       {/* ── Table ── */}
       <Spin spinning={loading || searchLoading}>
         <Table
+          className="responsive-table"
           size="small"
           dataSource={displayRecords}
           columns={columns}
           rowKey="id"
+          scroll={{ x: 760 }}
           onRow={(record) => ({
             onDoubleClick: () => {
               if (editingId !== record.id) startEdit(record);

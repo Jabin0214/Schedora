@@ -8,7 +8,7 @@ export const IndTitle: React.FC<{ children: React.ReactNode }> = ({ children }) 
       fontSize: '20px',
       fontWeight: 700,
       color: '#37352F',
-      letterSpacing: '-0.3px',
+      letterSpacing: 0,
     }}>
       {children}
     </span>

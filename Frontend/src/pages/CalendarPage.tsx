@@ -161,15 +161,15 @@ const CalendarPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
+      <div className="page-toolbar">
         <IndTitle>Calendar</IndTitle>
-        <Space size={6} wrap>
+        <Space className="page-toolbar-actions" size={6} wrap>
           <Button size="small" icon={<CalendarOutlined />} onClick={fetchTasks} loading={loading}>
             Refresh
           </Button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div className="calendar-toolbar-week" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <Button size="small" icon={<LeftOutlined />} onClick={() => setWeekStart(d => d.subtract(7, 'day'))} />
-            <span style={{ fontSize: '13px', fontWeight: 500, color: isCurrentWeek ? '#2383E2' : '#787774', minWidth: 160, textAlign: 'center', userSelect: 'none' }}>
+            <span className="calendar-week-label" style={{ fontSize: '13px', fontWeight: 500, color: isCurrentWeek ? '#2383E2' : '#787774', minWidth: 160, textAlign: 'center', userSelect: 'none' }}>
               {weekLabel}
             </span>
             <Button size="small" icon={<RightOutlined />} onClick={() => setWeekStart(d => d.add(7, 'day'))} />
@@ -184,7 +184,7 @@ const CalendarPage: React.FC = () => {
 
       {/* ── Overdue banner ── */}
       {overdueTasks.length > 0 && (
-        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(224,62,62,0.05)', border: '1px solid #E03E3E', borderLeft: '3px solid #E03E3E', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ marginBottom: 12, padding: '8px 12px', background: 'rgba(224,62,62,0.05)', border: '1px solid #E03E3E', borderLeft: '3px solid #E03E3E', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
           <WarningOutlined style={{ color: '#E03E3E', fontSize: 13 }} />
           <span style={{ fontSize: '13px', color: '#E03E3E', fontWeight: 500 }}>
             {overdueTasks.length} overdue task{overdueTasks.length > 1 ? 's' : ''}
@@ -196,7 +196,7 @@ const CalendarPage: React.FC = () => {
       )}
 
       {/* ── Week stats ── */}
-      <div style={{ display: 'flex', gap: 16, marginBottom: 10, fontSize: '12px', color: '#787774' }}>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 10, fontSize: '12px', color: '#787774', flexWrap: 'wrap' }}>
         <span>
           Week: <span style={{ color: weekTaskCount > 0 ? '#37352F' : '#ACABA9', fontWeight: 500 }}>{weekTaskCount}</span> task{weekTaskCount !== 1 ? 's' : ''}
         </span>
@@ -206,7 +206,9 @@ const CalendarPage: React.FC = () => {
       </div>
 
       {/* ── Time grid ── */}
-      <div style={{ border: '1px solid #E9E9E7', borderRadius: 6, overflow: 'hidden' }}>
+      <div className="calendar-shell">
+        <div className="calendar-scroll-x">
+          <div className="calendar-grid">
 
         {/* Sticky day-header row */}
         <div style={{ display: 'flex', borderBottom: '1px solid #E9E9E7', background: '#F7F7F5' }}>
@@ -322,6 +324,8 @@ const CalendarPage: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
           </div>
         </div>
       </div>

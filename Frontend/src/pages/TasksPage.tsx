@@ -207,26 +207,6 @@ const TasksPage: React.FC = () => {
     }
   }, [editingRecord, rowForm, updateInspectionTask, cancelEdit]);
 
-  // ── Layout constants ─────────────────────────────────────────
-  const gridTemplate = '130px 2fr 0.9fr 1fr 164px';
-
-  const firstRowStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: gridTemplate,
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 3,
-  };
-
-  const secondRowStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '130px 1fr',
-    alignItems: 'center',
-    gap: 6,
-    fontSize: '13px',
-    color: '#787774',
-  };
-
   const cellText: React.CSSProperties = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
@@ -254,7 +234,7 @@ const TasksPage: React.FC = () => {
         onMouseEnter={(e) => { if (!isEditing) (e.currentTarget as HTMLElement).style.backgroundColor = '#EBEBEA'; }}
         onMouseLeave={(e) => { if (!isEditing) (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
       >
-        <div style={firstRowStyle}>
+        <div className="tasks-grid-row" style={{ marginBottom: 3 }}>
           {/* Time */}
           <div style={cellText}>
             {isEditing ? (
@@ -308,7 +288,7 @@ const TasksPage: React.FC = () => {
           </div>
 
           {/* Actions */}
-          <Space size={4} onClick={(e) => e.stopPropagation()}>
+          <Space className="tasks-row-actions" size={4} onClick={(e) => e.stopPropagation()}>
             {isEditing ? (
               <>
                 <Button size="small" type="primary" icon={<SaveOutlined />} onClick={saveEdit}>Save</Button>
@@ -320,6 +300,7 @@ const TasksPage: React.FC = () => {
                   <Button
                     size="small"
                     icon={<CopyOutlined />}
+                    aria-label="Copy task"
                     onClick={() => {
                       const formatted = record.scheduledAt
                         ? `${dayjs(record.scheduledAt).format('DMMMYYYY')}:${record.propertyAddress}`
@@ -331,7 +312,7 @@ const TasksPage: React.FC = () => {
                 </Tooltip>
                 <Button size="small" type="primary" icon={<CheckCircleOutlined />} onClick={() => openCompleteModal(record)}>Done</Button>
                 <Popconfirm title="Delete this task?" onConfirm={() => deleteInspectionTask(record.id)} okText="Delete" cancelText="Cancel">
-                  <Button danger size="small" icon={<DeleteOutlined />} />
+                  <Button danger size="small" icon={<DeleteOutlined />} aria-label="Delete task" />
                 </Popconfirm>
               </>
             )}
@@ -339,7 +320,7 @@ const TasksPage: React.FC = () => {
         </div>
 
         {(isEditing || record.notes) && (
-          <div style={secondRowStyle}>
+          <div className="tasks-notes-row">
             <div />
             <div style={cellText}>
               {isEditing ? (
@@ -402,10 +383,10 @@ const TasksPage: React.FC = () => {
         }}
         style={{ marginBottom: 8, border: '1px solid #E9E9E7', borderTop: `2px solid ${accentColor}`, borderRadius: 6, background: '#FFFFFF' }}
       >
-        <div style={{ overflowX: 'auto' }}>
-          <div style={{ minWidth: 620 }}>
-            <div style={{ padding: '4px 10px 4px 16px', background: '#F7F7F5', borderBottom: '1px solid #E9E9E7', fontSize: '11px', color: '#787774', letterSpacing: '0.5px', textTransform: 'uppercase', fontWeight: 500 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: gridTemplate, alignItems: 'center', gap: 6 }}>
+        <div className="tasks-list-scroll">
+          <div className="tasks-list-inner">
+            <div className="tasks-list-header" style={{ padding: '4px 10px 4px 16px', background: '#F7F7F5', borderBottom: '1px solid #E9E9E7', fontSize: '11px', color: '#787774', letterSpacing: '0.5px', textTransform: 'uppercase', fontWeight: 500 }}>
+              <div className="tasks-grid-row">
                 <div>Time</div><div>Address</div><div>Type</div><div>Charge</div><div>Actions</div>
               </div>
             </div>
@@ -428,9 +409,9 @@ const TasksPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
+      <div className="page-toolbar">
         <IndTitle>Tasks</IndTitle>
-        <Space size={4} wrap>
+        <Space className="page-toolbar-actions" size={4} wrap>
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
           <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncingCalendar} disabled={syncingSheets}>Sync Calendar</Button>
           <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncingSheets} disabled={syncingCalendar}>Sync Sheets</Button>

@@ -83,7 +83,7 @@ const TemplatesPage: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="page-toolbar">
         <IndTitle>快速模板</IndTitle>
         <Button icon={<SettingOutlined />} onClick={() => setShowManager(true)}>
           管理模板
@@ -93,6 +93,7 @@ const TemplatesPage: React.FC = () => {
       {/* Inspection-type selector */}
       <div style={{ marginBottom: 16 }}>
         <Radio.Group
+          className="responsive-radio-group"
           value={state.inspectionTypeId ?? undefined}
           onChange={e => setState(s => ({ ...s, inspectionTypeId: e.target.value }))}
           optionType="button"
@@ -116,7 +117,7 @@ const TemplatesPage: React.FC = () => {
 
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         {/* Tenant column */}
-        <Card title="给房客（卫生）" size="small" style={{ flex: 1, minWidth: 320 }}>
+        <Card title="给房客（卫生）" size="small" style={{ flex: '1 1 280px', minWidth: 0 }}>
           <Checkbox.Group
             value={state.selectedAreaIds}
             onChange={vals => setState(s => ({ ...s, selectedAreaIds: vals as number[] }))}
@@ -137,7 +138,7 @@ const TemplatesPage: React.FC = () => {
         </Card>
 
         {/* Landlord column */}
-        <Card title="给房东（损坏）" size="small" style={{ flex: 1, minWidth: 320 }}>
+        <Card title="给房东（损坏）" size="small" style={{ flex: '1 1 280px', minWidth: 0 }}>
           <Checkbox.Group
             value={state.selectedDamageItemIds}
             onChange={vals => setState(s => ({ ...s, selectedDamageItemIds: vals as number[] }))}

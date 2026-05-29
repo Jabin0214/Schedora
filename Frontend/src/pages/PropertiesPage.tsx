@@ -133,9 +133,9 @@ const PropertiesPage: React.FC = () => {
       fixed: 'right' as const,
       render: (_: unknown, record: Property) => (
         <Space size={4}>
-          <Button icon={<EditOutlined />} size="small" onClick={() => openEditModal(record)} title="Edit" />
+          <Button icon={<EditOutlined />} size="small" onClick={() => openEditModal(record)} title="Edit" aria-label="Edit property" />
           <Popconfirm title="Delete this property?" description="This cannot be undone." onConfirm={() => handleDelete(record.id)} okText="Delete" cancelText="Cancel">
-            <Button danger icon={<DeleteOutlined />} size="small" title="Delete" />
+            <Button danger icon={<DeleteOutlined />} size="small" title="Delete" aria-label="Delete property" />
           </Popconfirm>
         </Space>
       ),
@@ -145,16 +145,16 @@ const PropertiesPage: React.FC = () => {
   return (
     <div>
       {/* ── Toolbar ── */}
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12, borderBottom: '1px solid #E9E9E7', flexWrap: 'wrap', gap: 8 }}>
+      <div className="page-toolbar">
         <IndTitle>Properties</IndTitle>
-        <Space size={4}>
+        <Space className="page-toolbar-actions" size={4} wrap>
           <Button icon={<ReloadOutlined />} size="small" onClick={fetchProperties} loading={loading}>Refresh</Button>
           <Button type="primary" icon={<PlusOutlined />} size="small" onClick={openAddModal}>Add Property</Button>
         </Space>
       </div>
 
       {/* ── Search bar ── */}
-      <div style={{ marginBottom: 12 }}>
+      <div className="responsive-search">
         <Input
           prefix={<SearchOutlined style={{ color: '#ACABA9', fontSize: 14 }} />}
           suffix={
@@ -168,11 +168,10 @@ const PropertiesPage: React.FC = () => {
           placeholder="Search by address..."
           value={searchText}
           onChange={e => setSearchText(e.target.value)}
-          style={{ maxWidth: 320 }}
           allowClear={false}
         />
         {searchText && (
-          <span style={{ marginLeft: 10, fontSize: '13px', color: '#787774' }}>
+          <span className="responsive-search-meta">
             {filteredProperties.length} of {properties.length} properties
           </span>
         )}
@@ -180,10 +179,12 @@ const PropertiesPage: React.FC = () => {
 
       <Spin spinning={loading}>
         <Table
+          className="responsive-table"
           dataSource={filteredProperties}
           columns={columns}
           rowKey="id"
           size="small"
+          scroll={{ x: 560 }}
           pagination={{
             showSizeChanger: true,
             showQuickJumper: true,
