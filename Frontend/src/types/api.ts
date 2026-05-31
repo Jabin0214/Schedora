@@ -19,6 +19,39 @@ export interface Property {
   id: number;
   address: string;
   billingPolicy?: BillingPolicyValue;
+  tenantContactCount?: number;
+  tenantContactSummary?: string;
+}
+
+export interface TenantContact {
+  id: number;
+  propertyId: number;
+  propertyAddress: string;
+  sourceAddress: string;
+  phone: string;
+  email: string;
+  leaseDateEnded: string;
+  importedAt: string;
+}
+
+export interface TenantContactImportUnmatched {
+  sourceAddress: string;
+  phone: string;
+  email: string;
+  leaseDateEnded: string;
+}
+
+export interface TenantContactImportResponse {
+  totalRows: number;
+  matchedRows: number;
+  skippedRows: number;
+  importedRows: number;
+  matchedProperties: number;
+  unmatchedRows: number;
+  existingRowsToReplace: number;
+  unchangedRows: number;
+  newOrChangedRows: number;
+  unmatched: TenantContactImportUnmatched[];
 }
 
 export interface CombinedTask {

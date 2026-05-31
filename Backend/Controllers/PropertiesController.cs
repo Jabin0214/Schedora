@@ -23,10 +23,50 @@ namespace InspectionApi.Controllers
 
         // GET: api/properties
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Property>>> GetProperties()
+        public async Task<ActionResult<IEnumerable<PropertyDto>>> GetProperties()
         {
-            var properties = await _context.Properties.OrderByDescending(p => p.Id).ToListAsync();
+            var properties = await _context.Properties
+                .Include(p => p.TenantContacts)
+                .OrderByDescending(p => p.Id)
+                .Select(p => new PropertyDto
+                {
+                    Id = p.Id,
+                    Address = p.Address,
+                    BillingPolicy = p.BillingPolicy.ToString(),
+                    TenantContactCount = p.TenantContacts.Count,
+                    TenantContactSummary = p.TenantContacts
+                        .OrderBy(c => c.Id)
+                        .Select(c => string.IsNullOrWhiteSpace(c.Phone) ? c.Email : c.Phone)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
             return Ok(properties);
+        }
+
+        // GET: api/properties/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<PropertyDto>> GetProperty(int id)
+        {
+            var property = await _context.Properties
+                .Include(p => p.TenantContacts)
+                .Where(p => p.Id == id)
+                .Select(p => new PropertyDto
+                {
+                    Id = p.Id,
+                    Address = p.Address,
+                    BillingPolicy = p.BillingPolicy.ToString(),
+                    TenantContactCount = p.TenantContacts.Count,
+                    TenantContactSummary = p.TenantContacts
+                        .OrderBy(c => c.Id)
+                        .Select(c => string.IsNullOrWhiteSpace(c.Phone) ? c.Email : c.Phone)
+                        .FirstOrDefault()
+                })
+                .FirstOrDefaultAsync();
+
+            if (property == null)
+                return NotFound(new { message = $"未找到ID为{id}的物业" });
+
+            return Ok(property);
         }
 
         // POST: api/properties
@@ -74,9 +114,10 @@ namespace InspectionApi.Controllers
                 return NotFound(new { message = $"未找到ID为{id}的物业" });
 
             var hasRelated = await _context.InspectionTasks.AnyAsync(t => t.PropertyId == id)
-                          || await _context.InspectionRecords.AnyAsync(r => r.PropertyId == id);
+                          || await _context.InspectionRecords.AnyAsync(r => r.PropertyId == id)
+                          || await _context.TenantContacts.AnyAsync(c => c.PropertyId == id);
             if (hasRelated)
-                return BadRequest(new { message = "该物业存在关联的任务或记录，无法删除" });
+                return BadRequest(new { message = "该物业存在关联的任务、记录或租客联系人，无法删除" });
 
             _context.Properties.Remove(property);
             await _context.SaveChangesAsync();

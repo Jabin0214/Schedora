@@ -20,4 +20,13 @@ public class DatabaseStartupSqlTests
         Assert.Contains("\"GeneralTemplates\"", sql);
         Assert.Contains("\"AudienceTemplates\"", sql);
     }
+
+    [Fact]
+    public void TenantContactsStartupSqlCreatesContactTable()
+    {
+        Assert.Contains("\"TenantContacts\"", DatabaseStartupSql.TenantContactsTableSql);
+        Assert.Contains("\"FK_TenantContacts_Properties_PropertyId\"", DatabaseStartupSql.TenantContactsTableSql);
+        Assert.Contains("\"IX_TenantContacts_PropertyId\"", DatabaseStartupSql.TenantContactsTableSql);
+        Assert.Contains("\"TenantContacts\"", DatabaseStartupSql.IdentitySequenceSyncSql);
+    }
 }

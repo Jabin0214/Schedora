@@ -13,13 +13,17 @@ Schedora is a property inspection management system built with ASP.NET Core and 
 ## Main Features
 
 - Manage properties and billing policies
+- View a per-property information page with tenant contacts, open tasks, and inspection history
+- Import Palace tenant contact CSV exports, safely match them to existing properties, preview changes, and deduplicate repeated contact rows
 - Create, update, complete, and archive inspection tasks
+- Complete inspection tasks directly from the Inspect workflow
 - View inspection history and payroll-style reports
 - Manage task types
 - Calendar-style task view in the frontend
 - Sync tasks to Google Calendar and Google Sheets
 - Run a daily background sync job
 - Generate professional AI inspection wording from rough site notes, with tenant tasks and landlord maintenance notifications separated
+- Keep AI inspection output in a fixed General Notes / Specific Advice format for easier review and reuse
 
 ## Project Structure
 
@@ -44,6 +48,13 @@ Important frontend files:
 - `Frontend/src/App.tsx`: main layout and routes
 - `Frontend/src/config/api.ts`: API base URL configuration
 - `Frontend/vite.config.ts`: dev server config and build output to `Backend/wwwroot`
+- `Frontend/src/pages/PropertiesPage.tsx`: property list and entrypoint into each property information page
+- `Frontend/src/pages/PropertyDetailsPage.tsx`: one-property information workspace
+- `Frontend/src/pages/TenantContactsPage.tsx`: tenant contact import, preview, search, and property-level summary
+
+Additional developer notes:
+
+- `docs/DEVELOPMENT.md`: feature workflow notes, database startup conventions, CSV import rules, and release checklist
 
 ## Requirements
 
@@ -88,12 +99,42 @@ Notes:
 
 On the Inspect page, enter rough inspection notes and choose `AI 润色`. The backend sends the notes, property address, inspection type, and billable flag to the configured AI provider, then returns English text for use and Chinese text for review:
 
-- `English General`: official record wording, structured as General Notes and Specific Advice
+- `English General`: official record wording, structured as General Notes and Specific Advice with fixed labels:
+  - Overall Presentation
+  - Tenant Care
+  - Maintenance
+  - Risk Areas
+  - Assessment
+  - Tenant Tasks
+  - Owner Notifications
 - `English Tenant`: tenant-facing tasks, including a two-week photo follow-up requirement for cleaning or minor-care issues
 - `English Landlord`: owner-facing maintenance, hazard, leak, mould, or damage notifications
 - `Chinese reference`: proofreading-only text to help the inspector quickly catch issues before using the English wording
 
 The prompt is written for a professional New Zealand property inspector/property manager voice. It tells the model to stay objective, separate tenant responsibilities from landlord maintenance, avoid legal advice, and avoid inventing facts not present in the rough notes.
+
+The Inspect page also supports completing an inspection task in place. Use `Done`, confirm the execution date and optional parking fee, and the task is moved into inspection history by the backend.
+
+### Tenant contacts and property information
+
+Tenant contact data is stored under each property rather than as a standalone address book.
+
+- Contacts are imported from Palace tenant contact CSV exports.
+- The importer matches rows to existing `Properties` by normalized address only. It intentionally avoids fuzzy matching so contacts are not attached to the wrong unit.
+- Supported Palace email columns include `Tenant Group Email` and `Tenant Email 1`.
+- If the export contains `Tenant Group Lease Date Ended`, it is stored as `LeaseDateEnded`.
+- Exact duplicate contact rows for the same property, phone, email, and lease-end value are skipped during import.
+- `Check CSV` previews matched rows, unmatched rows, existing rows that would be replaced, unchanged rows, and new/changed rows.
+- `Apply Update` replaces contacts only for properties matched by the uploaded CSV. Contacts for properties missing from that CSV are left untouched.
+
+Frontend workflow:
+
+1. Open `Contacts`.
+2. Choose a Palace CSV.
+3. Click `Check CSV`.
+4. Review the summary and unmatched examples.
+5. Click `Apply Update` when the result looks right.
+6. Open a property from `Properties` or from the Contacts summary to see the full property information page.
 
 ### Azure App Service settings
 
@@ -223,6 +264,7 @@ launchctl print gui/$(id -u)/com.schedora.frontend
 Main backend controllers currently include:
 
 - `/api/properties`
+- `/api/tenantcontacts`
 - `/api/inspectiontasks`
 - `/api/inspectionrecords`
 - `/api/tasktypes`
@@ -267,6 +309,18 @@ The AI inspection endpoint is configured under `Ai` in ASP.NET configuration:
 `BaseUrl` should point to the provider root that exposes `/chat/completions`. The backend adds the `/chat/completions` path itself. The API key must stay on the backend; do not expose it through Vite environment variables or frontend code.
 
 If AI configuration is missing or the provider is unavailable, the Inspect page will show an error message and the original note remains unchanged.
+
+## Validation Before Push
+
+Run these checks before publishing changes:
+
+```bash
+dotnet test Backend.Tests/Backend.Tests.csproj
+cd Frontend
+npm run build
+```
+
+The frontend build writes production assets into `Backend/wwwroot`, so changes under `Backend/wwwroot` are expected after `npm run build`.
 
 ## Troubleshooting
 

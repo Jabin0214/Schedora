@@ -10,6 +10,7 @@ namespace InspectionApi.Data
         public DbSet<Property> Properties { get; set; }
         public DbSet<InspectionTask> InspectionTasks { get; set; }
         public DbSet<InspectionRecord> InspectionRecords { get; set; }
+        public DbSet<TenantContact> TenantContacts { get; set; }
         public DbSet<TaskType> TaskTypes { get; set; }
         public DbSet<TemplateInspectionType> TemplateInspectionTypes { get; set; }
         public DbSet<CleanlinessArea> CleanlinessAreas { get; set; }
@@ -26,6 +27,21 @@ namespace InspectionApi.Data
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Address).IsRequired().HasMaxLength(200);
                 entity.HasIndex(p => p.Address);
+            });
+
+            modelBuilder.Entity<TenantContact>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.HasOne(c => c.Property)
+                    .WithMany(p => p.TenantContacts)
+                    .HasForeignKey(c => c.PropertyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(c => c.SourceAddress).IsRequired().HasMaxLength(200);
+                entity.Property(c => c.Phone).HasMaxLength(80);
+                entity.Property(c => c.Email).HasMaxLength(500);
+                entity.Property(c => c.LeaseDateEnded).HasMaxLength(50);
+                entity.HasIndex(c => c.PropertyId);
+                entity.HasIndex(c => c.SourceAddress);
             });
 
             modelBuilder.Entity<InspectionTask>(entity =>

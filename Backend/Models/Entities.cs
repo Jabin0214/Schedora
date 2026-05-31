@@ -11,6 +11,31 @@ namespace InspectionApi.Models
         public string Address { get; set; } = string.Empty;
 
         public BillingPolicy BillingPolicy { get; set; } = BillingPolicy.ThreeMonthToggle;
+
+        public ICollection<TenantContact> TenantContacts { get; set; } = new List<TenantContact>();
+    }
+
+    public class TenantContact
+    {
+        public int Id { get; set; }
+
+        public int PropertyId { get; set; }
+        public Property? Property { get; set; }
+
+        [Required]
+        [StringLength(200)]
+        public string SourceAddress { get; set; } = string.Empty;
+
+        [StringLength(80)]
+        public string Phone { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string Email { get; set; } = string.Empty;
+
+        [StringLength(50)]
+        public string LeaseDateEnded { get; set; } = string.Empty;
+
+        public DateTimeOffset ImportedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 
     public enum InspectionType { MoveIn, MoveOut, Routine, Other }
@@ -46,7 +71,6 @@ namespace InspectionApi.Models
         public InspectionType Type { get; set; }
         public bool IsBillable { get; set; }
 
-        [StringLength(500, ErrorMessage = "备注不能超过500个字符")]
         public string? Notes { get; set; }
     }
 

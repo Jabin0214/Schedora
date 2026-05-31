@@ -27,7 +27,6 @@ namespace InspectionApi.Models.DTOs
 
         public bool IsBillable { get; set; }
 
-        [StringLength(500)]
         public string? Notes { get; set; }
     }
 
@@ -39,7 +38,6 @@ namespace InspectionApi.Models.DTOs
         [StringLength(50)]
         public string? ScheduledAt { get; set; }
 
-        [StringLength(500)]
         public string? Notes { get; set; }
 
         [Range(0, 100)]

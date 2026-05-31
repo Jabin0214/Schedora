@@ -63,8 +63,7 @@ namespace InspectionApi.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<int>("PropertyId")
                         .HasColumnType("integer");

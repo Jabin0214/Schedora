@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
-import { Button, Card, Modal, Space, Tag, Typography, Spin, Empty, Input, message } from 'antd';
-import { CopyOutlined, RobotOutlined, SwapOutlined } from '@ant-design/icons';
+import { Button, Card, Modal, Space, Tag, Typography, Spin, Empty, Input, message, Form, DatePicker, InputNumber } from 'antd';
+import { CheckCircleOutlined, CopyOutlined, RobotOutlined, SwapOutlined } from '@ant-design/icons';
 import api from '../api';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
@@ -11,6 +11,7 @@ import type {
   CombinedTask,
   InspectionType,
   InspectionTaskUpdateRequest,
+  TaskCompletionRequest,
 } from '../types/api';
 
 const { Text, Title } = Typography;
@@ -21,16 +22,20 @@ interface InspectCardProps {
   task: CombinedTask;
   isOverdue: boolean;
   typeName: string;
+  onComplete: (id: number, data: TaskCompletionRequest) => Promise<unknown>;
 }
 
 const DEBOUNCE_MS = 800;
 const SAVED_CLEAR_MS = 3000;
 
-const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) => {
+const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName, onComplete }) => {
+  const [completeForm] = Form.useForm();
   const [notes, setNotes] = useState<string>(task.notes ?? '');
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiInspectionPolishResponse | null>(null);
+  const [completeOpen, setCompleteOpen] = useState(false);
+  const [completeLoading, setCompleteLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestNotesRef = useRef<string>(task.notes ?? '');
@@ -131,6 +136,31 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) 
     }
   };
 
+  const openComplete = () => {
+    completeForm.setFieldsValue({
+      executionDate: task.scheduledAt ? dayjs(task.scheduledAt) : dayjs(),
+      parkingFee: undefined,
+    });
+    setCompleteOpen(true);
+  };
+
+  const handleComplete = async () => {
+    const values = await completeForm.validateFields();
+    setCompleteLoading(true);
+    try {
+      const result = await onComplete(task.id, {
+        executionDate: values.executionDate.toISOString(),
+        parkingFee: values.parkingFee ?? undefined,
+      });
+      if (result !== null) {
+        setCompleteOpen(false);
+        completeForm.resetFields();
+      }
+    } finally {
+      setCompleteLoading(false);
+    }
+  };
+
   const replaceWithGeneral = () => {
     if (!aiResult?.englishGeneralText) return;
     setNotes(aiResult.englishGeneralText);
@@ -183,8 +213,6 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) 
         value={notes}
         onChange={handleChange}
         autoSize={{ minRows: 4, maxRows: 10 }}
-        maxLength={500}
-        showCount
         placeholder="记录检查情况…"
       />
       <div style={{ marginTop: 6, minHeight: 18, fontSize: 12, textAlign: 'right' }}>
@@ -206,8 +234,40 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) 
         >
           AI 润色
         </Button>
+        <Button
+          size="small"
+          type="primary"
+          icon={<CheckCircleOutlined />}
+          onClick={openComplete}
+        >
+          Done
+        </Button>
         {aiResult?.summary && <Text type="secondary" style={{ fontSize: 12 }}>{aiResult.summary}</Text>}
       </Space>
+      <Modal
+        open={completeOpen}
+        title="Complete Task"
+        onCancel={() => setCompleteOpen(false)}
+        onOk={handleComplete}
+        confirmLoading={completeLoading}
+        okText="Confirm"
+        cancelText="Cancel"
+        destroyOnHidden
+      >
+        <Form form={completeForm} layout="vertical">
+          <Form.Item name="executionDate" label="Execution Date" rules={[{ required: true, message: 'Please select a date' }]}>
+            <DatePicker
+              showTime
+              format={['YYYY-MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']}
+              style={{ width: '100%' }}
+              placeholder="03/02 10am"
+            />
+          </Form.Item>
+          <Form.Item name="parkingFee" label="Parking Fee (optional)">
+            <InputNumber min={0} precision={2} prefix="$" placeholder="0.00" style={{ width: '100%' }} />
+          </Form.Item>
+        </Form>
+      </Modal>
       <Modal
         open={aiResult !== null}
         title="AI 正式话术"
@@ -241,7 +301,7 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName }) 
 };
 
 const InspectPage: React.FC = () => {
-  const { overdueTasks, todayTasks, loading } = useTasks();
+  const { overdueTasks, todayTasks, loading, completeInspectionTask } = useTasks();
   const { getType } = useInspectionTypes();
 
   const items = useMemo(() => {
@@ -272,6 +332,7 @@ const InspectPage: React.FC = () => {
               task={task}
               isOverdue={isOverdue}
               typeName={getType(task.type)?.name ?? `Type ${task.type ?? '?'}`}
+              onComplete={completeInspectionTask}
             />
           ))}
         </div>

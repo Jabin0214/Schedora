@@ -4,6 +4,7 @@ import {
   message, Popconfirm, Spin, Empty, Space, Tag,
 } from 'antd';
 import { PlusOutlined, DeleteOutlined, ReloadOutlined, EditOutlined, SearchOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { Link } from 'react-router-dom';
 import api, { isAxiosError } from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
@@ -111,8 +112,14 @@ const PropertiesPage: React.FC = () => {
       dataIndex: 'address',
       key: 'address',
       ellipsis: { showTitle: false },
-      render: (text: string) => (
-        <span title={text} style={{ color: '#37352F', fontWeight: 600, fontSize: '14px' }}>{text}</span>
+      render: (text: string, record: Property) => (
+        <Link
+          to={`/properties/${record.id}`}
+          title={text}
+          style={{ color: '#2383E2', fontWeight: 600, fontSize: '14px' }}
+        >
+          {text}
+        </Link>
       ),
     },
     {
@@ -124,6 +131,21 @@ const PropertiesPage: React.FC = () => {
         if (normalizeBillingPolicy(policy as Property['billingPolicy']) === 'SixMonthFree')
           return <Tag style={{ ...policyTagStyle, background: 'rgba(15,123,108,0.08)', border: '1px solid rgba(15,123,108,0.3)', color: '#0F7B6C' }}>6-Month Free</Tag>;
         return <Tag style={{ ...policyTagStyle, background: 'rgba(203,145,47,0.08)', border: '1px solid rgba(203,145,47,0.3)', color: '#CB912F' }}>3-Month Toggle</Tag>;
+      },
+    },
+    {
+      title: 'Tenant Contacts',
+      key: 'tenantContacts',
+      width: 180,
+      render: (_: unknown, record: Property) => {
+        const count = record.tenantContactCount ?? 0;
+        if (count === 0) return <Tag>No contacts</Tag>;
+        return (
+          <span title={record.tenantContactSummary || undefined}>
+            <Tag color="blue">{count}</Tag>
+            <span style={{ color: '#787774', fontSize: 13 }}>{record.tenantContactSummary}</span>
+          </span>
+        );
       },
     },
     {
@@ -184,7 +206,7 @@ const PropertiesPage: React.FC = () => {
           columns={columns}
           rowKey="id"
           size="small"
-          scroll={{ x: 560 }}
+          scroll={{ x: 740 }}
           pagination={{
             showSizeChanger: true,
             showQuickJumper: true,

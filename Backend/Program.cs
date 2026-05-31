@@ -133,6 +133,9 @@ using (var scope = app.Services.CreateScope())
             await db.Database.ExecuteSqlRawAsync(TemplatesStartupSql.Sql);
             logger.LogInformation("✅ Template tables ready");
 
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.TenantContactsTableSql);
+            logger.LogInformation("✅ TenantContacts table ready");
+
             // Add ParkingFee column if it doesn't exist yet
             await db.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""InspectionRecords""

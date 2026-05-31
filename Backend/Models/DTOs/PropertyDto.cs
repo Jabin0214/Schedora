@@ -10,6 +10,8 @@ namespace InspectionApi.Models.DTOs
         public string? LastInspectionDate { get; set; }
         public string? LastInspectionType { get; set; }
         public bool LastInspectionWasCharged { get; set; }
+        public int TenantContactCount { get; set; }
+        public string? TenantContactSummary { get; set; }
     }
 
     public class PropertyCreateDto

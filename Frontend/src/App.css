@@ -241,6 +241,35 @@
   margin-bottom: 10px;
 }
 
+.property-info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.property-info-item {
+  min-width: 0;
+  border: 1px solid var(--n-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--n-bg);
+}
+
+.property-info-label {
+  margin-bottom: 6px;
+  color: var(--n-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.property-info-value {
+  min-width: 0;
+  color: var(--n-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
 .responsive-radio-group {
   max-width: 100%;
 }
@@ -451,6 +480,10 @@
     grid-template-columns: minmax(0, 1fr);
     gap: 6px;
     padding: 12px;
+  }
+
+  .property-info-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .config-row-header {

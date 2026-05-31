@@ -9,6 +9,7 @@ import {
   EditOutlined,
   CopyOutlined,
   LogoutOutlined,
+  ContactsOutlined,
 } from '@ant-design/icons';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
@@ -21,6 +22,8 @@ import ConfigPage from './pages/ConfigPage';
 import InspectPage from './pages/InspectPage';
 import TemplatesPage from './pages/TemplatesPage';
 import LoginPage from './pages/LoginPage';
+import TenantContactsPage from './pages/TenantContactsPage';
+import PropertyDetailsPage from './pages/PropertyDetailsPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -51,6 +54,7 @@ const AppShell: React.FC = () => {
     if (location.pathname === '/tasks') return '2';
     if (location.pathname === '/inspect') return '6';
     if (location.pathname === '/templates') return '7';
+    if (location.pathname === '/tenant-contacts') return '8';
     if (location.pathname === '/calendar') return '3';
     if (location.pathname === '/history') return '4';
     if (location.pathname === '/config') return '5';
@@ -62,6 +66,7 @@ const AppShell: React.FC = () => {
     { key: '2', icon: <UnorderedListOutlined />, label: <Link to="/tasks">Tasks</Link> },
     { key: '6', icon: <EditOutlined />,          label: <Link to="/inspect">Inspect</Link> },
     { key: '7', icon: <CopyOutlined />,          label: <Link to="/templates">Templates</Link> },
+    { key: '8', icon: <ContactsOutlined />,      label: <Link to="/tenant-contacts">Contacts</Link> },
     { key: '3', icon: <CalendarOutlined />,      label: <Link to="/calendar">Calendar</Link> },
     { key: '4', icon: <FileTextOutlined />,      label: <Link to="/history">History</Link> },
     { key: '5', icon: <SettingOutlined />,       label: <Link to="/config">Config</Link> },
@@ -121,9 +126,11 @@ const AppShell: React.FC = () => {
             <ErrorBoundary>
               <Routes>
                 <Route path="/" element={<PropertiesPage />} />
+                <Route path="/properties/:id" element={<PropertyDetailsPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/inspect" element={<InspectPage />} />
                 <Route path="/templates" element={<TemplatesPage />} />
+                <Route path="/tenant-contacts" element={<TenantContactsPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/history" element={<HistoryPage />} />
                 <Route path="/config" element={<ConfigPage />} />
