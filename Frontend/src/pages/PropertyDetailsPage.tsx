@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Card, Empty, Space, Spin, Table, Tag } from 'antd';
+import { Button, Empty, Space, Spin, Table, Tag } from 'antd';
 import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
 import { Link, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -13,11 +13,14 @@ import { useInspectionTypes } from '../hooks/useInspectionTypes';
 
 const tagStyle: React.CSSProperties = { fontSize: 12, letterSpacing: 0 };
 
-const InfoItem: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
-  <div className="property-info-item">
-    <div className="property-info-label">{label}</div>
-    <div className="property-info-value">{value}</div>
-  </div>
+const DetailSection: React.FC<{ title: string; count?: number; children: React.ReactNode }> = ({ title, count, children }) => (
+  <section className="property-section">
+    <div className="property-section-title">
+      <span>{title}</span>
+      {count !== undefined && <Tag>{count}</Tag>}
+    </div>
+    {children}
+  </section>
 );
 
 const PropertyDetailsPage: React.FC = () => {
@@ -175,27 +178,19 @@ const PropertyDetailsPage: React.FC = () => {
       </div>
 
       <Spin spinning={loading}>
-        <Space direction="vertical" size={12} style={{ width: '100%' }}>
-          <Card size="small" title={property?.address || 'Property'}>
-            {property ? (
-              <div className="property-info-grid">
-                <InfoItem label="Property ID" value={`#${property.id}`} />
-                <InfoItem
-                  label="Billing Policy"
-                  value={billingPolicy === 'SixMonthFree' ? '6-Month Free' : '3-Month Toggle'}
-                />
-                <InfoItem label="Tenant Contacts" value={contacts.length} />
-                <InfoItem
-                  label="Latest Inspection"
-                  value={latestRecord ? dayjs(latestRecord.executionDate).format('YYYY-MM-DD') : '-'}
-                />
+        {property ? (
+          <div className="property-page">
+            <div className="property-summary">
+              <h2>{property.address}</h2>
+              <div className="property-summary-meta">
+                <span>#{property.id}</span>
+                <span>{billingPolicy === 'SixMonthFree' ? '6-Month Free' : '3-Month Toggle'}</span>
+                <span>{contacts.length} contacts</span>
+                <span>Latest: {latestRecord ? dayjs(latestRecord.executionDate).format('YYYY-MM-DD') : '-'}</span>
               </div>
-            ) : (
-              <Empty description="Property not found" />
-            )}
-          </Card>
+            </div>
 
-          <Card size="small" title="Tenant Contacts">
+            <DetailSection title="Tenant Contacts" count={contacts.length}>
             <Table
               className="responsive-table"
               dataSource={contacts}
@@ -206,9 +201,9 @@ const PropertyDetailsPage: React.FC = () => {
               scroll={{ x: 850 }}
               locale={{ emptyText: <Empty description="No tenant contacts" /> }}
             />
-          </Card>
+            </DetailSection>
 
-          <Card size="small" title="Open Tasks">
+            <DetailSection title="Open Tasks" count={tasks.length}>
             <Table
               className="responsive-table"
               dataSource={tasks}
@@ -219,9 +214,9 @@ const PropertyDetailsPage: React.FC = () => {
               scroll={{ x: 720 }}
               locale={{ emptyText: <Empty description="No open tasks" /> }}
             />
-          </Card>
+            </DetailSection>
 
-          <Card size="small" title="Inspection Records">
+            <DetailSection title="Inspection Records" count={records.length}>
             <Table
               className="responsive-table"
               dataSource={records}
@@ -232,8 +227,11 @@ const PropertyDetailsPage: React.FC = () => {
               scroll={{ x: 620 }}
               locale={{ emptyText: <Empty description="No inspection records" /> }}
             />
-          </Card>
-        </Space>
+            </DetailSection>
+          </div>
+        ) : (
+          <Empty description="Property not found" />
+        )}
       </Spin>
     </div>
   );

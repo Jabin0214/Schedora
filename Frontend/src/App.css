@@ -241,33 +241,45 @@
   margin-bottom: 10px;
 }
 
-.property-info-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+.property-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
 }
 
-.property-info-item {
-  min-width: 0;
-  border: 1px solid var(--n-border);
-  border-radius: 6px;
-  padding: 10px 12px;
-  background: var(--n-bg);
+.property-summary {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--n-border);
 }
 
-.property-info-label {
-  margin-bottom: 6px;
+.property-summary h2 {
+  margin: 0 0 8px;
+  color: var(--n-text-primary);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.property-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
   color: var(--n-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
 }
 
-.property-info-value {
+.property-section {
   min-width: 0;
+}
+
+.property-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
   color: var(--n-text-primary);
   font-size: 15px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
+  font-weight: 650;
 }
 
 .responsive-radio-group {
@@ -482,8 +494,8 @@
     padding: 12px;
   }
 
-  .property-info-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .property-summary-meta {
+    gap: 6px 12px;
   }
 
   .config-row-header {
