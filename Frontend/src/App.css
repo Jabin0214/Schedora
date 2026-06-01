@@ -244,7 +244,7 @@
 .property-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .property-summary {
@@ -273,13 +273,40 @@
 }
 
 .property-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: var(--n-text-primary);
-  font-size: 15px;
-  font-weight: 650;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.property-simple-list {
+  border-top: 1px solid var(--n-border);
+}
+
+.property-simple-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1.2fr);
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--n-border);
+}
+
+.property-simple-main {
+  min-width: 0;
+  color: var(--n-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.property-simple-meta {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--n-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .responsive-radio-group {
@@ -496,6 +523,11 @@
 
   .property-summary-meta {
     gap: 6px 12px;
+  }
+
+  .property-simple-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
   }
 
   .config-row-header {
