@@ -15,10 +15,10 @@ public class DatabaseStartupSqlTests
     {
         var sql = DatabaseStartupSql.IdentitySequenceSyncSql;
         Assert.Contains("\"TemplateInspectionTypes\"", sql);
-        Assert.Contains("\"CleanlinessAreas\"", sql);
-        Assert.Contains("\"DamageItems\"", sql);
         Assert.Contains("\"GeneralTemplates\"", sql);
-        Assert.Contains("\"AudienceTemplates\"", sql);
+        Assert.DoesNotContain("\"CleanlinessAreas\"", sql);
+        Assert.DoesNotContain("\"DamageItems\"", sql);
+        Assert.DoesNotContain("\"AudienceTemplates\"", sql);
     }
 
     [Fact]

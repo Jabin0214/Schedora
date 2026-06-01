@@ -43,31 +43,10 @@ namespace InspectionApi.Data
                         PERFORM setval(seq, nval, false);
                     END IF;
 
-                    -- CleanlinessAreas
-                    seq := pg_get_serial_sequence('""CleanlinessAreas""', 'Id');
-                    IF seq IS NOT NULL THEN
-                        SELECT COALESCE(MAX(""Id""), 0) + 1 INTO nval FROM ""CleanlinessAreas"";
-                        PERFORM setval(seq, nval, false);
-                    END IF;
-
-                    -- DamageItems
-                    seq := pg_get_serial_sequence('""DamageItems""', 'Id');
-                    IF seq IS NOT NULL THEN
-                        SELECT COALESCE(MAX(""Id""), 0) + 1 INTO nval FROM ""DamageItems"";
-                        PERFORM setval(seq, nval, false);
-                    END IF;
-
                     -- GeneralTemplates
                     seq := pg_get_serial_sequence('""GeneralTemplates""', 'Id');
                     IF seq IS NOT NULL THEN
                         SELECT COALESCE(MAX(""Id""), 0) + 1 INTO nval FROM ""GeneralTemplates"";
-                        PERFORM setval(seq, nval, false);
-                    END IF;
-
-                    -- AudienceTemplates
-                    seq := pg_get_serial_sequence('""AudienceTemplates""', 'Id');
-                    IF seq IS NOT NULL THEN
-                        SELECT COALESCE(MAX(""Id""), 0) + 1 INTO nval FROM ""AudienceTemplates"";
                         PERFORM setval(seq, nval, false);
                     END IF;
                 END $$;
