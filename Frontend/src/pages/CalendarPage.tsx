@@ -109,13 +109,13 @@ const GridTaskCard: React.FC<{
 // ── Calendar page ──────────────────────────────────────────────
 const CalendarPage: React.FC = () => {
   const [weekStart, setWeekStart] = useState<Dayjs>(() => dayjs().isoWeekday(1).startOf('day'));
-  const { overdueTasks, todayTasks, upcomingTasks, unscheduledTasks, loading, fetchTasks } = useTasks();
+  const { overdueTasks, todayTasks, tomorrowTasks, upcomingTasks, unscheduledTasks, loading, fetchTasks } = useTasks();
   const { types } = useInspectionTypes();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const allScheduledTasks = useMemo(
-    () => [...overdueTasks, ...todayTasks, ...upcomingTasks],
-    [overdueTasks, todayTasks, upcomingTasks]
+    () => [...overdueTasks, ...todayTasks, ...tomorrowTasks, ...upcomingTasks],
+    [overdueTasks, todayTasks, tomorrowTasks, upcomingTasks]
   );
 
   const getTypeColor = (id?: number) => types.find(t => t.id === id)?.color ?? 'default';

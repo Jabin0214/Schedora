@@ -55,7 +55,7 @@ const TasksPage: React.FC = () => {
 
   const {
     loading: tasksLoading,
-    overdueTasks, todayTasks, upcomingTasks, unscheduledTasks,
+    overdueTasks, todayTasks, tomorrowTasks, upcomingTasks, unscheduledTasks,
     fetchTasks, createInspectionTask, updateInspectionTask,
     deleteInspectionTask, completeInspectionTask,
   } = useTasks();
@@ -422,6 +422,7 @@ const TasksPage: React.FC = () => {
       <Spin spinning={loading}>
         {overdueTasks.length > 0 && renderSection('Overdue', overdueTasks, '#E03E3E')}
         {renderSection('Today', todayTasks)}
+        {renderSection('Tomorrow', tomorrowTasks, '#0F7B6C')}
         {renderSection('Upcoming', upcomingTasks, '#2383E2', true)}
         {renderSection('Unscheduled', unscheduledTasks)}
       </Spin>
