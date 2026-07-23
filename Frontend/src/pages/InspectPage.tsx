@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback } from 'react';
 import { Button, Card, Modal, Space, Tag, Typography, Spin, Empty, Input, message, Form, DatePicker, InputNumber } from 'antd';
-import { CheckCircleOutlined, CopyOutlined, RobotOutlined, SwapOutlined } from '@ant-design/icons';
+import { CheckCircleOutlined, ClockCircleOutlined, CopyOutlined, RobotOutlined, SwapOutlined } from '@ant-design/icons';
+import type { TextAreaRef } from 'antd/es/input/TextArea';
 import api from '../api';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
@@ -46,17 +47,20 @@ const InspectCard: React.FC<InspectCardProps> = ({
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiResult, setAiResult] = useState<AiInspectionPolishResponse | null>(null);
+  const [insertLoading, setInsertLoading] = useState(false);
   const [completeOpen, setCompleteOpen] = useState(false);
   const [completeLoading, setCompleteLoading] = useState(false);
+  const notesInputRef = useRef<TextAreaRef>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestNotesRef = useRef<string>(task.notes ?? '');
   const lastSavedRef = useRef<string>(task.notes ?? '');
   const saveSeqRef = useRef<number>(0);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const save = useCallback(async (value: string) => {
+  const save = useCallback(async (value: string): Promise<boolean> => {
     if (value === lastSavedRef.current) {
-      return;
+      return true;
     }
     const mySeq = ++saveSeqRef.current;
     setStatus('saving');
@@ -67,19 +71,25 @@ const InspectCard: React.FC<InspectCardProps> = ({
       type: (task.type ?? 0) as InspectionType,
       isBillable: task.isBillable ?? false,
     };
-    try {
-      // Direct PUT (not useTasks.updateInspectionTask) to avoid its success toast + full refetch on every keystroke.
-      await api.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
-      if (mySeq !== saveSeqRef.current) return;
-      lastSavedRef.current = value;
-      setStatus('saved');
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = setTimeout(() => setStatus('idle'), SAVED_CLEAR_MS);
-    } catch (err) {
-      if (mySeq !== saveSeqRef.current) return;
-      console.warn('[InspectPage] save failed', err);
-      setStatus('error');
-    }
+    const run = saveQueueRef.current.then(async () => {
+      try {
+        // Direct PUT (not useTasks.updateInspectionTask) to avoid its success toast + full refetch on every keystroke.
+        await api.put(`${API_ENDPOINTS.inspectionTasks}/${task.id}`, payload);
+        if (mySeq !== saveSeqRef.current) return false;
+        lastSavedRef.current = value;
+        setStatus('saved');
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setStatus('idle'), SAVED_CLEAR_MS);
+        return true;
+      } catch (err) {
+        if (mySeq !== saveSeqRef.current) return false;
+        console.warn('[InspectPage] save failed', err);
+        setStatus('error');
+        return false;
+      }
+    });
+    saveQueueRef.current = run.then(() => undefined, () => undefined);
+    return run;
   }, [task.id, task.propertyId, task.scheduledAt, task.type, task.isBillable]);
 
   const scheduleSave = useCallback((value: string) => {
@@ -160,6 +170,10 @@ const InspectCard: React.FC<InspectCardProps> = ({
     copy(`${name} Template`, text);
   };
 
+  const copyNotes = () => {
+    copy('备注', notes);
+  };
+
   const openComplete = () => {
     completeForm.setFieldsValue({
       executionDate: task.scheduledAt ? dayjs(task.scheduledAt) : dayjs(),
@@ -185,41 +199,61 @@ const InspectCard: React.FC<InspectCardProps> = ({
     }
   };
 
-  const replaceWithGeneral = () => {
+  const insertGeneralIntoNotes = async () => {
     if (!aiResult?.englishGeneralText) return;
-    setNotes(aiResult.englishGeneralText);
-    latestNotesRef.current = aiResult.englishGeneralText;
-    scheduleSave(aiResult.englishGeneralText);
-    message.success('已填入 English General');
+    const nextNotes = aiResult.englishGeneralText;
+    setInsertLoading(true);
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    setNotes(nextNotes);
+    latestNotesRef.current = nextNotes;
+    setAiResult(null);
+    try {
+      const saved = await save(nextNotes);
+      notesInputRef.current?.focus({ cursor: 'end' });
+      if (saved) {
+        message.success('已插入备注');
+      } else {
+        message.error('已插入备注，但自动保存失败，请点重试');
+      }
+    } finally {
+      setInsertLoading(false);
+    }
   };
 
   const dateLabel = task.scheduledAt ? dayjs(task.scheduledAt).format('MM-DD') : '';
 
   const aiTextBlock = (label: string, text: string) => (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+    <div className="inspect-ai-block">
+      <div className="inspect-ai-block-header">
         <Text strong style={{ fontSize: 13 }}>{label}</Text>
-        <Button size="small" icon={<CopyOutlined />} onClick={() => copy(label, text)}>
+        <Button className="inspect-copy-button" size="small" icon={<CopyOutlined />} onClick={() => copy(label, text)}>
           复制
         </Button>
       </div>
-      <div style={{ whiteSpace: 'pre-wrap', background: '#F7F7F5', border: '1px solid #E9E9E7', borderRadius: 4, padding: 10, fontSize: 13 }}>
+      <div className="inspect-ai-text">
         {text || <Text type="secondary">（无内容）</Text>}
       </div>
     </div>
   );
 
   return (
-    <Card size="small" style={{ width: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <Tag color={isOverdue ? 'error' : undefined} style={{ margin: 0 }}>
-          {dateLabel}
-        </Tag>
-        {isOverdue && <Text type="secondary" style={{ fontSize: 12 }}>Overdue</Text>}
+    <Card size="small" className="inspect-card">
+      <div className="inspect-card-topline">
+        <div className="inspect-card-meta">
+          <Tag color={isOverdue ? 'error' : undefined} className="inspect-date-tag" icon={<ClockCircleOutlined />}>
+            {dateLabel || 'No date'}
+          </Tag>
+          <Tag className="inspect-type-tag">{typeName}</Tag>
+          {task.isBillable && <Tag color="gold" className="inspect-type-tag">Billable</Tag>}
+        </div>
+        {isOverdue && <Text type="danger" className="inspect-overdue-text">Overdue</Text>}
       </div>
       <Text
         strong
-        style={{ fontSize: 16, display: 'block', marginBottom: 8, cursor: 'pointer' }}
+        className="inspect-address"
         onClick={async () => {
           const addr = task.propertyAddress;
           if (!addr) return;
@@ -233,13 +267,17 @@ const InspectCard: React.FC<InspectCardProps> = ({
       >
         {task.propertyAddress ?? '(no address)'}
       </Text>
-      <Input.TextArea
-        value={notes}
-        onChange={handleChange}
-        autoSize={{ minRows: 4, maxRows: 10 }}
-        placeholder="记录检查情况…"
-      />
-      <div style={{ marginTop: 6, minHeight: 18, fontSize: 12, textAlign: 'right' }}>
+      <div className="inspect-notes-shell">
+        <Input.TextArea
+          ref={notesInputRef}
+          className="inspect-notes-input"
+          value={notes}
+          onChange={handleChange}
+          autoSize={{ minRows: 4, maxRows: 12 }}
+          placeholder="记录检查情况…"
+        />
+      </div>
+      <div className="inspect-save-status">
         {status === 'saving' && <Text type="secondary">保存中…</Text>}
         {status === 'saved' && <Text type="success">已保存 ✓</Text>}
         {status === 'error' && (
@@ -249,19 +287,32 @@ const InspectCard: React.FC<InspectCardProps> = ({
           </>
         )}
       </div>
-      <Space size={8} wrap>
-        {templateOptions.map(template => (
-          <Button
-            key={template.id}
-            size="small"
-            icon={<CopyOutlined />}
-            onClick={() => copyTemplate(template.name, template.text)}
-          >
-            {template.name}
-          </Button>
-        ))}
+      <div className="inspect-actions">
+        <div className="inspect-template-strip" aria-label="Inspection templates">
+          {templateOptions.map(template => (
+            <Button
+              key={template.id}
+              className="inspect-template-button"
+              size="small"
+              icon={<CopyOutlined />}
+              onClick={() => copyTemplate(template.name, template.text)}
+            >
+              {template.name}
+            </Button>
+          ))}
+        </div>
+        <Space className="inspect-primary-actions" size={8}>
         <Button
-          size="small"
+          className="inspect-action-button inspect-copy-notes-button"
+          size="middle"
+          icon={<CopyOutlined />}
+          onClick={copyNotes}
+        >
+          复制备注
+        </Button>
+        <Button
+          className="inspect-action-button"
+          size="middle"
           icon={<RobotOutlined />}
           loading={aiLoading}
           onClick={handleAiPolish}
@@ -269,15 +320,17 @@ const InspectCard: React.FC<InspectCardProps> = ({
           AI 润色
         </Button>
         <Button
-          size="small"
+          className="inspect-action-button"
+          size="middle"
           type="primary"
           icon={<CheckCircleOutlined />}
           onClick={openComplete}
         >
           Done
         </Button>
-        {aiResult?.summary && <Text type="secondary" style={{ fontSize: 12 }}>{aiResult.summary}</Text>}
-      </Space>
+        </Space>
+      </div>
+      {aiResult?.summary && <Text type="secondary" className="inspect-ai-summary">{aiResult.summary}</Text>}
       <Modal
         open={completeOpen}
         title="Complete Task"
@@ -305,13 +358,19 @@ const InspectCard: React.FC<InspectCardProps> = ({
       <Modal
         open={aiResult !== null}
         title="AI 正式话术"
+        className="inspect-ai-modal"
         onCancel={() => setAiResult(null)}
         width={760}
         footer={
-          <Space>
+          <Space className="inspect-ai-footer">
             <Button onClick={() => setAiResult(null)}>关闭</Button>
-            <Button type="primary" icon={<SwapOutlined />} onClick={replaceWithGeneral}>
-              填入 English General
+            <Button
+              type="primary"
+              icon={<SwapOutlined />}
+              loading={insertLoading}
+              onClick={insertGeneralIntoNotes}
+            >
+              插入到备注
             </Button>
           </Space>
         }
@@ -321,9 +380,9 @@ const InspectCard: React.FC<InspectCardProps> = ({
             {aiTextBlock('English General（正式记录）', aiResult.englishGeneralText)}
             {aiTextBlock('English Tenant（发给房客）', aiResult.englishTenantText)}
             {aiTextBlock('English Landlord（发给房东）', aiResult.englishLandlordText)}
-            <div style={{ marginTop: 4, paddingTop: 12, borderTop: '1px solid #E9E9E7' }}>
+            <div className="inspect-ai-reference">
               <Text strong style={{ fontSize: 13 }}>中文参考（仅校对）</Text>
-              <div style={{ whiteSpace: 'pre-wrap', background: '#FAFAF9', border: '1px dashed #D9D9D6', borderRadius: 4, padding: 10, fontSize: 13, marginTop: 6, color: '#55534E' }}>
+              <div className="inspect-ai-reference-text">
                 {aiResult.chineseReferenceText || <Text type="secondary">（无内容）</Text>}
               </div>
             </div>
@@ -361,7 +420,14 @@ const InspectPage: React.FC = () => {
 
   return (
     <div className="inspect-page">
-      <Title level={4} style={{ marginTop: 0 }}>Inspect</Title>
+      <div className="inspect-page-header">
+        <div>
+          <Title level={4} className="inspect-page-title">Inspect</Title>
+          <Text type="secondary" className="inspect-page-subtitle">
+            {items.length > 0 ? `${items.length} due today or overdue` : 'Field notes workspace'}
+          </Text>
+        </div>
+      </div>
 
       {loading && items.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 48 }}>
@@ -370,7 +436,7 @@ const InspectPage: React.FC = () => {
       ) : items.length === 0 ? (
         <Empty description="今天没有需要检查的任务" style={{ marginTop: 48 }} />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="inspect-list">
           {items.map(({ task, isOverdue }) => {
             const typeName = getType(task.type)?.name ?? `Type ${task.type ?? '?'}`;
 
