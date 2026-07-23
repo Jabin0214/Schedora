@@ -141,6 +141,9 @@ using (var scope = app.Services.CreateScope())
             await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.PropertiesTableSql);
             logger.LogInformation("✅ Property condition column ready");
 
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.InspectionTasksTableSql);
+            logger.LogInformation("✅ Inspection task notes column ready");
+
             // Add ParkingFee column if it doesn't exist yet
             await db.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""InspectionRecords""

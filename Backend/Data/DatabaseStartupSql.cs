@@ -7,6 +7,11 @@ namespace InspectionApi.Data
                 ADD COLUMN IF NOT EXISTS ""PropertyCondition"" text NULL;
             ";
 
+        public const string InspectionTasksTableSql = @"
+                ALTER TABLE ""InspectionTasks""
+                ALTER COLUMN ""Notes"" TYPE text;
+            ";
+
         public const string IdentitySequenceSyncSql = @"
                 DO $$
                 DECLARE

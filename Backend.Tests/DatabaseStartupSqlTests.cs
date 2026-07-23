@@ -36,4 +36,11 @@ public class DatabaseStartupSqlTests
         Assert.Contains("\"Properties\"", DatabaseStartupSql.PropertiesTableSql);
         Assert.Contains("\"PropertyCondition\" text", DatabaseStartupSql.PropertiesTableSql);
     }
+
+    [Fact]
+    public void InspectionTasksStartupSqlRemovesNotesLengthLimit()
+    {
+        Assert.Contains("\"InspectionTasks\"", DatabaseStartupSql.InspectionTasksTableSql);
+        Assert.Contains("\"Notes\" TYPE text", DatabaseStartupSql.InspectionTasksTableSql);
+    }
 }
