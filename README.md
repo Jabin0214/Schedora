@@ -242,6 +242,11 @@ What it does:
   - `~/Library/Logs/schedora-backend.log`
   - `~/Library/Logs/schedora-frontend.log`
 
+In this mode, the frontend is not served from a separate Vite dev-server port. The frontend watcher rebuilds the React app into `Backend/wwwroot`, and the backend serves that directory from the same origin:
+
+- Local app: `http://127.0.0.1:5097`
+- Frontend output: `Backend/wwwroot`
+
 ## LaunchAgent
 
 On macOS, this project may also be configured through `launchd`.
@@ -258,6 +263,68 @@ launchctl list | rg "com\\.schedora\\."
 launchctl print gui/$(id -u)/com.schedora.backend
 launchctl print gui/$(id -u)/com.schedora.frontend
 ```
+
+## Fixed Public Access
+
+This machine is configured to serve Schedora publicly through Cloudflare Tunnel at:
+
+- `https://schedora.jabinchen.com`
+
+Current routing:
+
+```text
+schedora.jabinchen.com
+  -> Vercel DNS CNAME
+  -> Cloudflare Tunnel
+  -> http://127.0.0.1:5097
+  -> Backend/wwwroot and /api
+```
+
+The Vercel DNS record for `jabinchen.com` must include:
+
+```text
+Name: schedora
+Type: CNAME
+Value: 5d1c70a2-a835-4b25-8158-6f5003a9a8a4.cfargotunnel.com
+```
+
+Cloudflare Tunnel details:
+
+```text
+Tunnel name: schedora-jabinchen
+Tunnel ID: 5d1c70a2-a835-4b25-8158-6f5003a9a8a4
+Local service: http://127.0.0.1:5097
+```
+
+Important local files:
+
+- `~/.cloudflared/config.yml`
+- `~/.cloudflared/5d1c70a2-a835-4b25-8158-6f5003a9a8a4.json`
+- `~/Library/LaunchAgents/com.cloudflare.cloudflared.plist`
+
+The Cloudflare LaunchAgent runs:
+
+```bash
+cloudflared tunnel --config ~/.cloudflared/config.yml run schedora-jabinchen
+```
+
+To check the public-access stack:
+
+```bash
+./scripts/schedora.sh status
+launchctl print gui/$(id -u)/com.cloudflare.cloudflared
+cloudflared tunnel info schedora-jabinchen
+dig +short CNAME schedora.jabinchen.com
+curl -I https://schedora.jabinchen.com
+```
+
+Operational notes:
+
+- The Mac must be awake, powered on, and online for the public URL to work.
+- The backend must keep serving `http://127.0.0.1:5097`.
+- The frontend watcher must keep writing the built frontend into `Backend/wwwroot`.
+- Do not delete the Cloudflare credentials file, Cloudflare config, Cloudflare LaunchAgent, or the Vercel `schedora` CNAME.
+- This setup intentionally uses `jabinchen.com`. Do not reuse `the-one.co.nz` or `bulid.org` for this project.
 
 ## API Surface
 
@@ -335,6 +402,36 @@ The frontend build writes production assets into `Backend/wwwroot`, so changes u
 - Confirm the backend is running on `http://localhost:5097`
 - Confirm `VITE_API_BASE_URL` if you are using the Vite dev server
 - If you are using the built frontend served by ASP.NET, make sure `Frontend` has been built into `Backend/wwwroot`
+
+### Public URL is down
+
+Check the local app first:
+
+```bash
+./scripts/schedora.sh status
+curl -I http://127.0.0.1:5097
+```
+
+If the local app is down, restart Schedora:
+
+```bash
+./scripts/schedora.sh restart
+```
+
+If the local app is healthy, check the tunnel and DNS:
+
+```bash
+launchctl print gui/$(id -u)/com.cloudflare.cloudflared
+cloudflared tunnel info schedora-jabinchen
+dig +short CNAME schedora.jabinchen.com
+curl -I https://schedora.jabinchen.com
+```
+
+The expected CNAME target is:
+
+```text
+5d1c70a2-a835-4b25-8158-6f5003a9a8a4.cfargotunnel.com
+```
 
 ### Background services appear to be running
 

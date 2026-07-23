@@ -23,6 +23,7 @@ namespace InspectionApi.Data
             {
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Address).IsRequired().HasMaxLength(200);
+                entity.Property(p => p.PropertyCondition);
                 entity.HasIndex(p => p.Address);
             });
 

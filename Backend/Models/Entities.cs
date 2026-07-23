@@ -10,6 +10,8 @@ namespace InspectionApi.Models
         [StringLength(200, MinimumLength = 5, ErrorMessage = "地址长度必须在5-200个字符之间")]
         public string Address { get; set; } = string.Empty;
 
+        public string? PropertyCondition { get; set; }
+
         public BillingPolicy BillingPolicy { get; set; } = BillingPolicy.ThreeMonthToggle;
 
         public ICollection<TenantContact> TenantContacts { get; set; } = new List<TenantContact>();

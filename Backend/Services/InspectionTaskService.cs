@@ -41,18 +41,11 @@ namespace InspectionApi.Services
         private static DateTimeOffset ParseDate(string iso) =>
             DateTimeOffset.Parse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
-        private async Task<bool> ShouldChargeAsync(int propertyId, BillingPolicy billingPolicy)
+        private async Task EnsureTaskTypeExistsAsync(int typeId, CancellationToken cancellationToken = default)
         {
-            if (billingPolicy == BillingPolicy.SixMonthFree)
-                return false;
-
-            var lastRecord = await _context.InspectionRecords
-                .Where(r => r.PropertyId == propertyId)
-                .OrderByDescending(r => r.ExecutionDate)
-                .FirstOrDefaultAsync();
-
-            if (lastRecord == null) return true;
-            return !lastRecord.IsCharged;
+            var exists = await _context.TaskTypes.AnyAsync(t => t.Id == typeId, cancellationToken);
+            if (!exists)
+                throw new ArgumentException($"指定的任务类型不存在: {typeId}");
         }
 
         private static InspectionTaskDto ToDto(InspectionTask t, string billingPolicy) => new()
@@ -81,6 +74,7 @@ namespace InspectionApi.Services
         {
             var property = await _context.Properties.FindAsync(dto.PropertyId)
                 ?? throw new ArgumentException("指定的物业不存在");
+            await EnsureTaskTypeExistsAsync(dto.Type);
 
             var scheduledAt = string.IsNullOrEmpty(dto.ScheduledAt)
                 ? (DateTimeOffset?)null
@@ -115,6 +109,7 @@ namespace InspectionApi.Services
                     ?? throw new ArgumentException("指定的物业不存在");
                 existingTask.Property = property;
             }
+            await EnsureTaskTypeExistsAsync(dto.Type);
 
             var scheduledAt = string.IsNullOrEmpty(dto.ScheduledAt)
                 ? (DateTimeOffset?)null

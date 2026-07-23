@@ -2,10 +2,12 @@ import React, { useState, useCallback, useMemo } from 'react';
 import {
   Button, Modal, Form, Input, Select, DatePicker, InputNumber,
   Popconfirm, Spin, Empty, Space, Tag, Tooltip, Card, message,
+  Alert,
 } from 'antd';
 import {
   PlusOutlined, DeleteOutlined, ReloadOutlined, CopyOutlined,
   SaveOutlined, CloseOutlined, CheckCircleOutlined, SyncOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import api from '../api';
 import dayjs from 'dayjs';
@@ -14,12 +16,13 @@ dayjs.extend(isoWeek);
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
-import type { CombinedTask, InspectionRecordDto } from '../types/api';
+import type { AiTaskDraftPropertyCandidate, AiTaskDraftResponse, CombinedTask, InspectionRecordDto } from '../types/api';
 import { API_ENDPOINTS } from '../config/api';
-import { IndTitle, modalStyles } from '../components/shared';
+import { IndTitle } from '../components/shared';
+import { modalStyles } from '../components/modalStyles';
 import { getSuggestedBillable, isSixMonthFreePolicy } from '../utils/billingPolicy';
 
-const { TextArea } = Input;
+const { Search, TextArea } = Input;
 
 const DISABLED_MINUTES = Array.from({ length: 60 }, (_, i) => i).filter(i => i % 10 !== 0);
 
@@ -27,6 +30,19 @@ const formattedDate = (dateStr?: string): string => {
   if (!dateStr) return 'Unscheduled';
   return dayjs(dateStr).format('MM-DD ddd HH:mm');
 };
+
+const routineInspectionEmailBody = `Kia Ora,
+
+My name is Jabin, and I will be conducting the routine inspection of your property on behalf of ST International LTD.
+
+To arrange a suitable time for the inspection, which should take no longer than 15 minutes, could you please let me know what days and times work best for you in the coming days?
+
+Ngā mihi,
+Jabin
+ST International LTD`;
+
+const getRoutineInspectionEmailSubject = (address?: string): string =>
+  address ? `Routine Inspection - ${address}` : 'Routine Inspection';
 
 const ModalTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span style={{ fontSize: '15px', fontWeight: 600, color: '#37352F' }}>
@@ -48,6 +64,11 @@ const TasksPage: React.FC = () => {
   const [completingTask,      setCompletingTask]      = useState<CombinedTask | null>(null);
   const [editingKey,          setEditingKey]          = useState<string | null>(null);
   const [editingRecord,       setEditingRecord]       = useState<CombinedTask | null>(null);
+  const [aiTaskText,          setAiTaskText]          = useState('');
+  const [aiDraftLoading,      setAiDraftLoading]      = useState(false);
+  const [isAiDraftApplied,    setIsAiDraftApplied]    = useState(false);
+  const [aiDraftCandidates,   setAiDraftCandidates]   = useState<AiTaskDraftPropertyCandidate[]>([]);
+  const [aiDraftAddressQuery, setAiDraftAddressQuery] = useState('');
 
   const [form]         = Form.useForm();
   const [completeForm] = Form.useForm();
@@ -73,6 +94,21 @@ const TasksPage: React.FC = () => {
     () => taskTypes.map(t => ({ value: t.id, label: t.name })),
     [taskTypes]
   );
+
+  const selectedProperty = useMemo(
+    () => properties.find(p => p.id === selectedPropertyId),
+    [properties, selectedPropertyId]
+  );
+
+  const copyRoutineEmailSubject = useCallback(() => {
+    navigator.clipboard.writeText(getRoutineInspectionEmailSubject(selectedProperty?.address));
+    message.success('Subject copied');
+  }, [selectedProperty?.address]);
+
+  const copyRoutineEmailBody = useCallback(() => {
+    navigator.clipboard.writeText(routineInspectionEmailBody);
+    message.success('Body copied');
+  }, []);
 
   // ── Handlers ────────────────────────────────────────────────
   const handleSync = useCallback(async (target: 'calendar' | 'sheets') => {
@@ -120,8 +156,61 @@ const TasksPage: React.FC = () => {
     setIsModalOpen(false);
     setRecentRecords([]);
     setSelectedPropertyId(null);
+    setIsAiDraftApplied(false);
+    setAiDraftCandidates([]);
+    setAiDraftAddressQuery('');
     form.resetFields();
   }, [form]);
+
+  const handleAiTaskDraft = useCallback(async (value?: string) => {
+    const text = (value ?? aiTaskText).trim();
+    if (!text) {
+      message.warning('Enter a task first');
+      return;
+    }
+
+    setAiDraftLoading(true);
+    try {
+      const res = await api.post<AiTaskDraftResponse>(API_ENDPOINTS.aiTaskDraft, { text });
+      const draft = res.data;
+      const propertyId = draft.propertyCandidates.length === 1
+        ? draft.propertyCandidates[0].propertyId
+        : undefined;
+
+      setRecentRecords([]);
+      setSelectedPropertyId(propertyId ?? null);
+      setIsAiDraftApplied(true);
+      setAiDraftCandidates(draft.propertyCandidates);
+      setAiDraftAddressQuery(draft.addressQuery);
+      form.resetFields();
+      form.setFieldsValue({
+        propertyId,
+        type: draft.type,
+        isBillable: draft.isBillable,
+        scheduledAt: draft.scheduledAt ? dayjs(draft.scheduledAt) : null,
+        notes: draft.notes ?? '',
+      });
+      setIsModalOpen(true);
+
+      if (propertyId) {
+        await fetchRecentRecords(propertyId);
+        form.setFieldValue('isBillable', draft.isBillable);
+      }
+
+      if (draft.propertyCandidates.length === 0) {
+        message.warning('Draft filled what it could. Please choose the property.');
+      } else if (draft.propertyCandidates.length > 1) {
+        message.info('Draft filled. Please choose the matching property.');
+      } else {
+        message.success('Draft filled. Review and add when ready.');
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message ?? 'AI task draft failed');
+    } finally {
+      setAiDraftLoading(false);
+    }
+  }, [aiTaskText, fetchRecentRecords, form]);
 
   const handleOk = useCallback(async () => {
     if (submitting) return;
@@ -415,8 +504,38 @@ const TasksPage: React.FC = () => {
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
           <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncingCalendar} disabled={syncingSheets}>Sync Calendar</Button>
           <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncingSheets} disabled={syncingCalendar}>Sync Sheets</Button>
-          <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>Add Task</Button>
+          <Button
+            size="small"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setAiDraftCandidates([]);
+              setAiDraftAddressQuery('');
+              setIsAiDraftApplied(false);
+              setIsModalOpen(true);
+            }}
+          >
+            Add Task
+          </Button>
         </Space>
+      </div>
+
+      <div style={{
+        marginBottom: 10,
+        padding: '8px 10px',
+        border: '1px solid #E9E9E7',
+        borderRadius: 6,
+        background: '#FFFFFF',
+      }}>
+        <Search
+          value={aiTaskText}
+          onChange={(event) => setAiTaskText(event.target.value)}
+          onSearch={handleAiTaskDraft}
+          loading={aiDraftLoading}
+          enterButton={<Button type="primary" icon={<ThunderboltOutlined />} loading={aiDraftLoading}>Draft</Button>}
+          placeholder="Try: tomorrow 3pm routine for queen street, free, bring keys"
+          allowClear
+        />
       </div>
 
       <Spin spinning={loading}>
@@ -445,6 +564,44 @@ const TasksPage: React.FC = () => {
             }
           }}
         >
+          {isAiDraftApplied && (
+            <Alert
+              type={aiDraftCandidates.length > 0 ? 'info' : 'warning'}
+              showIcon
+              message={aiDraftCandidates.length > 0 ? 'AI draft filled the form' : 'AI could not match a property'}
+              description={
+                <div>
+                  {aiDraftAddressQuery && (
+                    <div style={{ marginBottom: aiDraftCandidates.length > 0 ? 8 : 0 }}>
+                      Matched from: {aiDraftAddressQuery}
+                    </div>
+                  )}
+                  {aiDraftCandidates.length === 0 && (
+                    <div>Please choose the property manually before adding.</div>
+                  )}
+                  {aiDraftCandidates.length > 0 && (
+                    <Space size={4} wrap>
+                      {aiDraftCandidates.map(candidate => (
+                        <Button
+                          key={candidate.propertyId}
+                          size="small"
+                          onClick={() => {
+                            form.setFieldValue('propertyId', candidate.propertyId);
+                            setSelectedPropertyId(candidate.propertyId);
+                            fetchRecentRecords(candidate.propertyId);
+                          }}
+                        >
+                          {candidate.address}
+                        </Button>
+                      ))}
+                    </Space>
+                  )}
+                </div>
+              }
+              style={{ marginBottom: 12 }}
+            />
+          )}
+
           <Form.Item name="propertyId" label="Property" rules={[{ required: true, message: 'Please select a property' }]}>
             <Select placeholder="Select a property" showSearch optionFilterProp="label"
               filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
@@ -453,8 +610,7 @@ const TasksPage: React.FC = () => {
 
           {/* ── Billing policy badge ── */}
           {selectedPropertyId && (() => {
-            const prop = properties.find(p => p.id === selectedPropertyId);
-            const isSixMonth = isSixMonthFreePolicy(prop?.billingPolicy);
+            const isSixMonth = isSixMonthFreePolicy(selectedProperty?.billingPolicy);
             return (
               <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: `3px solid ${isSixMonth ? '#0F7B6C' : '#CB912F'}`, borderRadius: 4 }}>
                 <span style={{ fontSize: '13px', color: isSixMonth ? '#0F7B6C' : '#CB912F', fontWeight: 500 }}>
@@ -468,6 +624,35 @@ const TasksPage: React.FC = () => {
               </div>
             );
           })()}
+
+          {/* ── Tenant contact quick view ── */}
+          {selectedPropertyId && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: '11px', color: '#787774', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
+                Tenant Contact
+              </div>
+              <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: '3px solid #2383E2', borderRadius: 4, padding: '7px 10px', minHeight: 34 }}>
+                {selectedProperty?.tenantContactSummary ? (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <Space size={8} wrap>
+                      <Tag color="blue" style={tagStyle}>
+                        {selectedProperty.tenantContactCount ?? 1}
+                      </Tag>
+                      <span style={{ color: '#37352F', fontSize: '13px', fontWeight: 500 }}>
+                        {selectedProperty.tenantContactSummary}
+                      </span>
+                    </Space>
+                    <Space size={4}>
+                      <Button size="small" icon={<CopyOutlined />} onClick={copyRoutineEmailSubject}>Subject</Button>
+                      <Button size="small" icon={<CopyOutlined />} onClick={copyRoutineEmailBody}>Body</Button>
+                    </Space>
+                  </div>
+                ) : (
+                  <span style={{ color: '#ACABA9', fontSize: '13px' }}>No tenant contact</span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── Recent records ── */}
           {selectedPropertyId && (

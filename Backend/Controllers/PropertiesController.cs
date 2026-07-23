@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using InspectionApi.Data;
 using InspectionApi.Models;
 using InspectionApi.Models.DTOs;
+using InspectionApi.Services;
 using Microsoft.AspNetCore.Authorization;
 
 namespace InspectionApi.Controllers
@@ -28,19 +29,17 @@ namespace InspectionApi.Controllers
             var properties = await _context.Properties
                 .Include(p => p.TenantContacts)
                 .OrderByDescending(p => p.Id)
-                .Select(p => new PropertyDto
+                .ToListAsync();
+
+            return Ok(properties.Select(p => new PropertyDto
                 {
                     Id = p.Id,
                     Address = p.Address,
+                    PropertyCondition = p.PropertyCondition,
                     BillingPolicy = p.BillingPolicy.ToString(),
                     TenantContactCount = p.TenantContacts.Count,
-                    TenantContactSummary = p.TenantContacts
-                        .OrderBy(c => c.Id)
-                        .Select(c => string.IsNullOrWhiteSpace(c.Phone) ? c.Email : c.Phone)
-                        .FirstOrDefault()
-                })
-                .ToListAsync();
-            return Ok(properties);
+                    TenantContactSummary = TenantContactSummaryFormatter.FormatFirst(p.TenantContacts)
+                }));
         }
 
         // GET: api/properties/5
@@ -50,23 +49,20 @@ namespace InspectionApi.Controllers
             var property = await _context.Properties
                 .Include(p => p.TenantContacts)
                 .Where(p => p.Id == id)
-                .Select(p => new PropertyDto
-                {
-                    Id = p.Id,
-                    Address = p.Address,
-                    BillingPolicy = p.BillingPolicy.ToString(),
-                    TenantContactCount = p.TenantContacts.Count,
-                    TenantContactSummary = p.TenantContacts
-                        .OrderBy(c => c.Id)
-                        .Select(c => string.IsNullOrWhiteSpace(c.Phone) ? c.Email : c.Phone)
-                        .FirstOrDefault()
-                })
                 .FirstOrDefaultAsync();
 
             if (property == null)
                 return NotFound(new { message = $"未找到ID为{id}的物业" });
 
-            return Ok(property);
+            return Ok(new PropertyDto
+            {
+                Id = property.Id,
+                Address = property.Address,
+                PropertyCondition = property.PropertyCondition,
+                BillingPolicy = property.BillingPolicy.ToString(),
+                TenantContactCount = property.TenantContacts.Count,
+                TenantContactSummary = TenantContactSummaryFormatter.FormatFirst(property.TenantContacts)
+            });
         }
 
         // POST: api/properties
@@ -79,6 +75,7 @@ namespace InspectionApi.Controllers
             var property = new Property
             {
                 Address = dto.Address,
+                PropertyCondition = dto.PropertyCondition,
                 BillingPolicy = billingPolicy
             };
             _context.Properties.Add(property);
@@ -99,6 +96,7 @@ namespace InspectionApi.Controllers
                 return NotFound(new { message = $"未找到ID为{id}的物业" });
 
             existing.Address = dto.Address;
+            existing.PropertyCondition = dto.PropertyCondition;
             existing.BillingPolicy = billingPolicy;
             await _context.SaveChangesAsync();
             _logger.LogInformation("更新物业成功, ID: {Id}", id);

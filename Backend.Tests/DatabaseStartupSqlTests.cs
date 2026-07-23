@@ -29,4 +29,11 @@ public class DatabaseStartupSqlTests
         Assert.Contains("\"IX_TenantContacts_PropertyId\"", DatabaseStartupSql.TenantContactsTableSql);
         Assert.Contains("\"TenantContacts\"", DatabaseStartupSql.IdentitySequenceSyncSql);
     }
+
+    [Fact]
+    public void PropertiesStartupSqlAddsPropertyConditionColumn()
+    {
+        Assert.Contains("\"Properties\"", DatabaseStartupSql.PropertiesTableSql);
+        Assert.Contains("\"PropertyCondition\" text", DatabaseStartupSql.PropertiesTableSql);
+    }
 }

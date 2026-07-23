@@ -4,21 +4,17 @@
 
 ## Goal
 
-Add three convenient copy actions to every card on the Inspect page:
-
-- Copy the property's address.
-- Copy the General template matching the task's inspection type.
-- Copy the card's current notes.
+Add convenient General-template copy actions to every card on the Inspect page. The existing three default template inspection types produce three separate copy buttons.
 
 ## UI
 
-Place three compact secondary buttons in the existing action row before `AI 润色` and `Done`. Use the existing Ant Design `CopyOutlined` icon and toast messages so the behavior matches other copy actions in the app.
+Place compact secondary buttons in the existing action row before `AI 润色` and `Done`. Each button displays its template inspection type name and uses the existing Ant Design `CopyOutlined` icon and toast messages.
 
 ## Template Matching
 
-Load templates through the existing `useTemplates()` hook at page level. Match the task's inspection type name to a template inspection type name after trimming whitespace and comparing case-insensitively, then copy its General template text.
+Load templates through the existing `useTemplates()` hook at page level. Build one copy action per template inspection type and copy that type's General template text.
 
-If content is empty, templates fail to load, or no matching template exists, show a warning/error toast and do not write to the clipboard.
+If content is empty or templates fail to load, show a warning/error toast and do not write to the clipboard.
 
 ## Verification
 

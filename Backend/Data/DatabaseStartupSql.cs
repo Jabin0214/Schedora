@@ -2,6 +2,11 @@ namespace InspectionApi.Data
 {
     public static class DatabaseStartupSql
     {
+        public const string PropertiesTableSql = @"
+                ALTER TABLE ""Properties""
+                ADD COLUMN IF NOT EXISTS ""PropertyCondition"" text NULL;
+            ";
+
         public const string IdentitySequenceSyncSql = @"
                 DO $$
                 DECLARE

@@ -3,7 +3,7 @@ import { Modal, Tabs, List, Button, Input, Popconfirm, message, Collapse, Space 
 import { PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import api from '../api';
 import { API_ENDPOINTS } from '../config/api';
-import { modalStyles } from './shared';
+import { modalStyles } from './modalStyles';
 import type { TemplatesAll, GeneralTemplate } from '../types/templates';
 
 const { TextArea } = Input;

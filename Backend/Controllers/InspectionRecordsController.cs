@@ -102,6 +102,10 @@ namespace InspectionApi.Controllers
 
                 if (!DateTimeOffset.TryParse(dto.ExecutionDate, null, DateTimeStyles.RoundtripKind, out var parsedDate))
                     return BadRequest(new { message = "日期格式无效，请使用 ISO 8601 格式" });
+                var typeExists = await _context.TaskTypes.AnyAsync(t => t.Id == dto.Type);
+                if (!typeExists)
+                    return BadRequest(new { message = $"指定的任务类型不存在: {dto.Type}" });
+
                 record.ExecutionDate = parsedDate;
                 record.Type          = (InspectionType)dto.Type;
                 record.IsCharged     = dto.IsCharged;
@@ -142,4 +146,3 @@ namespace InspectionApi.Controllers
         }
     }
 }
-

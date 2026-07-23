@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { Suspense, lazy, useMemo } from 'react';
 import { Layout, Menu, ConfigProvider, Button, Spin } from 'antd';
 import {
   HomeOutlined,
@@ -14,20 +14,28 @@ import {
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 
-import PropertiesPage from './pages/PropertiesPage';
-import TasksPage from './pages/TasksPage';
-import CalendarPage from './pages/CalendarPage';
-import HistoryPage from './pages/HistoryPage';
-import ConfigPage from './pages/ConfigPage';
-import InspectPage from './pages/InspectPage';
-import TemplatesPage from './pages/TemplatesPage';
-import LoginPage from './pages/LoginPage';
-import TenantContactsPage from './pages/TenantContactsPage';
-import PropertyDetailsPage from './pages/PropertyDetailsPage';
 import ErrorBoundary from './components/ErrorBoundary';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 
 const { Header, Content, Footer, Sider } = Layout;
+
+const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
+const PropertyDetailsPage = lazy(() => import('./pages/PropertyDetailsPage'));
+const TasksPage = lazy(() => import('./pages/TasksPage'));
+const InspectPage = lazy(() => import('./pages/InspectPage'));
+const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
+const TenantContactsPage = lazy(() => import('./pages/TenantContactsPage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const ConfigPage = lazy(() => import('./pages/ConfigPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+
+const PageLoader: React.FC = () => (
+  <div style={{ minHeight: 240, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <Spin />
+  </div>
+);
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
@@ -124,17 +132,19 @@ const AppShell: React.FC = () => {
         <Content className="app-content">
           <div className="page-container">
             <ErrorBoundary>
-              <Routes>
-                <Route path="/" element={<PropertiesPage />} />
-                <Route path="/properties/:id" element={<PropertyDetailsPage />} />
-                <Route path="/tasks" element={<TasksPage />} />
-                <Route path="/inspect" element={<InspectPage />} />
-                <Route path="/templates" element={<TemplatesPage />} />
-                <Route path="/tenant-contacts" element={<TenantContactsPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/history" element={<HistoryPage />} />
-                <Route path="/config" element={<ConfigPage />} />
-              </Routes>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<PropertiesPage />} />
+                  <Route path="/properties/:id" element={<PropertyDetailsPage />} />
+                  <Route path="/tasks" element={<TasksPage />} />
+                  <Route path="/inspect" element={<InspectPage />} />
+                  <Route path="/templates" element={<TemplatesPage />} />
+                  <Route path="/tenant-contacts" element={<TenantContactsPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/history" element={<HistoryPage />} />
+                  <Route path="/config" element={<ConfigPage />} />
+                </Routes>
+              </Suspense>
             </ErrorBoundary>
           </div>
         </Content>
@@ -216,17 +226,19 @@ const App: React.FC = () => {
     >
       <Router>
         <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <AppShell />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <AppShell />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </Suspense>
         </AuthProvider>
       </Router>
     </ConfigProvider>

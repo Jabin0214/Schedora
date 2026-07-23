@@ -10,7 +10,8 @@ import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import { normalizeBillingPolicy } from '../utils/billingPolicy';
 import type { Property } from '../types/api';
-import { IndTitle, modalStyles } from '../components/shared';
+import { IndTitle } from '../components/shared';
+import { modalStyles } from '../components/modalStyles';
 
 // ── Billing policy tag styles ──────────────────────────────────
 const policyTagStyle: React.CSSProperties = { fontSize: '12px', letterSpacing: '0.2px' };
@@ -57,7 +58,7 @@ const PropertiesPage: React.FC = () => {
 
   const openAddModal = () => {
     form.resetFields();
-    form.setFieldsValue({ address: '', billingPolicy: 'ThreeMonthToggle' });
+    form.setFieldsValue({ address: '', propertyCondition: '', billingPolicy: 'ThreeMonthToggle' });
     setIsModalOpen(true);
   };
 
@@ -228,6 +229,9 @@ const PropertiesPage: React.FC = () => {
         <Form form={form} layout="vertical">
           <Form.Item name="address" label="Address" rules={[{ required: true, message: 'Address is required' }, { min: 5, message: 'At least 5 characters' }, { max: 200, message: 'Max 200 characters' }]}>
             <Input placeholder="Enter property address..." showCount maxLength={200} />
+          </Form.Item>
+          <Form.Item name="propertyCondition" label="Property Condition">
+            <Input.TextArea placeholder="Enter property condition..." autoSize={{ minRows: 3, maxRows: 8 }} />
           </Form.Item>
           <Form.Item name="billingPolicy" label="Billing Policy" rules={[{ required: true, message: 'Select a billing policy' }]}>
             <Select options={[{ value: 'SixMonthFree', label: '6-Month Free' }, { value: 'ThreeMonthToggle', label: '3-Month Toggle' }]} />

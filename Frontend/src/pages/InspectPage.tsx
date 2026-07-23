@@ -5,6 +5,7 @@ import api from '../api';
 import dayjs from 'dayjs';
 import { useTasks } from '../hooks/useTasks';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
+import { useTemplates } from '../hooks/useTemplates';
 import { API_ENDPOINTS } from '../config/api';
 import type {
   AiInspectionPolishResponse,
@@ -22,13 +23,24 @@ interface InspectCardProps {
   task: CombinedTask;
   isOverdue: boolean;
   typeName: string;
+  templateOptions: Array<{ id: number; name: string; text: string }>;
+  templateLoading: boolean;
+  templateError: unknown;
   onComplete: (id: number, data: TaskCompletionRequest) => Promise<unknown>;
 }
 
 const DEBOUNCE_MS = 800;
 const SAVED_CLEAR_MS = 3000;
 
-const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName, onComplete }) => {
+const InspectCard: React.FC<InspectCardProps> = ({
+  task,
+  isOverdue,
+  typeName,
+  templateOptions,
+  templateLoading,
+  templateError,
+  onComplete,
+}) => {
   const [completeForm] = Form.useForm();
   const [notes, setNotes] = useState<string>(task.notes ?? '');
   const [status, setStatus] = useState<SaveStatus>('idle');
@@ -136,6 +148,18 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName, on
     }
   };
 
+  const copyTemplate = (name: string, text: string) => {
+    if (templateLoading) {
+      message.info('Template 加载中');
+      return;
+    }
+    if (templateError) {
+      message.error('Template 加载失败');
+      return;
+    }
+    copy(`${name} Template`, text);
+  };
+
   const openComplete = () => {
     completeForm.setFieldsValue({
       executionDate: task.scheduledAt ? dayjs(task.scheduledAt) : dayjs(),
@@ -225,7 +249,17 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName, on
           </>
         )}
       </div>
-      <Space size={8}>
+      <Space size={8} wrap>
+        {templateOptions.map(template => (
+          <Button
+            key={template.id}
+            size="small"
+            icon={<CopyOutlined />}
+            onClick={() => copyTemplate(template.name, template.text)}
+          >
+            {template.name}
+          </Button>
+        ))}
         <Button
           size="small"
           icon={<RobotOutlined />}
@@ -303,6 +337,17 @@ const InspectCard: React.FC<InspectCardProps> = ({ task, isOverdue, typeName, on
 const InspectPage: React.FC = () => {
   const { overdueTasks, todayTasks, loading, completeInspectionTask } = useTasks();
   const { getType } = useInspectionTypes();
+  const { data: templates, loading: templatesLoading, error: templatesError } = useTemplates();
+  const templateOptions = useMemo(() => {
+    if (!templates) return [];
+    return templates.inspectionTypes.map(type => ({
+      id: type.id,
+      name: type.name,
+      text: templates.generalTemplates.find(
+        template => template.inspectionTypeId === type.id,
+      )?.text ?? '',
+    }));
+  }, [templates]);
 
   const items = useMemo(() => {
     const overdue = overdueTasks.map(t => ({ task: t, isOverdue: true }));
@@ -326,15 +371,22 @@ const InspectPage: React.FC = () => {
         <Empty description="今天没有需要检查的任务" style={{ marginTop: 48 }} />
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {items.map(({ task, isOverdue }) => (
-            <InspectCard
-              key={task.id}
-              task={task}
-              isOverdue={isOverdue}
-              typeName={getType(task.type)?.name ?? `Type ${task.type ?? '?'}`}
-              onComplete={completeInspectionTask}
-            />
-          ))}
+          {items.map(({ task, isOverdue }) => {
+            const typeName = getType(task.type)?.name ?? `Type ${task.type ?? '?'}`;
+
+            return (
+              <InspectCard
+                key={task.id}
+                task={task}
+                isOverdue={isOverdue}
+                typeName={typeName}
+                templateOptions={templateOptions}
+                templateLoading={templatesLoading}
+                templateError={templatesError}
+                onComplete={completeInspectionTask}
+              />
+            );
+          })}
         </div>
       )}
     </div>

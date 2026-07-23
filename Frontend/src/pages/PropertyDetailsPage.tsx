@@ -91,6 +91,14 @@ const PropertyDetailsPage: React.FC = () => {
               </div>
             </div>
 
+            <DetailSection title="Property Condition">
+              {property.propertyCondition ? (
+                <div style={{ whiteSpace: 'pre-wrap', color: '#37352F' }}>{property.propertyCondition}</div>
+              ) : (
+                <Muted>No property condition recorded</Muted>
+              )}
+            </DetailSection>
+
             <DetailSection title="Tenant Contacts">
               {contacts.length === 0 ? (
                 <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No tenant contacts" />

@@ -18,6 +18,7 @@ export type BillingPolicyValue = BillingPolicy | 0 | 1;
 export interface Property {
   id: number;
   address: string;
+  propertyCondition?: string | null;
   billingPolicy?: BillingPolicyValue;
   tenantContactCount?: number;
   tenantContactSummary?: string;
@@ -121,4 +122,26 @@ export interface AiInspectionPolishResponse {
   englishLandlordText: string;
   chineseReferenceText: string;
   summary: string;
+}
+
+export interface AiTaskDraftRequest {
+  text: string;
+}
+
+export interface AiTaskDraftPropertyCandidate {
+  propertyId: number;
+  address: string;
+  billingPolicy: BillingPolicy;
+}
+
+export interface AiTaskDraftResponse {
+  status: 'ready' | 'needsConfirmation';
+  propertyId?: number;
+  propertyAddress?: string;
+  scheduledAt?: string;
+  type: InspectionType;
+  isBillable: boolean;
+  notes?: string;
+  addressQuery: string;
+  propertyCandidates: AiTaskDraftPropertyCandidate[];
 }

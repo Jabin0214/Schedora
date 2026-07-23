@@ -8,7 +8,8 @@ import api, { isAxiosError } from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
 import type { TaskTypeConfig } from '../types/api';
-import { IndTitle, modalStyles } from '../components/shared';
+import { IndTitle } from '../components/shared';
+import { modalStyles } from '../components/modalStyles';
 
 const COLOR_OPTIONS = [
   'cyan', 'blue', 'geekblue', 'purple', 'magenta',

@@ -15,6 +15,7 @@ export const API_ENDPOINTS = {
   templates: `${API_BASE_URL}/templates`,
   tenantContacts: `${API_BASE_URL}/tenantcontacts`,
   aiInspectionPolish: `${API_BASE_URL}/ai/inspection-polish`,
+  aiTaskDraft: `${API_BASE_URL}/ai/task-draft`,
 } as const;
 
 // 外部资源链接（集中管理，方便变更）

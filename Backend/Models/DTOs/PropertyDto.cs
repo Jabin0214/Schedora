@@ -6,6 +6,7 @@ namespace InspectionApi.Models.DTOs
     {
         public int Id { get; set; }
         public string Address { get; set; } = string.Empty;
+        public string? PropertyCondition { get; set; }
         public string BillingPolicy { get; set; } = string.Empty;
         public string? LastInspectionDate { get; set; }
         public string? LastInspectionType { get; set; }
@@ -20,6 +21,8 @@ namespace InspectionApi.Models.DTOs
         [StringLength(200, MinimumLength = 2)]
         public string Address { get; set; } = string.Empty;
 
+        public string? PropertyCondition { get; set; }
+
         [Required]
         [StringLength(50)]
         public string BillingPolicy { get; set; } = string.Empty;
@@ -30,6 +33,8 @@ namespace InspectionApi.Models.DTOs
         [Required]
         [StringLength(200, MinimumLength = 2)]
         public string Address { get; set; } = string.Empty;
+
+        public string? PropertyCondition { get; set; }
 
         [Required]
         [StringLength(50)]

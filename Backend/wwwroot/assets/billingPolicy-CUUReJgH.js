@@ -1,0 +1,1 @@
+function t(e){return e===0||e==="SixMonthFree"?"SixMonthFree":"ThreeMonthToggle"}function i(e){return t(e)==="SixMonthFree"}function o(e,r){if(i(e))return!1;const n=r[0];return n?!n.isCharged:!0}export{o as g,i,t as n};

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace InspectionApi.Models.DTOs
 {
     public class PayrollReportDto
@@ -31,15 +33,21 @@ namespace InspectionApi.Models.DTOs
 
     public class TaskCompletionDto
     {
+        [Required]
         public string ExecutionDate { get; set; } = string.Empty;
+
+        [Range(typeof(decimal), "0", "10000")]
         public decimal? ParkingFee { get; set; }
     }
 
     public class InspectionRecordUpdateDto
     {
+        [Required]
         public string ExecutionDate { get; set; } = string.Empty;
         public int Type { get; set; }
         public bool IsCharged { get; set; }
+
+        [Range(typeof(decimal), "0", "10000")]
         public decimal? ParkingFee { get; set; }
     }
 }
