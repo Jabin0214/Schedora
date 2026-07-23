@@ -24,6 +24,8 @@ builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IGoogleSyncService, GoogleSyncService>();
 builder.Services.AddHttpClient<IAiInspectionService, AiInspectionService>();
+builder.Services.AddScoped<IAiTaskDraftService, AiTaskDraftService>();
+builder.Services.AddHttpClient<IAiTaskDraftExtractor, AiTaskDraftExtractor>();
 builder.Services.AddHostedService<DailySyncBackgroundService>();
 
 // 3. 允许跨域 (CORS) - 允许前端访问
@@ -132,6 +134,15 @@ using (var scope = app.Services.CreateScope())
             // Create template feature tables and seed defaults if not present
             await db.Database.ExecuteSqlRawAsync(TemplatesStartupSql.Sql);
             logger.LogInformation("✅ Template tables ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.TenantContactsTableSql);
+            logger.LogInformation("✅ TenantContacts table ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.PropertiesTableSql);
+            logger.LogInformation("✅ Property condition column ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.InspectionTasksTableSql);
+            logger.LogInformation("✅ Inspection task notes column ready");
 
             // Add ParkingFee column if it doesn't exist yet
             await db.Database.ExecuteSqlRawAsync(@"

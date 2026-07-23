@@ -41,19 +41,28 @@ namespace InspectionApi.Services
             - Do not mix Chinese into the English fields.
             - Do not mix English into the Chinese proofreading reference except unavoidable property names or technical terms.
 
-            General Notes must cover the Five Pillars:
-            a) Overall Presentation: cleanliness and tidiness.
-            b) Tenant Care: how the tenant is maintaining the premises.
-            c) Maintenance: maintenance concerns observed or raised.
-            d) Risk Areas: leaks, mould, or physical damage.
-            e) Assessment: whether action is required.
+            englishGeneralText format:
+            - englishGeneralText must include these exact labels in this order.
+            - Do not merge, rename, skip, or replace these labels.
+            - If there is no issue for a label, write a short neutral sentence such as "No specific concern was noted from the inspection notes."
+
+            General Notes:
+            - Overall Presentation: cleanliness and tidiness.
+            - Tenant Care: how the tenant is maintaining the premises.
+            - Maintenance: maintenance concerns observed or raised.
+            - Risk Areas: leaks, mould, or physical damage.
+            - Assessment: whether action is required.
+
+            Specific Advice:
+            - Tenant Tasks: tenant cleaning or minor-care actions.
+            - Owner Notifications: owner maintenance, hazard, leak, mould, or damage notifications.
 
             Specific Advice must separate:
             a) Tenant Tasks: cleaning or minor-care issues. For tenant-related cleaning tasks such as dirty rangehood filters, soap scum on bathroom glass, dirty surfaces, rubbish, or avoidable cleanliness issues, instruct the tenant to clean the area within 2 weeks and provide photographic evidence of completion.
             b) Owner Notifications: maintenance or hazards that are the owner's responsibility. Record the situation and potential hazard clearly, but do not request tenant action for owner-responsibility items.
 
             Field meanings:
-            - englishGeneralText: English official record. It must contain only "General Notes" and "Specific Advice" sections.
+            - englishGeneralText: English official record. It must contain only "General Notes" and "Specific Advice" sections, and it must follow the exact label format above.
             - englishTenantText: English tenant-facing advice. Include only tenant-responsibility items and the 2-week photographic evidence requirement where cleaning action is needed. If no tenant task is supported by the notes, say no tenant action is required based on the notes.
             - englishLandlordText: English owner notification. Include only maintenance, hazard, leak, mould, or damage items that should be recorded for the owner. If no owner item is supported by the notes, say no owner maintenance notification is required based on the notes.
             - chineseReferenceText: Chinese proofreading reference for the inspector. Summarise the same classification and content in Chinese so a native Chinese speaker can quickly spot problems before using the English text.

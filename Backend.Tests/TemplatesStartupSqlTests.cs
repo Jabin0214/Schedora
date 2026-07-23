@@ -5,14 +5,14 @@ namespace Backend.Tests;
 public class TemplatesStartupSqlTests
 {
     [Fact]
-    public void CreatesAllFiveTables()
+    public void CreatesOnlyInspectionTypeAndGeneralTemplateTables()
     {
         var sql = TemplatesStartupSql.Sql;
         Assert.Contains("\"TemplateInspectionTypes\"", sql);
-        Assert.Contains("\"CleanlinessAreas\"", sql);
-        Assert.Contains("\"DamageItems\"", sql);
         Assert.Contains("\"GeneralTemplates\"", sql);
-        Assert.Contains("\"AudienceTemplates\"", sql);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS \"CleanlinessAreas\"", sql);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS \"DamageItems\"", sql);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS \"AudienceTemplates\"", sql);
     }
 
     [Fact]
@@ -22,7 +22,7 @@ public class TemplatesStartupSqlTests
         var sql = TemplatesStartupSql.Sql;
         var createCount = System.Text.RegularExpressions.Regex
             .Matches(sql, "CREATE TABLE IF NOT EXISTS").Count;
-        Assert.Equal(5, createCount);
+        Assert.Equal(2, createCount);
     }
 
     [Fact]
@@ -35,13 +35,29 @@ public class TemplatesStartupSqlTests
     }
 
     [Fact]
-    public void SeedsFiveDefaultCleanlinessAreas()
+    public void DropsRemovedDetailTables()
     {
         var sql = TemplatesStartupSql.Sql;
-        Assert.Contains("'卫生间'", sql);
-        Assert.Contains("'厨房'", sql);
-        Assert.Contains("'卧室'", sql);
-        Assert.Contains("'客厅'", sql);
-        Assert.Contains("'阳台'", sql);
+        Assert.Contains("DROP TABLE IF EXISTS \"AudienceTemplates\"", sql);
+        Assert.Contains("DROP TABLE IF EXISTS \"CleanlinessAreas\"", sql);
+        Assert.Contains("DROP TABLE IF EXISTS \"DamageItems\"", sql);
+    }
+
+    [Fact]
+    public void GeneralTemplatesAreOnePerInspectionType()
+    {
+        var sql = TemplatesStartupSql.Sql;
+        Assert.Contains("\"IX_GeneralTemplates_InspectionTypeId\"", sql);
+        Assert.DoesNotContain("\"HasCleanlinessIssue\"  boolean", sql);
+        Assert.DoesNotContain("\"HasDamageIssue\"       boolean", sql);
+    }
+
+    [Fact]
+    public void CollapsePreservesExistingNonEmptyGeneralText()
+    {
+        var sql = TemplatesStartupSql.Sql;
+        Assert.Contains("first_non_empty", sql);
+        Assert.Contains("NULLIF(trim(src.\"Text\"), '')", sql);
+        Assert.Contains("SET \"Text\" = COALESCE(first_non_empty.\"Text\", keeper.\"Text\")", sql);
     }
 }

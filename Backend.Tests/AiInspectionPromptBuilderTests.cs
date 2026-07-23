@@ -75,6 +75,27 @@ public class AiInspectionPromptBuilderTests
     }
 
     [Fact]
+    public void RequiresEnglishGeneralTextToUseFiveExplicitPillarLabels()
+    {
+        var request = new AiInspectionPolishRequestDto
+        {
+            Address = "7 Sample Street",
+            InspectionType = "Routine",
+            Notes = "kitchen dirty, garage leak mark",
+            IsBillable = true
+        };
+
+        var prompt = AiInspectionPromptBuilder.BuildUserPrompt(request);
+
+        Assert.Contains("englishGeneralText must include these exact labels", prompt);
+        Assert.Contains("Overall Presentation:", prompt);
+        Assert.Contains("Tenant Care:", prompt);
+        Assert.Contains("Maintenance:", prompt);
+        Assert.Contains("Risk Areas:", prompt);
+        Assert.Contains("Assessment:", prompt);
+    }
+
+    [Fact]
     public void SystemPromptRestrictsTheModelToInspectionWording()
     {
         var prompt = AiInspectionPromptBuilder.SystemPrompt;

@@ -13,13 +13,17 @@ Schedora is a property inspection management system built with ASP.NET Core and 
 ## Main Features
 
 - Manage properties and billing policies
+- View a per-property information page with tenant contacts, open tasks, and inspection history
+- Import Palace tenant contact CSV exports, safely match them to existing properties, preview changes, and deduplicate repeated contact rows
 - Create, update, complete, and archive inspection tasks
+- Complete inspection tasks directly from the Inspect workflow
 - View inspection history and payroll-style reports
 - Manage task types
 - Calendar-style task view in the frontend
 - Sync tasks to Google Calendar and Google Sheets
 - Run a daily background sync job
 - Generate professional AI inspection wording from rough site notes, with tenant tasks and landlord maintenance notifications separated
+- Keep AI inspection output in a fixed General Notes / Specific Advice format for easier review and reuse
 
 ## Project Structure
 
@@ -44,6 +48,13 @@ Important frontend files:
 - `Frontend/src/App.tsx`: main layout and routes
 - `Frontend/src/config/api.ts`: API base URL configuration
 - `Frontend/vite.config.ts`: dev server config and build output to `Backend/wwwroot`
+- `Frontend/src/pages/PropertiesPage.tsx`: property list and entrypoint into each property information page
+- `Frontend/src/pages/PropertyDetailsPage.tsx`: one-property information workspace
+- `Frontend/src/pages/TenantContactsPage.tsx`: tenant contact import, preview, search, and property-level summary
+
+Additional developer notes:
+
+- `docs/DEVELOPMENT.md`: feature workflow notes, database startup conventions, CSV import rules, and release checklist
 
 ## Requirements
 
@@ -88,12 +99,42 @@ Notes:
 
 On the Inspect page, enter rough inspection notes and choose `AI 润色`. The backend sends the notes, property address, inspection type, and billable flag to the configured AI provider, then returns English text for use and Chinese text for review:
 
-- `English General`: official record wording, structured as General Notes and Specific Advice
+- `English General`: official record wording, structured as General Notes and Specific Advice with fixed labels:
+  - Overall Presentation
+  - Tenant Care
+  - Maintenance
+  - Risk Areas
+  - Assessment
+  - Tenant Tasks
+  - Owner Notifications
 - `English Tenant`: tenant-facing tasks, including a two-week photo follow-up requirement for cleaning or minor-care issues
 - `English Landlord`: owner-facing maintenance, hazard, leak, mould, or damage notifications
 - `Chinese reference`: proofreading-only text to help the inspector quickly catch issues before using the English wording
 
 The prompt is written for a professional New Zealand property inspector/property manager voice. It tells the model to stay objective, separate tenant responsibilities from landlord maintenance, avoid legal advice, and avoid inventing facts not present in the rough notes.
+
+The Inspect page also supports completing an inspection task in place. Use `Done`, confirm the execution date and optional parking fee, and the task is moved into inspection history by the backend.
+
+### Tenant contacts and property information
+
+Tenant contact data is stored under each property rather than as a standalone address book.
+
+- Contacts are imported from Palace tenant contact CSV exports.
+- The importer matches rows to existing `Properties` by normalized address only. It intentionally avoids fuzzy matching so contacts are not attached to the wrong unit.
+- Supported Palace email columns include `Tenant Group Email` and `Tenant Email 1`.
+- If the export contains `Tenant Group Lease Date Ended`, it is stored as `LeaseDateEnded`.
+- Exact duplicate contact rows for the same property, phone, email, and lease-end value are skipped during import.
+- `Check CSV` previews matched rows, unmatched rows, existing rows that would be replaced, unchanged rows, and new/changed rows.
+- `Apply Update` replaces contacts only for properties matched by the uploaded CSV. Contacts for properties missing from that CSV are left untouched.
+
+Frontend workflow:
+
+1. Open `Contacts`.
+2. Choose a Palace CSV.
+3. Click `Check CSV`.
+4. Review the summary and unmatched examples.
+5. Click `Apply Update` when the result looks right.
+6. Open a property from `Properties` or from the Contacts summary to see the full property information page.
 
 ### Azure App Service settings
 
@@ -201,6 +242,11 @@ What it does:
   - `~/Library/Logs/schedora-backend.log`
   - `~/Library/Logs/schedora-frontend.log`
 
+In this mode, the frontend is not served from a separate Vite dev-server port. The frontend watcher rebuilds the React app into `Backend/wwwroot`, and the backend serves that directory from the same origin:
+
+- Local app: `http://127.0.0.1:5097`
+- Frontend output: `Backend/wwwroot`
+
 ## LaunchAgent
 
 On macOS, this project may also be configured through `launchd`.
@@ -218,11 +264,74 @@ launchctl print gui/$(id -u)/com.schedora.backend
 launchctl print gui/$(id -u)/com.schedora.frontend
 ```
 
+## Fixed Public Access
+
+This machine is configured to serve Schedora publicly through Cloudflare Tunnel at:
+
+- `https://schedora.jabinchen.com`
+
+Current routing:
+
+```text
+schedora.jabinchen.com
+  -> Vercel DNS CNAME
+  -> Cloudflare Tunnel
+  -> http://127.0.0.1:5097
+  -> Backend/wwwroot and /api
+```
+
+The Vercel DNS record for `jabinchen.com` must include:
+
+```text
+Name: schedora
+Type: CNAME
+Value: 5d1c70a2-a835-4b25-8158-6f5003a9a8a4.cfargotunnel.com
+```
+
+Cloudflare Tunnel details:
+
+```text
+Tunnel name: schedora-jabinchen
+Tunnel ID: 5d1c70a2-a835-4b25-8158-6f5003a9a8a4
+Local service: http://127.0.0.1:5097
+```
+
+Important local files:
+
+- `~/.cloudflared/config.yml`
+- `~/.cloudflared/5d1c70a2-a835-4b25-8158-6f5003a9a8a4.json`
+- `~/Library/LaunchAgents/com.cloudflare.cloudflared.plist`
+
+The Cloudflare LaunchAgent runs:
+
+```bash
+cloudflared tunnel --config ~/.cloudflared/config.yml run schedora-jabinchen
+```
+
+To check the public-access stack:
+
+```bash
+./scripts/schedora.sh status
+launchctl print gui/$(id -u)/com.cloudflare.cloudflared
+cloudflared tunnel info schedora-jabinchen
+dig +short CNAME schedora.jabinchen.com
+curl -I https://schedora.jabinchen.com
+```
+
+Operational notes:
+
+- The Mac must be awake, powered on, and online for the public URL to work.
+- The backend must keep serving `http://127.0.0.1:5097`.
+- The frontend watcher must keep writing the built frontend into `Backend/wwwroot`.
+- Do not delete the Cloudflare credentials file, Cloudflare config, Cloudflare LaunchAgent, or the Vercel `schedora` CNAME.
+- This setup intentionally uses `jabinchen.com`. Do not reuse `the-one.co.nz` or `bulid.org` for this project.
+
 ## API Surface
 
 Main backend controllers currently include:
 
 - `/api/properties`
+- `/api/tenantcontacts`
 - `/api/inspectiontasks`
 - `/api/inspectionrecords`
 - `/api/tasktypes`
@@ -268,6 +377,18 @@ The AI inspection endpoint is configured under `Ai` in ASP.NET configuration:
 
 If AI configuration is missing or the provider is unavailable, the Inspect page will show an error message and the original note remains unchanged.
 
+## Validation Before Push
+
+Run these checks before publishing changes:
+
+```bash
+dotnet test Backend.Tests/Backend.Tests.csproj
+cd Frontend
+npm run build
+```
+
+The frontend build writes production assets into `Backend/wwwroot`, so changes under `Backend/wwwroot` are expected after `npm run build`.
+
 ## Troubleshooting
 
 ### Backend starts but cannot use data
@@ -281,6 +402,36 @@ If AI configuration is missing or the provider is unavailable, the Inspect page 
 - Confirm the backend is running on `http://localhost:5097`
 - Confirm `VITE_API_BASE_URL` if you are using the Vite dev server
 - If you are using the built frontend served by ASP.NET, make sure `Frontend` has been built into `Backend/wwwroot`
+
+### Public URL is down
+
+Check the local app first:
+
+```bash
+./scripts/schedora.sh status
+curl -I http://127.0.0.1:5097
+```
+
+If the local app is down, restart Schedora:
+
+```bash
+./scripts/schedora.sh restart
+```
+
+If the local app is healthy, check the tunnel and DNS:
+
+```bash
+launchctl print gui/$(id -u)/com.cloudflare.cloudflared
+cloudflared tunnel info schedora-jabinchen
+dig +short CNAME schedora.jabinchen.com
+curl -I https://schedora.jabinchen.com
+```
+
+The expected CNAME target is:
+
+```text
+5d1c70a2-a835-4b25-8158-6f5003a9a8a4.cfargotunnel.com
+```
 
 ### Background services appear to be running
 

@@ -10,12 +10,10 @@ namespace InspectionApi.Data
         public DbSet<Property> Properties { get; set; }
         public DbSet<InspectionTask> InspectionTasks { get; set; }
         public DbSet<InspectionRecord> InspectionRecords { get; set; }
+        public DbSet<TenantContact> TenantContacts { get; set; }
         public DbSet<TaskType> TaskTypes { get; set; }
         public DbSet<TemplateInspectionType> TemplateInspectionTypes { get; set; }
-        public DbSet<CleanlinessArea> CleanlinessAreas { get; set; }
-        public DbSet<DamageItem> DamageItems { get; set; }
         public DbSet<GeneralTemplate> GeneralTemplates { get; set; }
-        public DbSet<AudienceTemplate> AudienceTemplates { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -25,7 +23,23 @@ namespace InspectionApi.Data
             {
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Address).IsRequired().HasMaxLength(200);
+                entity.Property(p => p.PropertyCondition);
                 entity.HasIndex(p => p.Address);
+            });
+
+            modelBuilder.Entity<TenantContact>(entity =>
+            {
+                entity.HasKey(c => c.Id);
+                entity.HasOne(c => c.Property)
+                    .WithMany(p => p.TenantContacts)
+                    .HasForeignKey(c => c.PropertyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(c => c.SourceAddress).IsRequired().HasMaxLength(200);
+                entity.Property(c => c.Phone).HasMaxLength(80);
+                entity.Property(c => c.Email).HasMaxLength(500);
+                entity.Property(c => c.LeaseDateEnded).HasMaxLength(50);
+                entity.HasIndex(c => c.PropertyId);
+                entity.HasIndex(c => c.SourceAddress);
             });
 
             modelBuilder.Entity<InspectionTask>(entity =>
@@ -66,22 +80,6 @@ namespace InspectionApi.Data
                 entity.HasIndex(e => e.DisplayOrder);
             });
 
-            modelBuilder.Entity<CleanlinessArea>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.DirtyText).HasMaxLength(1000);
-                entity.HasIndex(e => e.DisplayOrder);
-            });
-
-            modelBuilder.Entity<DamageItem>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.Text).HasMaxLength(1000);
-                entity.HasIndex(e => e.DisplayOrder);
-            });
-
             modelBuilder.Entity<GeneralTemplate>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -89,22 +87,8 @@ namespace InspectionApi.Data
                     .WithMany()
                     .HasForeignKey(e => e.InspectionTypeId)
                     .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(e => new { e.InspectionTypeId, e.HasCleanlinessIssue, e.HasDamageIssue })
-                    .IsUnique();
+                entity.HasIndex(e => e.InspectionTypeId).IsUnique();
                 entity.Property(e => e.Text).HasMaxLength(2000);
-            });
-
-            modelBuilder.Entity<AudienceTemplate>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.HasOne(e => e.InspectionType)
-                    .WithMany()
-                    .HasForeignKey(e => e.InspectionTypeId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(e => new { e.InspectionTypeId, e.Audience }).IsUnique();
-                entity.Property(e => e.NoIssueText).HasMaxLength(2000);
-                entity.Property(e => e.IssuePrefix).HasMaxLength(1000);
-                entity.Property(e => e.IssueSuffix).HasMaxLength(1000);
             });
         }
     }

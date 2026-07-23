@@ -14,27 +14,20 @@ dayjs.extend(isoWeek);
 import { useTasks } from '../hooks/useTasks';
 import { useProperties } from '../hooks/useProperties';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
-import type { CombinedTask, InspectionRecordDto } from '../types/api';
+import type { AiTaskDraftPropertyCandidate, AiTaskDraftResponse, CombinedTask, InspectionRecordDto } from '../types/api';
 import { API_ENDPOINTS } from '../config/api';
-import { IndTitle, modalStyles } from '../components/shared';
-import { getSuggestedBillable, isSixMonthFreePolicy } from '../utils/billingPolicy';
-
-const { TextArea } = Input;
-
-const DISABLED_MINUTES = Array.from({ length: 60 }, (_, i) => i).filter(i => i % 10 !== 0);
-
-const formattedDate = (dateStr?: string): string => {
-  if (!dateStr) return 'Unscheduled';
-  return dayjs(dateStr).format('MM-DD ddd HH:mm');
-};
+import { IndTitle } from '../components/shared';
+import { modalStyles } from '../components/modalStyles';
+import { getSuggestedBillable } from '../utils/billingPolicy';
+import { AddTaskModal } from './tasks/AddTaskModal';
+import { TaskDraftBar } from './tasks/TaskDraftBar';
+import { formatTaskDate, tagStyle } from './tasks/taskUi';
 
 const ModalTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <span style={{ fontSize: '15px', fontWeight: 600, color: '#37352F' }}>
     {children}
   </span>
 );
-
-const tagStyle: React.CSSProperties = { margin: 0, fontSize: '12px', letterSpacing: '0.2px' };
 
 const TasksPage: React.FC = () => {
   const [syncingCalendar,     setSyncingCalendar]     = useState(false);
@@ -48,6 +41,11 @@ const TasksPage: React.FC = () => {
   const [completingTask,      setCompletingTask]      = useState<CombinedTask | null>(null);
   const [editingKey,          setEditingKey]          = useState<string | null>(null);
   const [editingRecord,       setEditingRecord]       = useState<CombinedTask | null>(null);
+  const [aiTaskText,          setAiTaskText]          = useState('');
+  const [aiDraftLoading,      setAiDraftLoading]      = useState(false);
+  const [isAiDraftApplied,    setIsAiDraftApplied]    = useState(false);
+  const [aiDraftCandidates,   setAiDraftCandidates]   = useState<AiTaskDraftPropertyCandidate[]>([]);
+  const [aiDraftAddressQuery, setAiDraftAddressQuery] = useState('');
 
   const [form]         = Form.useForm();
   const [completeForm] = Form.useForm();
@@ -55,7 +53,7 @@ const TasksPage: React.FC = () => {
 
   const {
     loading: tasksLoading,
-    overdueTasks, todayTasks, upcomingTasks, unscheduledTasks,
+    overdueTasks, todayTasks, tomorrowTasks, upcomingTasks, unscheduledTasks,
     fetchTasks, createInspectionTask, updateInspectionTask,
     deleteInspectionTask, completeInspectionTask,
   } = useTasks();
@@ -72,6 +70,11 @@ const TasksPage: React.FC = () => {
   const typeOptions = useMemo(
     () => taskTypes.map(t => ({ value: t.id, label: t.name })),
     [taskTypes]
+  );
+
+  const selectedProperty = useMemo(
+    () => properties.find(p => p.id === selectedPropertyId),
+    [properties, selectedPropertyId]
   );
 
   // ── Handlers ────────────────────────────────────────────────
@@ -116,12 +119,79 @@ const TasksPage: React.FC = () => {
     }
   }, [form, properties]);
 
+  const handlePropertyChange = useCallback((propertyId?: number) => {
+    setSelectedPropertyId(propertyId ?? null);
+    if (propertyId) fetchRecentRecords(propertyId);
+    else {
+      setRecentRecords([]);
+      form.setFieldValue('isBillable', false);
+    }
+  }, [fetchRecentRecords, form]);
+
+  const handleDraftCandidateSelect = useCallback((propertyId: number) => {
+    form.setFieldValue('propertyId', propertyId);
+    handlePropertyChange(propertyId);
+  }, [form, handlePropertyChange]);
+
   const closeModal = useCallback(() => {
     setIsModalOpen(false);
     setRecentRecords([]);
     setSelectedPropertyId(null);
+    setIsAiDraftApplied(false);
+    setAiDraftCandidates([]);
+    setAiDraftAddressQuery('');
     form.resetFields();
   }, [form]);
+
+  const handleAiTaskDraft = useCallback(async (value?: string) => {
+    const text = (value ?? aiTaskText).trim();
+    if (!text) {
+      message.warning('Enter a task first');
+      return;
+    }
+
+    setAiDraftLoading(true);
+    try {
+      const res = await api.post<AiTaskDraftResponse>(API_ENDPOINTS.aiTaskDraft, { text });
+      const draft = res.data;
+      const propertyId = draft.propertyCandidates.length === 1
+        ? draft.propertyCandidates[0].propertyId
+        : undefined;
+
+      setRecentRecords([]);
+      setSelectedPropertyId(propertyId ?? null);
+      setIsAiDraftApplied(true);
+      setAiDraftCandidates(draft.propertyCandidates);
+      setAiDraftAddressQuery(draft.addressQuery);
+      form.resetFields();
+      form.setFieldsValue({
+        propertyId,
+        type: draft.type,
+        isBillable: draft.isBillable,
+        scheduledAt: draft.scheduledAt ? dayjs(draft.scheduledAt) : null,
+        notes: draft.notes ?? '',
+      });
+      setIsModalOpen(true);
+
+      if (propertyId) {
+        await fetchRecentRecords(propertyId);
+        form.setFieldValue('isBillable', draft.isBillable);
+      }
+
+      if (draft.propertyCandidates.length === 0) {
+        message.warning('Draft filled what it could. Please choose the property.');
+      } else if (draft.propertyCandidates.length > 1) {
+        message.info('Draft filled. Please choose the matching property.');
+      } else {
+        message.success('Draft filled. Review and add when ready.');
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      message.error(err.response?.data?.message ?? 'AI task draft failed');
+    } finally {
+      setAiDraftLoading(false);
+    }
+  }, [aiTaskText, fetchRecentRecords, form]);
 
   const handleOk = useCallback(async () => {
     if (submitting) return;
@@ -243,7 +313,7 @@ const TasksPage: React.FC = () => {
               </Form.Item>
             ) : (
               <span style={{ fontSize: '13px', fontWeight: 500, color: record.scheduledAt ? '#2383E2' : '#ACABA9', letterSpacing: '0.1px' }}>
-                {formattedDate(record.scheduledAt)}
+                {formatTaskDate(record.scheduledAt)}
               </span>
             )}
           </div>
@@ -415,115 +485,56 @@ const TasksPage: React.FC = () => {
           <Button size="small" icon={<ReloadOutlined />} onClick={fetchTasks} loading={loading}>Refresh</Button>
           <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('calendar')} loading={syncingCalendar} disabled={syncingSheets}>Sync Calendar</Button>
           <Button size="small" icon={<SyncOutlined />} onClick={() => handleSync('sheets')} loading={syncingSheets} disabled={syncingCalendar}>Sync Sheets</Button>
-          <Button size="small" type="primary" icon={<PlusOutlined />} onClick={() => setIsModalOpen(true)}>Add Task</Button>
+          <Button
+            size="small"
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setAiDraftCandidates([]);
+              setAiDraftAddressQuery('');
+              setIsAiDraftApplied(false);
+              setIsModalOpen(true);
+            }}
+          >
+            Add Task
+          </Button>
         </Space>
       </div>
+
+      <TaskDraftBar
+        value={aiTaskText}
+        loading={aiDraftLoading}
+        onChange={setAiTaskText}
+        onDraft={handleAiTaskDraft}
+      />
 
       <Spin spinning={loading}>
         {overdueTasks.length > 0 && renderSection('Overdue', overdueTasks, '#E03E3E')}
         {renderSection('Today', todayTasks)}
+        {renderSection('Tomorrow', tomorrowTasks, '#0F7B6C')}
         {renderSection('Upcoming', upcomingTasks, '#2383E2', true)}
         {renderSection('Unscheduled', unscheduledTasks)}
       </Spin>
 
-      {/* ── Add task modal ── */}
-      <Modal title={<ModalTitle>Add Task</ModalTitle>} open={isModalOpen} onOk={handleOk} onCancel={closeModal}
-        confirmLoading={submitting} okText="Add" cancelText="Cancel" destroyOnHidden width={600} styles={modalStyles}>
-        <Form
-          form={form}
-          layout="vertical"
-          onValuesChange={(changed) => {
-            if ('propertyId' in changed) {
-              const pid = changed.propertyId as number | undefined;
-              setSelectedPropertyId(pid ?? null);
-              if (pid) fetchRecentRecords(pid);
-              else {
-                setRecentRecords([]);
-                form.setFieldValue('isBillable', false);
-              }
-            }
-          }}
-        >
-          <Form.Item name="propertyId" label="Property" rules={[{ required: true, message: 'Please select a property' }]}>
-            <Select placeholder="Select a property" showSearch optionFilterProp="label"
-              filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-              options={propertyOptions} />
-          </Form.Item>
-
-          {/* ── Billing policy badge ── */}
-          {selectedPropertyId && (() => {
-            const prop = properties.find(p => p.id === selectedPropertyId);
-            const isSixMonth = isSixMonthFreePolicy(prop?.billingPolicy);
-            return (
-              <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: `3px solid ${isSixMonth ? '#0F7B6C' : '#CB912F'}`, borderRadius: 4 }}>
-                <span style={{ fontSize: '13px', color: isSixMonth ? '#0F7B6C' : '#CB912F', fontWeight: 500 }}>
-                  {isSixMonth ? '6-Month Cycle' : '3-Month Cycle'}
-                </span>
-                <span style={{ fontSize: '13px', color: '#787774' }}>
-                  {isSixMonth
-                    ? '— inspection every 6 months, always free'
-                    : '— inspection every 3 months, alternates Charged / Free'}
-                </span>
-              </div>
-            );
-          })()}
-
-          {/* ── Recent records ── */}
-          {selectedPropertyId && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: '11px', color: '#787774', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
-                Recent Records
-              </div>
-              <Spin spinning={recordsLoading} size="small">
-                <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderLeft: '3px solid #ACABA9', borderRadius: 4, padding: '6px 10px', minHeight: 32 }}>
-                  {!recordsLoading && recentRecords.length === 0 ? (
-                    <span style={{ color: '#ACABA9', fontSize: '13px' }}>No history</span>
-                  ) : (
-                    recentRecords.map((r, idx) => {
-                      const tc = getType(r.type);
-                      return (
-                        <div key={r.id} style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '3px 0',
-                          borderBottom: idx < recentRecords.length - 1 ? '1px solid #E9E9E7' : 'none',
-                        }}>
-                          <span style={{ color: '#2383E2', fontSize: '12px', minWidth: 115 }}>
-                            {dayjs(r.executionDate).format('YYYY-MM-DD HH:mm')}
-                          </span>
-                          <Tag color={tc?.color ?? 'default'} style={tagStyle}>
-                            {tc?.name ?? String(r.type)}
-                          </Tag>
-                          <Tag color={r.isCharged ? 'gold' : 'green'} style={tagStyle}>
-                            {r.isCharged ? 'Charged' : 'Free'}
-                          </Tag>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </Spin>
-            </div>
-          )}
-
-          <Form.Item name="type" label="Inspection Type" rules={[{ required: true, message: 'Please select a type' }]}>
-            <Select placeholder="Select inspection type" options={typeOptions} />
-          </Form.Item>
-
-          <Form.Item name="isBillable" label="Billable" initialValue={false} rules={[{ required: true, message: 'Please select billing status' }]}>
-            <Select options={[{ value: false, label: 'Free' }, { value: true, label: 'Charged' }]} />
-          </Form.Item>
-
-          <Form.Item name="scheduledAt" label="Scheduled Time">
-            <DatePicker
-              showTime={{ format: 'HH:mm', hideDisabledOptions: true, disabledMinutes: () => DISABLED_MINUTES }}
-              format={['YYYY-MM-DD HH:mm', 'MM/DD HH:mm', 'MM/DD ha', 'MM/DD h:mma', 'M/D ha', 'M/D HH:mm']}
-              style={{ width: '100%' }} placeholder="03/02 10am  or  03/02 10:30am" />
-          </Form.Item>
-          <Form.Item name="notes" label="Notes">
-            <TextArea rows={3} placeholder="Enter notes..." showCount maxLength={500} />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <AddTaskModal
+        open={isModalOpen}
+        submitting={submitting}
+        form={form}
+        propertyOptions={propertyOptions}
+        typeOptions={typeOptions}
+        selectedProperty={selectedProperty}
+        selectedPropertyId={selectedPropertyId}
+        recentRecords={recentRecords}
+        recordsLoading={recordsLoading}
+        isAiDraftApplied={isAiDraftApplied}
+        aiDraftCandidates={aiDraftCandidates}
+        aiDraftAddressQuery={aiDraftAddressQuery}
+        getType={getType}
+        onOk={handleOk}
+        onCancel={closeModal}
+        onPropertyChange={handlePropertyChange}
+        onDraftCandidateSelect={handleDraftCandidateSelect}
+      />
 
       {/* ── Complete task modal ── */}
       <Modal title={<ModalTitle>Complete Task</ModalTitle>} open={isCompleteModalOpen} onOk={handleComplete}
