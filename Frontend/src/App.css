@@ -98,6 +98,23 @@
   display: none;
 }
 
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: var(--n-text-primary);
+  color: var(--n-bg);
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -222,6 +239,143 @@
 
 .calendar-grid {
   min-width: 760px;
+}
+
+.workflow-page-subtitle {
+  margin-top: 3px;
+  color: var(--n-text-secondary);
+  font-size: 13px;
+}
+
+.workflow-empty {
+  padding: 36px 16px;
+  border: 1px solid var(--n-border);
+  border-radius: 6px;
+  background: var(--n-bg-sidebar);
+}
+
+.workflow-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workflow-list-card {
+  border: 1px solid var(--n-border);
+  border-radius: 6px;
+  background: var(--n-bg);
+  overflow: hidden;
+}
+
+.workflow-list-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--n-border);
+  background: var(--n-bg-sidebar);
+}
+
+.workflow-list-title-block {
+  min-width: 0;
+}
+
+.workflow-list-address {
+  overflow: hidden;
+  color: var(--n-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-list-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  color: var(--n-text-secondary);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.workflow-list-progress {
+  padding: 10px 14px 2px;
+}
+
+.workflow-list-next {
+  margin-top: 3px;
+  color: var(--n-text-secondary);
+  font-size: 12px;
+}
+
+.workflow-list-controls {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 14px 12px;
+  border-bottom: 1px solid var(--n-border);
+}
+
+.workflow-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.workflow-checklist-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid var(--n-border);
+  border-radius: 6px;
+  background: var(--n-bg);
+}
+
+.workflow-checklist-label {
+  min-width: 0;
+  color: var(--n-text-primary);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.workflow-checklist-label.done {
+  color: var(--n-text-secondary);
+  text-decoration: line-through;
+}
+
+.workflow-checklist-done-icon {
+  color: var(--n-success);
+  font-size: 13px;
+}
+
+.workflow-long-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+}
+
+.workflow-long-checklist-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--n-border);
+  cursor: pointer;
+  user-select: none;
+}
+
+.workflow-long-checklist-row:nth-child(odd) {
+  border-right: 1px solid var(--n-border);
+}
+
+.workflow-long-checklist-row:hover {
+  background: var(--n-bg-hover);
 }
 
 .config-row {
@@ -359,35 +513,46 @@
   }
 
   .mobile-nav {
-    display: block;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     background: var(--n-bg-sidebar);
     border-bottom: 1px solid var(--n-border);
-    overflow-x: auto;
-    overflow-y: hidden;
-    scrollbar-width: none;
-  }
-
-  .mobile-nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mobile-nav .ant-menu {
-    min-width: max-content;
-    background: var(--n-bg-sidebar);
-    border-bottom: 0;
     padding: 0 8px;
-    line-height: 42px;
   }
 
-  .mobile-nav .ant-menu-item {
-    display: inline-flex;
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 48px;
     align-items: center;
-    height: 44px;
-    padding-inline: 10px;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px 2px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--n-text-secondary);
+    font-size: 11px;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
   }
 
-  .mobile-nav .ant-menu-title-content a {
-    font-size: 13px;
+  .mobile-nav-item .anticon {
+    flex: 0 0 auto;
+    font-size: 14px;
+  }
+
+  .mobile-nav-item.active {
+    border-bottom-color: var(--n-accent);
+    color: var(--n-text-primary);
+    font-weight: 600;
+  }
+
+  .mobile-nav-more {
+    width: 100%;
   }
 
   .ant-table {
@@ -880,5 +1045,22 @@
   .inspect-ai-text,
   .inspect-ai-reference-text {
     font-size: 14px;
+  }
+
+  .workflow-list-card-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workflow-list-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workflow-long-checklist {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workflow-long-checklist-row:nth-child(odd) {
+    border-right: 0;
   }
 }

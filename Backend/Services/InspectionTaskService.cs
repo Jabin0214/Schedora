@@ -41,6 +41,9 @@ namespace InspectionApi.Services
         private static DateTimeOffset ParseDate(string iso) =>
             DateTimeOffset.Parse(iso, null, System.Globalization.DateTimeStyles.RoundtripKind);
 
+        private static int GetDefaultWorkUnits(InspectionType type) =>
+            type is InspectionType.MoveIn or InspectionType.MoveOut ? 2 : 1;
+
         private async Task EnsureTaskTypeExistsAsync(int typeId, CancellationToken cancellationToken = default)
         {
             var exists = await _context.TaskTypes.AnyAsync(t => t.Id == typeId, cancellationToken);
@@ -153,6 +156,7 @@ namespace InspectionApi.Services
                 ExecutionDate = executionDate,
                 Type = task.Type,
                 IsCharged = task.IsBillable,
+                WorkUnits = GetDefaultWorkUnits(task.Type),
                 ParkingFee = dto.ParkingFee
             });
 

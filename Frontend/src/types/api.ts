@@ -106,6 +106,7 @@ export interface InspectionRecordDto {
   executionDate: string;
   type: InspectionType;
   isCharged: boolean;
+  workUnits: number;
   parkingFee?: number;
 }
 
@@ -114,6 +115,7 @@ export interface AiInspectionPolishRequest {
   inspectionType?: string;
   notes: string;
   isBillable: boolean;
+  outputMode?: 'full' | 'generalOnly';
 }
 
 export interface AiInspectionPolishResponse {
@@ -122,6 +124,10 @@ export interface AiInspectionPolishResponse {
   englishLandlordText: string;
   chineseReferenceText: string;
   summary: string;
+}
+
+export interface AiInspectionReportPromptSetting {
+  prompt: string;
 }
 
 export interface AiTaskDraftRequest {
@@ -144,4 +150,39 @@ export interface AiTaskDraftResponse {
   notes?: string;
   addressQuery: string;
   propertyCandidates: AiTaskDraftPropertyCandidate[];
+}
+
+export interface WorkflowChecklistItem {
+  id: number;
+  key: string;
+  label: string;
+  stage: number;
+  displayOrder: number;
+  isCompleted: boolean;
+  completedAt?: string | null;
+}
+
+export interface Workflow {
+  id: number;
+  type: number;
+  address: string;
+  stage: number;
+  moveInAppointmentAt?: string | null;
+  notes?: string | null;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  items: WorkflowChecklistItem[];
+}
+
+export interface WorkflowCreateRequest {
+  address: string;
+  moveInAppointmentAt?: string;
+  notes?: string;
+}
+
+export interface WorkflowUpdateRequest {
+  address: string;
+  moveInAppointmentAt?: string;
+  notes?: string;
 }

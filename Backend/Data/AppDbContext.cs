@@ -10,10 +10,13 @@ namespace InspectionApi.Data
         public DbSet<Property> Properties { get; set; }
         public DbSet<InspectionTask> InspectionTasks { get; set; }
         public DbSet<InspectionRecord> InspectionRecords { get; set; }
+        public DbSet<Workflow> Workflows { get; set; }
+        public DbSet<WorkflowChecklistItem> WorkflowChecklistItems { get; set; }
         public DbSet<TenantContact> TenantContacts { get; set; }
         public DbSet<TaskType> TaskTypes { get; set; }
         public DbSet<TemplateInspectionType> TemplateInspectionTypes { get; set; }
         public DbSet<GeneralTemplate> GeneralTemplates { get; set; }
+        public DbSet<SystemSetting> SystemSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -71,6 +74,33 @@ namespace InspectionApi.Data
                     .OnDelete(DeleteBehavior.Restrict);
                 entity.HasIndex(r => r.PropertyId);
                 entity.HasIndex(r => r.ExecutionDate);
+                entity.Property(r => r.WorkUnits).HasDefaultValue(1);
+            });
+
+            modelBuilder.Entity<Workflow>(entity =>
+            {
+                entity.HasKey(w => w.Id);
+                entity.Property(w => w.Address).IsRequired().HasMaxLength(200);
+                entity.Property(w => w.AddressKey).IsRequired().HasMaxLength(200);
+                entity.Property(w => w.Notes).HasColumnType("text");
+                entity.HasIndex(w => new { w.Type, w.AddressKey })
+                    .IsUnique()
+                    .HasFilter("\"IsArchived\" = false");
+                entity.HasIndex(w => w.Stage);
+                entity.HasIndex(w => w.MoveInAppointmentAt);
+            });
+
+            modelBuilder.Entity<WorkflowChecklistItem>(entity =>
+            {
+                entity.HasKey(i => i.Id);
+                entity.HasOne(i => i.Workflow)
+                    .WithMany(w => w.Items)
+                    .HasForeignKey(i => i.WorkflowId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(i => i.Key).IsRequired().HasMaxLength(80);
+                entity.Property(i => i.Label).IsRequired().HasMaxLength(200);
+                entity.HasIndex(i => new { i.WorkflowId, i.Key }).IsUnique();
+                entity.HasIndex(i => new { i.WorkflowId, i.DisplayOrder });
             });
 
             modelBuilder.Entity<TemplateInspectionType>(entity =>
@@ -89,6 +119,13 @@ namespace InspectionApi.Data
                     .OnDelete(DeleteBehavior.Cascade);
                 entity.HasIndex(e => e.InspectionTypeId).IsUnique();
                 entity.Property(e => e.Text).HasMaxLength(2000);
+            });
+
+            modelBuilder.Entity<SystemSetting>(entity =>
+            {
+                entity.HasKey(e => e.Key);
+                entity.Property(e => e.Key).HasMaxLength(100);
+                entity.Property(e => e.Value).HasColumnType("text");
             });
         }
     }

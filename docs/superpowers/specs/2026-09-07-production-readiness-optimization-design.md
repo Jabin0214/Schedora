@@ -25,16 +25,16 @@ The pass will fix concrete security and reliability risks, improve the highest-i
 
 ### Dependency safety
 
-Upgrade Axios, React Router, and their lockfile resolutions to non-vulnerable compatible releases. Confirm the audit has no known production vulnerabilities after the upgrade and rerun the complete frontend test, lint, and build pipeline.
+Upgrade Axios, React Router, and their lockfile resolutions to non-vulnerable compatible releases. Confirm the full dependency audit has no known vulnerabilities after the upgrade and rerun the complete frontend test, lint, and build pipeline.
 
 ### Authentication hardening
 
-- Add server-side login rate limiting with a small fixed-window policy suitable for a single-admin operational application.
+- Add server-side login rate limiting with a small fixed-window policy suitable for a single-admin operational application, partitioned by the real client address when traffic arrives through the trusted local Cloudflare Tunnel.
 - Return `429 Too Many Requests` with a retry hint when the limit is exceeded.
 - Validate JWT configuration at startup, including a minimum signing-secret length and a bounded positive expiry.
 - Shorten the default session lifetime from seven days to a safer operational default while preserving explicit configuration overrides.
 - Keep the existing bearer-token API contract for compatibility. Replacing it with server-managed secure cookies is deliberately out of scope because it would change deployment and CSRF requirements.
-- Centralize frontend `401` handling so expired or invalid sessions are cleared once and the user is returned to login without each page implementing its own behavior.
+- Centralize frontend `401` handling so expired or invalid sessions are cleared once and the user is returned to login without each page implementing its own behavior. A delayed response from an older token must never clear a newer login.
 
 ### HTTP and error handling
 
@@ -92,7 +92,7 @@ The work is complete when all of the following are true:
 2. `dotnet test Backend.Tests/Backend.Tests.csproj` passes.
 3. `dotnet build Schedora.sln --no-restore -warnaserror` passes without warnings.
 4. `npm run test`, `npm run lint`, and `npm run build` pass in `Frontend`.
-5. `npm audit --omit=dev --audit-level=moderate` reports no known production vulnerabilities.
+5. `npm audit --audit-level=moderate` reports no known dependency vulnerabilities.
 6. Login attempts are throttled, JWT configuration is validated, and production responses include the selected security headers.
 7. Expired frontend sessions reliably return the user to login.
 8. Every existing destination remains reachable on desktop and mobile, with no mobile navigation overflow.

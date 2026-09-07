@@ -7,7 +7,7 @@ import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import api, { isAxiosError } from '../api';
 import { API_ENDPOINTS } from '../config/api';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
-import type { TaskTypeConfig } from '../types/api';
+import type { AiInspectionReportPromptSetting, TaskTypeConfig } from '../types/api';
 import { IndTitle } from '../components/shared';
 import { modalStyles } from '../components/modalStyles';
 
@@ -28,6 +28,85 @@ const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     {children}
   </div>
 );
+
+// ── AI Inspect Report Prompt section ───────────────────────────
+const AiInspectPromptSection: React.FC = () => {
+  const [prompt, setPrompt] = useState('');
+  const [lastLoadedPrompt, setLastLoadedPrompt] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const loadPrompt = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get<AiInspectionReportPromptSetting>(
+        `${API_ENDPOINTS.settings}/ai-inspection-report-prompt`,
+      );
+      setPrompt(res.data.prompt);
+      setLastLoadedPrompt(res.data.prompt);
+    } catch (err) {
+      if (isAxiosError(err)) {
+        message.error(err.response?.data?.message ?? 'Prompt load failed');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadPrompt();
+  }, []);
+
+  const savePrompt = async () => {
+    try {
+      setSaving(true);
+      await api.put(`${API_ENDPOINTS.settings}/ai-inspection-report-prompt`, { prompt });
+      setLastLoadedPrompt(prompt);
+      message.success('Prompt saved');
+    } catch (err) {
+      if (isAxiosError(err)) {
+        message.error(err.response?.data?.message ?? 'Prompt save failed');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const hasChanges = prompt !== lastLoadedPrompt;
+
+  return (
+    <>
+      <div className="config-section-header">
+        <SectionTitle>AI Inspect Report Prompt</SectionTitle>
+        <Space size={8}>
+          <Button size="small" onClick={() => setPrompt(lastLoadedPrompt)} disabled={!hasChanges || saving}>
+            Reset
+          </Button>
+          <Button size="small" type="primary" onClick={savePrompt} loading={saving} disabled={!hasChanges || loading}>
+            Save Prompt
+          </Button>
+        </Space>
+      </div>
+
+      <Spin spinning={loading}>
+        <div style={{ border: '1px solid #E9E9E7', borderTop: '2px solid #2383E2', borderRadius: 6, background: '#FFFFFF', padding: 12 }}>
+          <Input.TextArea
+            value={prompt}
+            onChange={e => setPrompt(e.target.value)}
+            autoSize={{ minRows: 14, maxRows: 28 }}
+            maxLength={12000}
+            showCount
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+              fontSize: 12,
+              lineHeight: 1.6,
+            }}
+          />
+        </div>
+      </Spin>
+    </>
+  );
+};
 
 // ── Task Types section ────────────────────────────────────────
 const TaskTypesSection: React.FC = () => {
@@ -192,7 +271,9 @@ const ConfigPage: React.FC = () => (
       <TaskTypesSection />
     </section>
 
-    {/* Future sections go here */}
+    <section style={{ marginBottom: 32 }}>
+      <AiInspectPromptSection />
+    </section>
   </div>
 );
 

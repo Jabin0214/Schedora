@@ -21,6 +21,7 @@ interface EditState {
   executionDate: Dayjs;
   type: number;
   isCharged: boolean;
+  workUnits: number;
   parkingFee: number | null;
 }
 
@@ -35,6 +36,12 @@ const countWorkdays = (start: Dayjs, end: Dayjs): number => {
   }
   return count;
 };
+
+const getDefaultWorkUnits = (type: number): number =>
+  type === 0 || type === 1 ? 2 : 1;
+
+const getRecordWorkUnits = (record: InspectionRecordDto): number =>
+  record.workUnits ?? getDefaultWorkUnits(record.type);
 
 const StatCard: React.FC<{ label: string; value: React.ReactNode; sub?: React.ReactNode }> = ({ label, value, sub }) => (
   <div style={{
@@ -119,8 +126,9 @@ const HistoryPage: React.FC = () => {
     const [start, end] = dateRange;
     const workdays    = countWorkdays(start, end);
     const officeHours = workdays;           // 1 hr/workday
+    const workUnits = records.reduce((sum, r) => sum + getRecordWorkUnits(r), 0);
     const totalParking = records.reduce((sum, r) => sum + (r.parkingFee ?? 0), 0);
-    return { workdays, officeHours, totalParking };
+    return { workdays, officeHours, workUnits, totalParking };
   }, [dateRange, records]);
 
   // ── Inline edit ───────────────────────────────────────────────
@@ -130,6 +138,7 @@ const HistoryPage: React.FC = () => {
       executionDate: dayjs(record.executionDate),
       type:          record.type,
       isCharged:     record.isCharged,
+      workUnits:     getRecordWorkUnits(record),
       parkingFee:    record.parkingFee ?? null,
     });
   }, []);
@@ -147,6 +156,7 @@ const HistoryPage: React.FC = () => {
         executionDate: editState.executionDate.toISOString(),
         type:          editState.type,
         isCharged:     editState.isCharged,
+        workUnits:     editState.workUnits,
         parkingFee:    editState.parkingFee ?? null,
       });
       setRecords(prev => prev.map(r =>
@@ -156,6 +166,7 @@ const HistoryPage: React.FC = () => {
               executionDate: editState.executionDate.toISOString(),
               type:          editState.type as InspectionRecordDto['type'],
               isCharged:     editState.isCharged,
+              workUnits:     editState.workUnits,
               parkingFee:    editState.parkingFee ?? undefined,
             }
           : r
@@ -254,6 +265,27 @@ const HistoryPage: React.FC = () => {
       },
     },
     {
+      title: 'Units',
+      key: 'workUnits',
+      width: 95,
+      render: (_: unknown, record: InspectionRecordDto) => {
+        const isEditing = editingId === record.id;
+        if (isEditing) {
+          return (
+            <Select
+              value={editState!.workUnits}
+              onChange={(v) => setEditState(s => s ? { ...s, workUnits: v } : s)}
+              options={[{ value: 1, label: '1x' }, { value: 2, label: '2x' }]}
+              size="small"
+              style={{ width: 70 }}
+              onClick={(e) => e.stopPropagation()}
+            />
+          );
+        }
+        return <Tag color={getRecordWorkUnits(record) === 2 ? 'blue' : 'default'} style={tagStyle}>{getRecordWorkUnits(record)}x</Tag>;
+      },
+    },
+    {
       title: 'Parking',
       key: 'parking',
       width: 110,
@@ -331,7 +363,7 @@ const HistoryPage: React.FC = () => {
       if (r.parkingFee) totalParking += r.parkingFee;
     }
 
-    const { workdays, officeHours } = stats;
+    const { workdays, officeHours, workUnits } = stats;
 
     const rows = records
       .slice()
@@ -344,6 +376,7 @@ const HistoryPage: React.FC = () => {
           <td>${r.propertyAddress ?? '-'}</td>
           <td class="center">${typeName(r.type)}</td>
           <td class="center">${r.isCharged ? 'Charged' : 'Free'}</td>
+          <td class="center">${getRecordWorkUnits(r)}x</td>
           <td class="center">${r.parkingFee != null && r.parkingFee > 0 ? '$' + r.parkingFee.toFixed(2) : '—'}</td>
         </tr>`)
       .join('');
@@ -390,7 +423,7 @@ const HistoryPage: React.FC = () => {
     <div class="stat-box">
       <div class="stat-label">Inspections</div>
       <div class="stat-value">${records.length}</div>
-      <div class="stat-sub">${Object.entries(countByType).map(([n, c]) => `${n}: ${c}`).join(' · ')}</div>
+      <div class="stat-sub">Work units: ${workUnits} · ${Object.entries(countByType).map(([n, c]) => `${n}: ${c}`).join(' · ')}</div>
     </div>
     <div class="stat-box">
       <div class="stat-label">Office Hours</div>
@@ -413,16 +446,17 @@ const HistoryPage: React.FC = () => {
         <th>Property Address</th>
         <th class="center">Type</th>
         <th class="center">Charge</th>
+        <th class="center">Units</th>
         <th class="center">Parking</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:16px">No records</td></tr>'}
+      ${rows || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:16px">No records</td></tr>'}
     </tbody>
   </table>
 
 
-  <div class="footer">Work Report &nbsp;|&nbsp; ${periodLabel} &nbsp;|&nbsp; Inspections: ${records.length} &nbsp;|&nbsp; Office: ${officeHours} hrs${totalParking > 0 ? ` &nbsp;|&nbsp; Parking: $${totalParking.toFixed(2)}` : ''}</div>
+  <div class="footer">Work Report &nbsp;|&nbsp; ${periodLabel} &nbsp;|&nbsp; Inspections: ${records.length} &nbsp;|&nbsp; Work units: ${workUnits} &nbsp;|&nbsp; Office: ${officeHours} hrs${totalParking > 0 ? ` &nbsp;|&nbsp; Parking: $${totalParking.toFixed(2)}` : ''}</div>
   <script>window.onload = () => { window.print(); }</script>
 </body>
 </html>`;
@@ -461,13 +495,15 @@ const HistoryPage: React.FC = () => {
           label="Inspections"
           value={records.length}
           sub={
-            types
-              .map(t => {
-                const count = records.filter(r => r.type === t.id).length;
-                return count > 0 ? `${t.name}: ${count}` : null;
-              })
-              .filter(Boolean)
-              .join('  ·  ') || undefined
+            `Work units: ${stats.workUnits}${
+              types
+                .map(t => {
+                  const count = records.filter(r => r.type === t.id).length;
+                  return count > 0 ? ` · ${t.name}: ${count}` : null;
+                })
+                .filter(Boolean)
+                .join('') || ''
+            }`
           }
         />
         <StatCard
@@ -518,7 +554,7 @@ const HistoryPage: React.FC = () => {
           dataSource={displayRecords}
           columns={columns}
           rowKey="id"
-          scroll={{ x: 760 }}
+          scroll={{ x: 840 }}
           onRow={(record) => ({
             onDoubleClick: () => {
               if (editingId !== record.id) startEdit(record);

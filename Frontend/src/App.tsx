@@ -1,5 +1,6 @@
-import React, { Suspense, lazy, useMemo } from 'react';
-import { Layout, Menu, ConfigProvider, Button, Spin } from 'antd';
+import React, { Suspense, lazy } from 'react';
+import { Layout, Menu, ConfigProvider, Button, Dropdown, Spin } from 'antd';
+import type { MenuProps } from 'antd';
 import {
   HomeOutlined,
   CalendarOutlined,
@@ -10,19 +11,29 @@ import {
   CopyOutlined,
   LogoutOutlined,
   ContactsOutlined,
+  PartitionOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import './App.css';
 
 import ErrorBoundary from './components/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
+import {
+  allNavigationItems,
+  mobileMoreItems,
+  mobilePrimaryItems,
+  selectedNavigationKey,
+  type NavigationKey,
+} from './navigation';
 
 const { Header, Content, Footer, Sider } = Layout;
 
 const PropertiesPage = lazy(() => import('./pages/PropertiesPage'));
 const PropertyDetailsPage = lazy(() => import('./pages/PropertyDetailsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
+const WorkflowsPage = lazy(() => import('./pages/WorkflowsPage'));
 const InspectPage = lazy(() => import('./pages/InspectPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const TenantContactsPage = lazy(() => import('./pages/TenantContactsPage'));
@@ -56,35 +67,44 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppShell: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { username, logout } = useAuth();
 
-  const selectedKey = useMemo(() => {
-    if (location.pathname === '/tasks') return '2';
-    if (location.pathname === '/inspect') return '6';
-    if (location.pathname === '/templates') return '7';
-    if (location.pathname === '/tenant-contacts') return '8';
-    if (location.pathname === '/calendar') return '3';
-    if (location.pathname === '/history') return '4';
-    if (location.pathname === '/config') return '5';
-    return '1';
-  }, [location.pathname]);
-
-  const navItems = [
-    { key: '1', icon: <HomeOutlined />,          label: <Link to="/">Properties</Link> },
-    { key: '2', icon: <UnorderedListOutlined />, label: <Link to="/tasks">Tasks</Link> },
-    { key: '6', icon: <EditOutlined />,          label: <Link to="/inspect">Inspect</Link> },
-    { key: '7', icon: <CopyOutlined />,          label: <Link to="/templates">Templates</Link> },
-    { key: '8', icon: <ContactsOutlined />,      label: <Link to="/tenant-contacts">Contacts</Link> },
-    { key: '3', icon: <CalendarOutlined />,      label: <Link to="/calendar">Calendar</Link> },
-    { key: '4', icon: <FileTextOutlined />,      label: <Link to="/history">History</Link> },
-    { key: '5', icon: <SettingOutlined />,       label: <Link to="/config">Config</Link> },
-  ];
+  const selectedKey = selectedNavigationKey(location.pathname);
+  const icons: Record<NavigationKey, React.ReactNode> = {
+    properties: <HomeOutlined />,
+    tasks: <UnorderedListOutlined />,
+    workflows: <PartitionOutlined />,
+    inspect: <EditOutlined />,
+    templates: <CopyOutlined />,
+    contacts: <ContactsOutlined />,
+    calendar: <CalendarOutlined />,
+    history: <FileTextOutlined />,
+    config: <SettingOutlined />,
+  };
+  const navItems = allNavigationItems.map(item => ({
+    key: item.key,
+    icon: icons[item.key],
+    label: <Link to={item.path}>{item.label}</Link>,
+  }));
+  const moreMenuItems: MenuProps['items'] = mobileMoreItems.map(item => ({
+    key: item.key,
+    icon: icons[item.key],
+    label: item.label,
+  }));
+  const handleMoreNavigation: MenuProps['onClick'] = ({ key }) => {
+    const destination = mobileMoreItems.find(item => item.key === key);
+    if (destination) navigate(destination.path);
+  };
+  const isMoreSelected = mobileMoreItems.some(item => item.key === selectedKey);
 
   return (
-    <Layout className="app-shell">
+    <>
+      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <Layout className="app-shell">
       {/* ── Sidebar ── */}
       <Sider
-        breakpoint="lg"
+        breakpoint="md"
         collapsedWidth="0"
         className="app-sider"
         trigger={null}
@@ -122,14 +142,34 @@ const AppShell: React.FC = () => {
         </Header>
 
         <nav className="mobile-nav" aria-label="Primary navigation">
-          <Menu
-            mode="horizontal"
-            selectedKeys={[selectedKey]}
-            items={navItems}
-          />
+          {mobilePrimaryItems.map(item => (
+            <Link
+              key={item.key}
+              className={`mobile-nav-item${selectedKey === item.key ? ' active' : ''}`}
+              to={item.path}
+              aria-current={selectedKey === item.key ? 'page' : undefined}
+            >
+              {icons[item.key]}
+              <span>{item.label}</span>
+            </Link>
+          ))}
+          <Dropdown
+            menu={{ items: moreMenuItems, onClick: handleMoreNavigation, selectedKeys: [selectedKey] }}
+            trigger={['click']}
+            placement="bottomRight"
+          >
+            <button
+              type="button"
+              className={`mobile-nav-item mobile-nav-more${isMoreSelected ? ' active' : ''}`}
+              aria-label="More navigation destinations"
+            >
+              <MoreOutlined />
+              <span>More</span>
+            </button>
+          </Dropdown>
         </nav>
 
-        <Content className="app-content">
+        <Content id="main-content" className="app-content" tabIndex={-1}>
           <div className="page-container">
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
@@ -137,6 +177,7 @@ const AppShell: React.FC = () => {
                   <Route path="/" element={<PropertiesPage />} />
                   <Route path="/properties/:id" element={<PropertyDetailsPage />} />
                   <Route path="/tasks" element={<TasksPage />} />
+                  <Route path="/workflows" element={<WorkflowsPage />} />
                   <Route path="/inspect" element={<InspectPage />} />
                   <Route path="/templates" element={<TemplatesPage />} />
                   <Route path="/tenant-contacts" element={<TenantContactsPage />} />
@@ -153,7 +194,8 @@ const AppShell: React.FC = () => {
           Schedora PMS © 2026 — Created by Jabin
         </Footer>
       </Layout>
-    </Layout>
+      </Layout>
+    </>
   );
 };
 

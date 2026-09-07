@@ -77,6 +77,92 @@ namespace InspectionApi.Data
                     );
                 END LOOP;
             END $$;
+
+            -- Default no-issue templates for the quick copy buttons.
+            -- Fill empty rows and upgrade known old defaults; preserve user-edited wording.
+            UPDATE ""GeneralTemplates"" g
+            SET ""Text"" = defaults.""Text""
+            FROM ""TemplateInspectionTypes"" t
+            JOIN (VALUES
+                ('搬入', 'Overall Presentation:
+The property was presented in a clean, tidy, and professional condition and was ready for tenant possession.
+
+Tenant Care:
+This was a commencement inspection. The property was vacant at the time of inspection, and no tenant-care concern was applicable.
+
+Move-in Checks & Observations:
+The following items were checked with no issue noted:
+- Fixed heating source
+- Kitchen rangehood and extraction system
+- Bathroom extractor fan(s)
+- Doors, windows, and security locks
+
+No other specific maintenance concern was noted from the inspection.
+
+The following risk and compliance items were checked with no issue noted:
+- Smoke alarms
+- Visible moisture, mould, or leaks
+- Drainage or visible water ingress concerns
+- General safety concerns
+
+Assessment:
+No immediate action is required. The property is suitable for handover to the incoming tenants.', 'Overall Presentation:
+The property was presented in a clean and tidy condition and was ready for tenant possession.
+
+Tenant Care:
+This was a commencement inspection, and no tenant-care concern was noted from the inspection.
+
+Maintenance:
+No specific maintenance concern was noted from the inspection.
+
+Risk Areas:
+No visible leak, mould, moisture, or safety concern was noted from the inspection.
+
+Assessment:
+No immediate action is required. The property is suitable for handover.', 'Overall Presentation: The property is presented in a clean, tidy, and professional condition. It is clear and ready for the incoming tenants to take possession.
+
+Tenant Care: As this is a commencement inspection, the property is currently vacant. The expectations for maintaining this standard have been outlined to the new tenants.
+
+Maintenance: A full walkthrough confirms that all fixtures, fittings, and appliances are clean, functional, and in good working order. No pre-existing issues were identified.
+
+Risk Areas: The property is dry and secure. All smoke alarms have been tested and are compliant with current legislation. No signs of moisture or leaks were detected.
+
+Assessment: No action is required. The property is fit for habitation and the keys have been released.'),
+                ('搬出', 'Overall Presentation:
+The property was returned in a clean and tidy condition.
+
+Tenant Care:
+No tenant cleaning, rubbish, abandoned item, or avoidable damage issue was noted from the inspection.
+
+Maintenance:
+No specific maintenance concern requiring owner follow-up was noted from the inspection.
+
+Risk Areas:
+No leak, mould, or physical damage concern was noted from the inspection.
+
+Assessment:
+No immediate action is required based on the inspection notes.', '', ''),
+                ('例行检查', 'Overall Presentation:
+The property was presented in a generally clean and tidy condition.
+
+Tenant Care:
+The tenant appears to be maintaining the premises to an acceptable standard.
+
+Maintenance:
+No specific maintenance concern was noted from the inspection.
+
+Risk Areas:
+No leak, mould, or physical damage concern was noted from the inspection.
+
+Assessment:
+No immediate action is required.', '', '')
+            ) AS defaults(""Name"", ""Text"", ""PreviousText"", ""LegacyText"") ON defaults.""Name"" = t.""Name""
+            WHERE g.""InspectionTypeId"" = t.""Id""
+              AND (
+                  NULLIF(trim(g.""Text""), '') IS NULL
+                  OR g.""Text"" = defaults.""PreviousText""
+                  OR g.""Text"" = defaults.""LegacyText""
+              );
         ";
     }
 }

@@ -60,4 +60,29 @@ public class TemplatesStartupSqlTests
         Assert.Contains("NULLIF(trim(src.\"Text\"), '')", sql);
         Assert.Contains("SET \"Text\" = COALESCE(first_non_empty.\"Text\", keeper.\"Text\")", sql);
     }
+
+    [Fact]
+    public void SeedsDefaultNoIssueGeneralTemplateTextAndUpgradesKnownOldDefaults()
+    {
+        var sql = TemplatesStartupSql.Sql;
+
+        Assert.Contains("Default no-issue templates", sql);
+        Assert.Contains("Move-in Checks & Observations:", sql);
+        Assert.Contains("The following items were checked with no issue noted:", sql);
+        Assert.Contains("- Fixed heating source", sql);
+        Assert.Contains("- Kitchen rangehood and extraction system", sql);
+        Assert.Contains("- Bathroom extractor fan(s)", sql);
+        Assert.Contains("- Doors, windows, and security locks", sql);
+        Assert.Contains("The following risk and compliance items were checked with no issue noted:", sql);
+        Assert.Contains("- Smoke alarms", sql);
+        Assert.Contains("- Visible moisture, mould, or leaks", sql);
+        Assert.Contains("- Drainage or visible water ingress concerns", sql);
+        Assert.DoesNotContain("full compliance verification is outside the scope", sql);
+        Assert.Contains("The property was returned in a clean and tidy condition.", sql);
+        Assert.Contains("The tenant appears to be maintaining the premises to an acceptable standard.", sql);
+        Assert.Contains("NULLIF(trim(g.\"Text\"), '') IS NULL", sql);
+        Assert.Contains("OR g.\"Text\" = defaults.\"PreviousText\"", sql);
+        Assert.Contains("OR g.\"Text\" = defaults.\"LegacyText\"", sql);
+        Assert.Contains("All smoke alarms have been tested and are compliant with current legislation.", sql);
+    }
 }

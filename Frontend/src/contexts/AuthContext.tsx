@@ -1,10 +1,13 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import {
+  clearSession,
+  SESSION_EXPIRED_EVENT,
+  TOKEN_KEY,
+  USERNAME_KEY,
+} from '../auth/session';
 import { AuthContext, type AuthContextValue } from './authContextValue';
-
-const TOKEN_KEY = 'schedora_token';
-const USERNAME_KEY = 'schedora_username';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
@@ -13,36 +16,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const navigate = useNavigate();
 
   useEffect(() => {
+    const handleSessionExpired = () => {
+      setToken(null);
+      setUsername(null);
+      setIsLoading(false);
+      navigate('/login', { replace: true });
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, [navigate]);
+
+  useEffect(() => {
     const stored = localStorage.getItem(TOKEN_KEY);
     if (!stored) {
       setIsLoading(false);
       return;
     }
     let cancelled = false;
+    const controller = new AbortController();
     (async () => {
       try {
-        const res = await api.get('/api/auth/verify');
+        const res = await api.get('/api/auth/verify', { signal: controller.signal });
         if (cancelled) return;
         if (res.data?.valid) {
           setToken(stored);
           setUsername(res.data.username ?? localStorage.getItem(USERNAME_KEY));
         } else {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(USERNAME_KEY);
+          clearSession();
           setToken(null);
           setUsername(null);
         }
       } catch {
         if (cancelled) return;
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USERNAME_KEY);
+        clearSession();
         setToken(null);
         setUsername(null);
       } finally {
         if (!cancelled) setIsLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   const login = useCallback(async (user: string, password: string) => {
@@ -55,8 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USERNAME_KEY);
+    clearSession();
     setToken(null);
     setUsername(null);
     navigate('/login');

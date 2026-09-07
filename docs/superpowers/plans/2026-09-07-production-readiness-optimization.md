@@ -41,7 +41,7 @@
 
 - [ ] **Step 1: Capture the failing dependency audit**
 
-Run: `cd Frontend && npm audit --omit=dev --audit-level=moderate`
+Run: `cd Frontend && npm audit --audit-level=moderate`
 
 Expected: non-zero exit with Axios, React Router, `follow-redirects`, and `form-data` advisories.
 
@@ -53,9 +53,9 @@ Expected: `package.json` pins compatible caret ranges and the lockfile resolves 
 
 - [ ] **Step 3: Verify the dependency boundary**
 
-Run: `cd Frontend && npm audit --omit=dev --audit-level=moderate && npm run test && npm run lint && npm run build`
+Run: `cd Frontend && npm audit --audit-level=moderate && npm run test && npm run lint && npm run build`
 
-Expected: audit reports zero production vulnerabilities; tests, lint, and build pass.
+Expected: audit reports zero dependency vulnerabilities; tests, lint, and build pass.
 
 - [ ] **Step 4: Commit dependency safety changes**
 
@@ -207,7 +207,7 @@ Expected: the test fails because login has no `EnableRateLimitingAttribute`.
 
 - [ ] **Step 3: Register and apply the limiter**
 
-Add a partitioned fixed-window policy in `Program.cs` keyed by remote IP, with 5 permits per minute, no queue, automatic replenishment, status `429`, and a `Retry-After: 60` response header. Add `app.UseRateLimiter()` before authentication and decorate `Login` with `[EnableRateLimiting("login")]`.
+Add a partitioned fixed-window policy keyed by the direct remote IP or, for the trusted loopback Cloudflare Tunnel hop, a validated `CF-Connecting-IP`. Use 5 permits per minute, no queue, automatic replenishment, status `429`, and a `Retry-After: 60` response header. Add `app.UseRateLimiter()` before authentication and decorate `Login` with the named policy.
 
 ```csharp
 builder.Services.AddRateLimiter(options =>
@@ -369,7 +369,7 @@ export const expireSession = (
 };
 ```
 
-Use the exported keys in the API request interceptor and `AuthContext`. On `401`, call `expireSession()` instead of writing storage and navigation logic inside `api.ts`. In `AuthContext`, subscribe once to `SESSION_EXPIRED_EVENT`, clear in-memory user state, and navigate to `/login` with `replace: true`; remove the listener on cleanup. Create an `AbortController` for the initial `/api/auth/verify` request, pass its signal to Axios, and abort it in the effect cleanup so an unmounted provider cannot leave a stale request running.
+Use the exported keys in the API request interceptor and `AuthContext`. On `401`, expire the session only when the failed request's bearer token still matches the persisted token; this deduplicates concurrent failures and prevents an old request from clearing a newer login. In `AuthContext`, subscribe once to `SESSION_EXPIRED_EVENT`, clear in-memory user state, and navigate to `/login` with `replace: true`; remove the listener on cleanup. Create an `AbortController` for the initial `/api/auth/verify` request, pass its signal to Axios, and abort it in the effect cleanup so an unmounted provider cannot leave a stale request running.
 
 - [ ] **Step 4: Verify the session tests and frontend suite**
 
@@ -507,7 +507,7 @@ git commit -m "feat(accessibility): improve keyboard and motion support"
 
 - [ ] **Step 1: Update operational documentation**
 
-Document the 32-character JWT secret minimum, the 24-hour default and 720-hour validation ceiling, login throttling behavior, and `npm audit --omit=dev --audit-level=moderate` as a required release check.
+Document the 32-character JWT secret minimum, the 24-hour default and 720-hour validation ceiling, proxy-aware login throttling behavior, and `npm audit --audit-level=moderate` as a required release check.
 
 - [ ] **Step 2: Run the complete backend verification**
 
@@ -517,9 +517,9 @@ Expected: all tests pass and the build reports zero warnings and zero errors.
 
 - [ ] **Step 3: Run the complete frontend verification**
 
-Run: `cd Frontend && npm audit --omit=dev --audit-level=moderate && npm run test && npm run lint && npm run build`
+Run: `cd Frontend && npm audit --audit-level=moderate && npm run test && npm run lint && npm run build`
 
-Expected: zero known production vulnerabilities; all tests, lint, and production build pass.
+Expected: zero known dependency vulnerabilities; all tests, lint, and production build pass.
 
 - [ ] **Step 4: Check repository integrity**
 

@@ -54,6 +54,43 @@ public class InspectionTaskServiceDataSafetyTests
         Assert.Empty(await context.InspectionTasks.ToListAsync());
     }
 
+    [Theory]
+    [InlineData(InspectionType.MoveIn, 2)]
+    [InlineData(InspectionType.MoveOut, 2)]
+    [InlineData(InspectionType.Routine, 1)]
+    [InlineData(InspectionType.Other, 1)]
+    public async Task CompleteTaskSetsWorkUnitsFromInspectionType(InspectionType taskType, int expectedWorkUnits)
+    {
+        await using var context = CreateContext();
+        var service = CreateService(context);
+        var property = new Property
+        {
+            Address = "90 Test Drive",
+            BillingPolicy = BillingPolicy.ThreeMonthToggle
+        };
+        context.Properties.Add(property);
+        context.TaskTypes.Add(new TaskType { Id = (int)taskType, Name = taskType.ToString(), Color = "blue", DisplayOrder = 0 });
+        await context.SaveChangesAsync();
+
+        var task = new InspectionTask
+        {
+            PropertyId = property.Id,
+            ScheduledAt = DateTimeOffset.Parse("2026-06-10T10:00:00+12:00"),
+            Type = taskType,
+            IsBillable = true
+        };
+        context.InspectionTasks.Add(task);
+        await context.SaveChangesAsync();
+
+        await service.CompleteTaskAsync(task.Id, new TaskCompletionDto
+        {
+            ExecutionDate = "2026-06-10T10:00:00+12:00"
+        });
+
+        var completedRecord = await context.InspectionRecords.SingleAsync();
+        Assert.Equal(expectedWorkUnits, completedRecord.WorkUnits);
+    }
+
     [Fact]
     public async Task CreateTaskPersistsManualFreeChoiceWhenPolicySuggestsCharged()
     {

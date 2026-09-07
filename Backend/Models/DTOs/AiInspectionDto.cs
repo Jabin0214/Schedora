@@ -15,6 +15,9 @@ namespace InspectionApi.Models.DTOs
         public string Notes { get; set; } = string.Empty;
 
         public bool IsBillable { get; set; }
+
+        [StringLength(20)]
+        public string? OutputMode { get; set; }
     }
 
     public class AiInspectionPolishResponseDto

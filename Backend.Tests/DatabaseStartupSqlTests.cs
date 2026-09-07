@@ -5,6 +5,16 @@ namespace Backend.Tests;
 public class DatabaseStartupSqlTests
 {
     [Fact]
+    public void SystemSettingsTableIncludesAiInspectionReportPrompt()
+    {
+        var sql = DatabaseStartupSql.SystemSettingsTableSql;
+
+        Assert.Contains("\"SystemSettings\"", sql);
+        Assert.Contains("AiInspectionReportPrompt", sql);
+        Assert.Contains("ON CONFLICT", sql);
+    }
+
+    [Fact]
     public void IdentitySequenceSyncIncludesProperties()
     {
         Assert.Contains("\"Properties\"", DatabaseStartupSql.IdentitySequenceSyncSql);
@@ -42,5 +52,16 @@ public class DatabaseStartupSqlTests
     {
         Assert.Contains("\"InspectionTasks\"", DatabaseStartupSql.InspectionTasksTableSql);
         Assert.Contains("\"Notes\" TYPE text", DatabaseStartupSql.InspectionTasksTableSql);
+    }
+
+    [Fact]
+    public void InspectionRecordsStartupSqlAddsAndBackfillsWorkUnits()
+    {
+        var sql = DatabaseStartupSql.InspectionRecordsTableSql;
+
+        Assert.Contains("\"InspectionRecords\"", sql);
+        Assert.Contains("information_schema.columns", sql);
+        Assert.Contains("WHEN \"Type\" IN (0, 1) THEN 2", sql);
+        Assert.Contains("ALTER COLUMN \"WorkUnits\" SET NOT NULL", sql);
     }
 }

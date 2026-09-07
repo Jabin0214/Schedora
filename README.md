@@ -91,6 +91,9 @@ Notes:
 
 - `appsettings.local.json` is loaded by the backend and is intended for local secrets.
 - `appsettings.local.json` and `google-credentials.json` are excluded from publish output; production secrets must be configured through hosting environment settings.
+- `Jwt:Secret` must be at least 32 characters. Generate a unique random value for each deployment and never commit it.
+- JWT sessions default to 24 hours. `Jwt:ExpiryHours` must be greater than 0 and no more than 720 hours; explicit overrides within that range remain supported.
+- Login is limited to five attempts per source address per minute. The local Cloudflare Tunnel client address is read from `CF-Connecting-IP` only when the immediate connection is loopback, preventing public callers from spoofing the rate-limit key. Rejected requests return HTTP 429 with a retry hint.
 - If Google sync is enabled, place the credential file in `Backend/` unless you configure a different path.
 - The AI inspection feature uses an OpenAI-compatible chat completions endpoint. The defaults are set for DeepSeek, and only `Ai:ApiKey` is required for local use.
 - The frontend uses `VITE_API_BASE_URL` and defaults to same-origin `/api`. Local Vite development proxies `/api` to the ASP.NET backend.
@@ -384,6 +387,9 @@ Run these checks before publishing changes:
 ```bash
 dotnet test Backend.Tests/Backend.Tests.csproj
 cd Frontend
+npm audit --audit-level=moderate
+npm run test
+npm run lint
 npm run build
 ```
 

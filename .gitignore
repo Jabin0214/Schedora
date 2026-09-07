@@ -48,6 +48,7 @@ Backend/appsettings.local.json
 .fake
 
 .claude/
+.superpowers/
 
 # Git worktrees (local isolated workspaces)
 .worktrees/

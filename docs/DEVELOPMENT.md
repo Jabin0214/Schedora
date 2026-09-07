@@ -42,11 +42,14 @@ Open `http://localhost:3000`.
 
 ## Required Checks
 
-Run both before pushing:
+Run all checks before pushing:
 
 ```bash
 dotnet test Backend.Tests/Backend.Tests.csproj
 cd Frontend
+npm audit --audit-level=moderate
+npm run test
+npm run lint
 npm run build
 ```
 
@@ -54,6 +57,14 @@ Notes:
 
 - `npm run build` updates `Backend/wwwroot`.
 - Vite may warn that the main chunk is larger than 500 kB. That is currently expected and does not fail the build.
+
+## Authentication and Browser Security
+
+- `Jwt:Secret` is validated at startup and must contain at least 32 characters.
+- `Jwt:ExpiryHours` defaults to 24 and must be greater than 0 and no more than 720.
+- The login endpoint permits five attempts per source address per minute and returns HTTP 429 with `Retry-After: 60` when the limit is exceeded.
+- Protected API requests use bearer tokens. A 401 response clears the browser session and returns the user to login.
+- The backend applies `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` headers to application responses.
 
 ## Database Startup Conventions
 

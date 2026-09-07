@@ -8,6 +8,7 @@ import { useTasks } from '../hooks/useTasks';
 import { useInspectionTypes } from '../hooks/useInspectionTypes';
 import { useTemplates } from '../hooks/useTemplates';
 import { API_ENDPOINTS } from '../config/api';
+import { formatInspectionTemplateForCopy } from '../utils/inspectionTextFormat';
 import type {
   AiInspectionPolishResponse,
   CombinedTask,
@@ -136,7 +137,7 @@ const InspectCard: React.FC<InspectCardProps> = ({
     }
   };
 
-  const handleAiPolish = async () => {
+  const handleAiPolish = async (outputMode: 'full' | 'generalOnly' = 'full') => {
     const rawNotes = notes.trim();
     if (rawNotes.length < 2) {
       message.warning('先输入一些检查备注');
@@ -149,6 +150,7 @@ const InspectCard: React.FC<InspectCardProps> = ({
         inspectionType: typeName,
         notes: rawNotes,
         isBillable: task.isBillable ?? false,
+        outputMode,
       });
       setAiResult(res.data);
     } catch {
@@ -167,7 +169,7 @@ const InspectCard: React.FC<InspectCardProps> = ({
       message.error('Template 加载失败');
       return;
     }
-    copy(`${name} Template`, text);
+    copy(`${name} Template`, formatInspectionTemplateForCopy(text));
   };
 
   const copyNotes = () => {
@@ -315,7 +317,16 @@ const InspectCard: React.FC<InspectCardProps> = ({
           size="middle"
           icon={<RobotOutlined />}
           loading={aiLoading}
-          onClick={handleAiPolish}
+          onClick={() => handleAiPolish('generalOnly')}
+        >
+          AI 记录
+        </Button>
+        <Button
+          className="inspect-action-button"
+          size="middle"
+          icon={<RobotOutlined />}
+          loading={aiLoading}
+          onClick={() => handleAiPolish('full')}
         >
           AI 润色
         </Button>
@@ -378,14 +389,18 @@ const InspectCard: React.FC<InspectCardProps> = ({
         {aiResult && (
           <>
             {aiTextBlock('English General（正式记录）', aiResult.englishGeneralText)}
-            {aiTextBlock('English Tenant（发给房客）', aiResult.englishTenantText)}
-            {aiTextBlock('English Landlord（发给房东）', aiResult.englishLandlordText)}
-            <div className="inspect-ai-reference">
-              <Text strong style={{ fontSize: 13 }}>中文参考（仅校对）</Text>
-              <div className="inspect-ai-reference-text">
-                {aiResult.chineseReferenceText || <Text type="secondary">（无内容）</Text>}
-              </div>
-            </div>
+            {(aiResult.englishTenantText || aiResult.englishLandlordText || aiResult.chineseReferenceText) && (
+              <>
+                {aiTextBlock('English Tenant（发给房客）', aiResult.englishTenantText)}
+                {aiTextBlock('English Landlord（发给房东）', aiResult.englishLandlordText)}
+                <div className="inspect-ai-reference">
+                  <Text strong style={{ fontSize: 13 }}>中文参考（仅校对）</Text>
+                  <div className="inspect-ai-reference-text">
+                    {aiResult.chineseReferenceText || <Text type="secondary">（无内容）</Text>}
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </Modal>
