@@ -6,7 +6,6 @@ import { assemble } from '../utils/templateAssembly';
 import { IndTitle } from '../components/shared';
 import TemplatesManager from '../components/TemplatesManager';
 import type { AssemblyState } from '../types/templates';
-import { reviewCommentTemplates } from '../data/reviewCommentTemplates';
 import {
   defaultTemplateSection,
   templateSections,
@@ -130,20 +129,6 @@ const TemplatesPage: React.FC = () => {
           复制评论
         </Button>
       </Card>
-      {reviewCommentTemplates.map(template => (
-        <Card key={template.title} title={template.title} size="small" style={{ marginBottom: 12 }}>
-          <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
-          <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderRadius: 4, padding: 12, whiteSpace: 'pre-wrap', fontSize: 13, color: '#37352F' }}>
-            {template.copyText}
-          </div>
-          <div style={{ marginTop: 12, fontSize: 13, color: '#6B6B69' }}>
-            实际范例：{template.example}
-          </div>
-          <Button type="primary" icon={<CopyOutlined />} onClick={() => copy(template.title, template.copyText)} style={{ marginTop: 12 }}>
-            复制模板
-          </Button>
-        </Card>
-      ))}
     </div>
   );
 
