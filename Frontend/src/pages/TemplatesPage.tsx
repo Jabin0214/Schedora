@@ -59,18 +59,6 @@ const TemplatesPage: React.FC = () => {
     }));
   };
 
-  if (loading) return <Spin />;
-  if (error || !data) {
-    return (
-      <Empty description="加载模板失败">
-        <Button onClick={refresh}>重试</Button>
-      </Empty>
-    );
-  }
-  if (data.inspectionTypes.length === 0) {
-    return <Empty description="还没有检查类型，先去管理模板里加一个" />;
-  }
-
   const previewStyle: React.CSSProperties = {
     background: '#F7F7F5',
     border: '1px solid #E9E9E7',
@@ -81,6 +69,49 @@ const TemplatesPage: React.FC = () => {
     fontSize: 13,
     color: '#37352F',
   };
+
+  const reviewComments = (
+    <div style={{ marginTop: 24 }}>
+      <h2 style={{ fontSize: 18, marginBottom: 0 }}>Review Comments</h2>
+      {reviewCommentTemplates.map(template => (
+        <Card key={template.title} title={template.title} size="small" style={{ marginTop: 12 }}>
+          <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
+          <div style={previewStyle}>{template.copyText}</div>
+          <div style={{ marginTop: 12, fontSize: 13, color: '#6B6B69' }}>
+            实际范例：{template.example}
+          </div>
+          <Button
+            type="primary"
+            icon={<CopyOutlined />}
+            onClick={() => copy(template.title, template.copyText)}
+            style={{ marginTop: 12 }}
+          >
+            复制模板
+          </Button>
+        </Card>
+      ))}
+    </div>
+  );
+
+  if (loading) return <Spin />;
+  if (error || !data) {
+    return (
+      <>
+        <Empty description="报告描述模板加载失败">
+          <Button onClick={refresh}>重试</Button>
+        </Empty>
+        {reviewComments}
+      </>
+    );
+  }
+  if (data.inspectionTypes.length === 0) {
+    return (
+      <>
+        <Empty description="还没有检查类型，先去管理模板里加一个" />
+        {reviewComments}
+      </>
+    );
+  }
 
   return (
     <div>
@@ -182,26 +213,7 @@ const TemplatesPage: React.FC = () => {
         </Card>
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        <h2 style={{ fontSize: 18, marginBottom: 0 }}>Review Comments</h2>
-        {reviewCommentTemplates.map(template => (
-          <Card key={template.title} title={template.title} size="small" style={{ marginTop: 12 }}>
-            <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
-            <div style={previewStyle}>{template.copyText}</div>
-            <div style={{ marginTop: 12, fontSize: 13, color: '#6B6B69' }}>
-              实际范例：{template.example}
-            </div>
-            <Button
-              type="primary"
-              icon={<CopyOutlined />}
-              onClick={() => copy(template.title, template.copyText)}
-              style={{ marginTop: 12 }}
-            >
-              复制模板
-            </Button>
-          </Card>
-        ))}
-      </div>
+      {reviewComments}
 
       {showManager && (
         <TemplatesManager
@@ -215,4 +227,3 @@ const TemplatesPage: React.FC = () => {
 };
 
 export default TemplatesPage;
-
