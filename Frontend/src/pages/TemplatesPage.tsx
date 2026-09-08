@@ -14,10 +14,10 @@ import {
 } from './templateSections';
 import {
   buildReviewComment,
-  calculateFixedTermEndDate,
-  formatReviewDate,
+  endDateForTermSelection,
 } from '../utils/reviewCommentGenerator';
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 
 const TemplatesPage: React.FC = () => {
   const { data, loading, error, refresh } = useTemplates();
@@ -27,6 +27,7 @@ const TemplatesPage: React.FC = () => {
   const [reviewStartDate, setReviewStartDate] = useState<Dayjs | null>(null);
   const [reviewTenancyType, setReviewTenancyType] = useState<'fixed' | 'periodic'>('fixed');
   const [reviewTermWeeks, setReviewTermWeeks] = useState<26 | 52>(26);
+  const [reviewEndDate, setReviewEndDate] = useState<Dayjs | null>(null);
 
   const [state, setState] = useState<AssemblyState>({
     inspectionTypeId: null,
@@ -62,9 +63,13 @@ const TemplatesPage: React.FC = () => {
     startDate: reviewStartDate?.format('YYYY-MM-DD') ?? '',
     tenancyType: reviewTenancyType,
     term: `${reviewTermWeeks} weeks`,
-    endDate: calculateFixedTermEndDate(reviewStartDate?.format('YYYY-MM-DD') ?? '', reviewTermWeeks),
+    endDate: reviewEndDate?.format('YYYY-MM-DD') ?? '',
   });
-  const automaticEndDate = calculateFixedTermEndDate(reviewStartDate?.format('YYYY-MM-DD') ?? '', reviewTermWeeks);
+
+  const prefillEndDate = (startDate: Dayjs | null, weeks: 26 | 52) => {
+    if (!startDate) return null;
+    return dayjs(endDateForTermSelection(startDate.format('YYYY-MM-DD'), weeks));
+  };
 
   const reviewComments = (
     <div>
@@ -78,7 +83,10 @@ const TemplatesPage: React.FC = () => {
           />
           <DatePicker
             value={reviewStartDate}
-            onChange={setReviewStartDate}
+            onChange={value => {
+              setReviewStartDate(value);
+              setReviewEndDate(prefillEndDate(value, reviewTermWeeks));
+            }}
             placeholder="生效日期"
             format="DD MMM YYYY"
           />
@@ -95,18 +103,22 @@ const TemplatesPage: React.FC = () => {
             <>
               <Select
                 value={reviewTermWeeks}
-                onChange={value => setReviewTermWeeks(value as 26 | 52)}
+                onChange={value => {
+                  const weeks = value as 26 | 52;
+                  setReviewTermWeeks(weeks);
+                  setReviewEndDate(prefillEndDate(reviewStartDate, weeks));
+                }}
                 style={{ width: 195 }}
                 options={[
                   { value: 26, label: '6 months (26 weeks)' },
                   { value: 52, label: '1 year (52 weeks)' },
                 ]}
               />
-              <Input
-                value={formatReviewDate(automaticEndDate)}
-                placeholder="自动计算截止日期"
-                readOnly
-                style={{ width: 180 }}
+              <DatePicker
+                value={reviewEndDate}
+                onChange={setReviewEndDate}
+                placeholder="截止日期（可修改）"
+                format="DD MMM YYYY"
               />
             </>
           )}

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildReviewComment, calculateFixedTermEndDate } from './reviewCommentGenerator';
+import {
+  buildReviewComment,
+  calculateFixedTermEndDate,
+  endDateForTermSelection,
+} from './reviewCommentGenerator';
 
 describe('buildReviewComment', () => {
   it('builds a rent increase for a fixed term', () => {
@@ -25,5 +29,9 @@ describe('buildReviewComment', () => {
   it('calculates an inclusive 26 or 52 week term ending the day before the anniversary weekday', () => {
     expect(calculateFixedTermEndDate('2026-03-09', 26)).toBe('2026-09-06');
     expect(calculateFixedTermEndDate('2026-03-09', 52)).toBe('2027-03-07');
+  });
+
+  it('provides an initial end date when a duration is selected', () => {
+    expect(endDateForTermSelection('2026-03-09', 52)).toBe('2027-03-07');
   });
 });

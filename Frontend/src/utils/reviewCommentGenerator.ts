@@ -26,6 +26,10 @@ export function calculateFixedTermEndDate(startDate: string, weeks: number): str
   return start.toISOString().slice(0, 10);
 }
 
+export function endDateForTermSelection(startDate: string, weeks: number): string {
+  return calculateFixedTermEndDate(startDate, weeks);
+}
+
 export function buildReviewComment(input: ReviewCommentInput): string {
   const rent = input.rent.trim();
   const startDate = formatReviewDate(input.startDate);
