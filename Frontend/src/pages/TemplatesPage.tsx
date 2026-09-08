@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Radio, Button, Empty, Spin, Tabs, message } from 'antd';
+import { Card, Radio, Button, DatePicker, Empty, Input, Select, Space, Spin, Tabs, message } from 'antd';
 import { CopyOutlined, SettingOutlined } from '@ant-design/icons';
 import { useTemplates } from '../hooks/useTemplates';
 import { assemble } from '../utils/templateAssembly';
@@ -12,11 +12,18 @@ import {
   templateSections,
   type TemplateSection,
 } from './templateSections';
+import { buildReviewComment } from '../utils/reviewCommentGenerator';
+import type { Dayjs } from 'dayjs';
 
 const TemplatesPage: React.FC = () => {
   const { data, loading, error, refresh } = useTemplates();
   const [showManager, setShowManager] = useState(false);
   const [activeSection, setActiveSection] = useState<TemplateSection>(defaultTemplateSection);
+  const [reviewRent, setReviewRent] = useState('');
+  const [reviewStartDate, setReviewStartDate] = useState<Dayjs | null>(null);
+  const [reviewTenancyType, setReviewTenancyType] = useState<'fixed' | 'periodic'>('fixed');
+  const [reviewTerm, setReviewTerm] = useState('');
+  const [reviewEndDate, setReviewEndDate] = useState<Dayjs | null>(null);
 
   const [state, setState] = useState<AssemblyState>({
     inspectionTypeId: null,
@@ -47,8 +54,63 @@ const TemplatesPage: React.FC = () => {
     }
   };
 
+  const generatedReviewComment = buildReviewComment({
+    rent: reviewRent,
+    startDate: reviewStartDate?.format('YYYY-MM-DD') ?? '',
+    tenancyType: reviewTenancyType,
+    term: reviewTerm,
+    endDate: reviewEndDate?.format('YYYY-MM-DD') ?? '',
+  });
+
   const reviewComments = (
     <div>
+      <Card title="自定义租约评论" size="small" style={{ marginBottom: 16 }}>
+        <Space wrap size="middle">
+          <Input
+            value={reviewRent}
+            onChange={event => setReviewRent(event.target.value)}
+            placeholder="新租金，例如 650/week（可留空）"
+            style={{ width: 250 }}
+          />
+          <DatePicker
+            value={reviewStartDate}
+            onChange={setReviewStartDate}
+            placeholder="生效日期"
+            format="DD MMM YYYY"
+          />
+          <Select
+            value={reviewTenancyType}
+            onChange={setReviewTenancyType}
+            style={{ width: 130 }}
+            options={[
+              { value: 'fixed', label: '固定期' },
+              { value: 'periodic', label: '周期性' },
+            ]}
+          />
+          {reviewTenancyType === 'fixed' && (
+            <>
+              <Input
+                value={reviewTerm}
+                onChange={event => setReviewTerm(event.target.value)}
+                placeholder="期限，例如 6 months"
+                style={{ width: 190 }}
+              />
+              <DatePicker
+                value={reviewEndDate}
+                onChange={setReviewEndDate}
+                placeholder="截止日期"
+                format="DD MMM YYYY"
+              />
+            </>
+          )}
+        </Space>
+        <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderRadius: 4, padding: 12, marginTop: 16, whiteSpace: 'pre-wrap', fontSize: 13, color: '#37352F' }}>
+          {generatedReviewComment}
+        </div>
+        <Button type="primary" icon={<CopyOutlined />} onClick={() => copy('自定义租约评论', generatedReviewComment)} style={{ marginTop: 12 }}>
+          复制评论
+        </Button>
+      </Card>
       {reviewCommentTemplates.map(template => (
         <Card key={template.title} title={template.title} size="small" style={{ marginBottom: 12 }}>
           <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
