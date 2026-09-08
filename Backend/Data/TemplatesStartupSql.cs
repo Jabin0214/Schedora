@@ -34,6 +34,20 @@ namespace InspectionApi.Data
                 ""HasDamageIssue""       boolean                 NOT NULL,
                 ""Text""                 character varying(2000) NOT NULL DEFAULT ''
             );
+
+            -- Older installations created GeneralTemplates before issue-state
+            -- variants were introduced. An existing table is not altered by
+            -- the create statement, so migrate it before
+            -- creating the composite index or seeding variant rows.
+            ALTER TABLE ""GeneralTemplates""
+                ADD COLUMN IF NOT EXISTS ""HasCleanlinessIssue"" boolean NOT NULL DEFAULT false;
+            ALTER TABLE ""GeneralTemplates""
+                ADD COLUMN IF NOT EXISTS ""HasDamageIssue"" boolean NOT NULL DEFAULT false;
+
+            -- Replaced by the state-aware composite index below. Older
+            -- installations allowed only one General template per inspection type.
+            DROP INDEX IF EXISTS ""IX_GeneralTemplates_InspectionTypeId"";
+
             CREATE UNIQUE INDEX IF NOT EXISTS ""IX_GeneralTemplates_Combo""
                 ON ""GeneralTemplates""(""InspectionTypeId"", ""HasCleanlinessIssue"", ""HasDamageIssue"");
 
