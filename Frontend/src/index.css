@@ -59,6 +59,11 @@ select {
   font: inherit;
 }
 
+:focus-visible {
+  outline: 2px solid var(--n-accent);
+  outline-offset: 2px;
+}
+
 .ant-layout,
 .ant-layout-content {
   min-width: 0;
@@ -81,4 +86,15 @@ select {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--n-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

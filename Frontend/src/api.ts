@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { expireSessionIfCurrent, TOKEN_KEY } from './auth/session';
 
 export { isAxiosError } from 'axios';
 export type { AxiosError, AxiosResponse, AxiosRequestConfig, AxiosInstance } from 'axios';
@@ -9,8 +10,14 @@ export type { AxiosError, AxiosResponse, AxiosRequestConfig, AxiosInstance } fro
 // causing antd Table to fail with "fe.some is not a function".
 const api = axios.create();
 
+const getBearerToken = (authorization: unknown) => {
+  if (typeof authorization !== 'string') return null;
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] ?? null;
+};
+
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('schedora_token');
+  const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     config.headers = config.headers ?? {};
     config.headers.Authorization = `Bearer ${token}`;
@@ -22,11 +29,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      localStorage.removeItem('schedora_token');
-      localStorage.removeItem('schedora_username');
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      const headers = error?.config?.headers;
+      const authorization = typeof headers?.get === 'function'
+        ? headers.get('Authorization')
+        : headers?.Authorization;
+      expireSessionIfCurrent(getBearerToken(authorization));
     }
     return Promise.reject(error);
   }

@@ -10,10 +10,100 @@ namespace InspectionApi.Models
         [StringLength(200, MinimumLength = 5, ErrorMessage = "地址长度必须在5-200个字符之间")]
         public string Address { get; set; } = string.Empty;
 
+        public string? PropertyCondition { get; set; }
+
         public BillingPolicy BillingPolicy { get; set; } = BillingPolicy.ThreeMonthToggle;
+
+        public ICollection<TenantContact> TenantContacts { get; set; } = new List<TenantContact>();
+    }
+
+    public class TenantContact
+    {
+        public int Id { get; set; }
+
+        public int PropertyId { get; set; }
+        public Property? Property { get; set; }
+
+        [Required]
+        [StringLength(200)]
+        public string SourceAddress { get; set; } = string.Empty;
+
+        [StringLength(80)]
+        public string Phone { get; set; } = string.Empty;
+
+        [StringLength(500)]
+        public string Email { get; set; } = string.Empty;
+
+        [StringLength(50)]
+        public string LeaseDateEnded { get; set; } = string.Empty;
+
+        public DateTimeOffset ImportedAt { get; set; } = DateTimeOffset.UtcNow;
     }
 
     public enum InspectionType { MoveIn, MoveOut, Routine, Other }
+
+    public enum WorkflowType { MoveIn = 0 }
+
+    public enum WorkflowStage
+    {
+        DeclarationEmail = 0,
+        WaitingDeclarationReply = 1,
+        DraftPack = 2,
+        SignedAndTenancySetup = 3,
+        MoveInAndWrapUp = 4,
+        Completed = 5
+    }
+
+    public class Workflow
+    {
+        public int Id { get; set; }
+
+        public WorkflowType Type { get; set; } = WorkflowType.MoveIn;
+
+        [Required]
+        [StringLength(200, MinimumLength = 5)]
+        public string Address { get; set; } = string.Empty;
+
+        public string AddressKey { get; set; } = string.Empty;
+
+        public WorkflowStage Stage { get; set; } = WorkflowStage.DeclarationEmail;
+
+        public DateTimeOffset? MoveInAppointmentAt { get; set; }
+
+        public string? Notes { get; set; }
+
+        public bool IsArchived { get; set; }
+
+        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+        public ICollection<WorkflowChecklistItem> Items { get; set; } = new List<WorkflowChecklistItem>();
+    }
+
+    public class WorkflowChecklistItem
+    {
+        public int Id { get; set; }
+
+        public int WorkflowId { get; set; }
+        public Workflow? Workflow { get; set; }
+
+        [Required]
+        [StringLength(80)]
+        public string Key { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        public string Label { get; set; } = string.Empty;
+
+        public WorkflowStage Stage { get; set; }
+
+        public int DisplayOrder { get; set; }
+
+        public bool IsCompleted { get; set; }
+
+        public DateTimeOffset? CompletedAt { get; set; }
+    }
 
     // Dynamic task type config (user-manageable)
     public class TaskType
@@ -46,7 +136,6 @@ namespace InspectionApi.Models
         public InspectionType Type { get; set; }
         public bool IsBillable { get; set; }
 
-        [StringLength(500, ErrorMessage = "备注不能超过500个字符")]
         public string? Notes { get; set; }
     }
 
@@ -58,6 +147,7 @@ namespace InspectionApi.Models
         public DateTimeOffset ExecutionDate { get; set; }
         public InspectionType Type { get; set; }
         public bool IsCharged { get; set; }
+        public int WorkUnits { get; set; } = 1;
         public decimal? ParkingFee { get; set; }
     }
 
@@ -74,34 +164,6 @@ namespace InspectionApi.Models
         public int DisplayOrder { get; set; }
     }
 
-    public class CleanlinessArea
-    {
-        public int Id { get; set; }
-
-        [Required]
-        [StringLength(50)]
-        public string Name { get; set; } = string.Empty;
-
-        [StringLength(1000)]
-        public string DirtyText { get; set; } = string.Empty;
-
-        public int DisplayOrder { get; set; }
-    }
-
-    public class DamageItem
-    {
-        public int Id { get; set; }
-
-        [Required]
-        [StringLength(50)]
-        public string Name { get; set; } = string.Empty;
-
-        [StringLength(1000)]
-        public string Text { get; set; } = string.Empty;
-
-        public int DisplayOrder { get; set; }
-    }
-
     public class GeneralTemplate
     {
         public int Id { get; set; }
@@ -109,31 +171,16 @@ namespace InspectionApi.Models
         public int InspectionTypeId { get; set; }
         public TemplateInspectionType? InspectionType { get; set; }
 
-        public bool HasCleanlinessIssue { get; set; }
-        public bool HasDamageIssue { get; set; }
-
         [StringLength(2000)]
         public string Text { get; set; } = string.Empty;
     }
 
-    public enum TemplateAudience { Tenant = 0, Landlord = 1 }
-
-    public class AudienceTemplate
+    public class SystemSetting
     {
-        public int Id { get; set; }
+        [Key]
+        [StringLength(100)]
+        public string Key { get; set; } = string.Empty;
 
-        public int InspectionTypeId { get; set; }
-        public TemplateInspectionType? InspectionType { get; set; }
-
-        public TemplateAudience Audience { get; set; }
-
-        [StringLength(2000)]
-        public string NoIssueText { get; set; } = string.Empty;
-
-        [StringLength(1000)]
-        public string IssuePrefix { get; set; } = string.Empty;
-
-        [StringLength(1000)]
-        public string IssueSuffix { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
     }
 }

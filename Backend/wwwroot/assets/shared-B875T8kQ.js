@@ -1,0 +1,1 @@
+import{j as t}from"./index-D47aaP6N.js";import"./antd-DYfK0JlX.js";const n=({children:e})=>t.jsx("div",{style:{display:"flex",alignItems:"center"},children:t.jsx("span",{style:{fontSize:"20px",fontWeight:700,color:"#37352F",letterSpacing:0},children:e})});export{n as I};

@@ -27,7 +27,9 @@ namespace InspectionApi.Services
                     ExecutionDate = r.ExecutionDate.ToString("O"),
                     PropertyAddress = r.Property != null ? r.Property.Address : null,
                     Type = (int)r.Type,
-                    IsCharged = r.IsCharged
+                    IsCharged = r.IsCharged,
+                    WorkUnits = r.WorkUnits,
+                    ParkingFee = r.ParkingFee
                 })
                 .ToListAsync();
 

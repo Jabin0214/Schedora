@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import api from '../api';
-import dayjs from 'dayjs';
 import { API_ENDPOINTS } from '../config/api';
 import { handleApiError } from '../utils/errorHandler';
 import { useApi } from './useApi';
+import { bucketTasks } from './taskBuckets';
 import type {
   InspectionTaskDto,
   CombinedTask,
@@ -12,8 +12,6 @@ import type {
   InspectionTaskUpdateRequest,
   TaskCompletionRequest,
 } from '../types/api';
-
-const getPlannedDate = (task: CombinedTask): string | undefined => task.scheduledAt;
 
 export function useTasks() {
   const [combinedTasks, setCombinedTasks] = useState<CombinedTask[]>([]);
@@ -83,49 +81,9 @@ export function useTasks() {
     return result;
   }, [executeApi, fetchTasks]);
 
-  const startOfToday = useMemo(() => dayjs().startOf('day'), []);
-  const endOfToday = useMemo(() => dayjs().endOf('day'), []);
-
-  const sortedTasks = useMemo(() => {
-    const list = [...combinedTasks];
-    list.sort((a, b) => {
-      const da = getPlannedDate(a);
-      const db = getPlannedDate(b);
-      if (da && db) return dayjs(da).valueOf() - dayjs(db).valueOf();
-      if (da) return -1;
-      if (db) return 1;
-      return 0;
-    });
-    return list;
-  }, [combinedTasks]);
-
-  const overdueTasks = useMemo(
-    () => sortedTasks.filter((item) => {
-      const d = getPlannedDate(item);
-      return d ? dayjs(d).isBefore(startOfToday) : false;
-    }),
-    [sortedTasks, startOfToday]
-  );
-
-  const todayTasks = useMemo(
-    () => sortedTasks.filter((item) => {
-      const d = getPlannedDate(item);
-      return d ? dayjs(d).isBetween(startOfToday, endOfToday, 'minute', '[]') : false;
-    }),
-    [sortedTasks, startOfToday, endOfToday]
-  );
-
-  const upcomingTasks = useMemo(
-    () => sortedTasks.filter((item) => {
-      const d = getPlannedDate(item);
-      return d ? dayjs(d).isAfter(endOfToday) : false;
-    }),
-    [sortedTasks, endOfToday]
-  );
-
-  const unscheduledTasks = useMemo(
-    () => sortedTasks.filter((item) => !getPlannedDate(item)),
-    [sortedTasks]
+  const { overdueTasks, todayTasks, tomorrowTasks, upcomingTasks, unscheduledTasks } = useMemo(
+    () => bucketTasks(combinedTasks),
+    [combinedTasks]
   );
 
   useEffect(() => {
@@ -136,6 +94,7 @@ export function useTasks() {
     loading,
     overdueTasks,
     todayTasks,
+    tomorrowTasks,
     upcomingTasks,
     unscheduledTasks,
     fetchTasks,

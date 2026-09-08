@@ -1,8 +1,10 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using InspectionApi.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 
 namespace InspectionApi.Controllers;
@@ -16,11 +18,16 @@ public record VerifyResponse(bool Valid, string? Username, DateTime? ExpiresAt);
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
     private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IConfiguration configuration, ILogger<AuthController> logger)
+    public AuthController(
+        IConfiguration configuration,
+        JwtSettings jwtSettings,
+        ILogger<AuthController> logger)
     {
         _configuration = configuration;
+        _jwtSettings = jwtSettings;
         _logger = logger;
     }
 
@@ -29,6 +36,7 @@ public class AuthController : ControllerBase
     /// </summary>
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting(LoginRateLimitPolicy.Name)]
     public IActionResult Login([FromBody] LoginRequest request)
     {
         var expectedUsername = _configuration["Auth:Credentials:Username"] ?? "admin";
@@ -70,16 +78,10 @@ public class AuthController : ControllerBase
 
     private LoginResponse GenerateJwtToken(string username)
     {
-        var secret = _configuration["Jwt:Secret"]
-            ?? throw new InvalidOperationException("JWT Secret is not configured");
-        var issuer = _configuration["Jwt:Issuer"] ?? "Schedora";
-        var audience = _configuration["Jwt:Audience"] ?? "SchedoraApp";
-        var expiryHours = double.TryParse(_configuration["Jwt:ExpiryHours"], out var h) ? h : 168;
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var expiresAt = DateTime.UtcNow.AddHours(expiryHours);
+        var expiresAt = DateTime.UtcNow.AddHours(_jwtSettings.ExpiryHours);
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, username),
@@ -88,8 +90,8 @@ public class AuthController : ControllerBase
         };
 
         var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
+            issuer: _jwtSettings.Issuer,
+            audience: _jwtSettings.Audience,
             claims: claims,
             expires: expiresAt,
             signingCredentials: credentials

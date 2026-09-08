@@ -5,14 +5,14 @@ namespace Backend.Tests;
 public class TemplatesStartupSqlTests
 {
     [Fact]
-    public void CreatesAllFiveTables()
+    public void CreatesOnlyInspectionTypeAndGeneralTemplateTables()
     {
         var sql = TemplatesStartupSql.Sql;
         Assert.Contains("\"TemplateInspectionTypes\"", sql);
-        Assert.Contains("\"CleanlinessAreas\"", sql);
-        Assert.Contains("\"DamageItems\"", sql);
         Assert.Contains("\"GeneralTemplates\"", sql);
-        Assert.Contains("\"AudienceTemplates\"", sql);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS \"CleanlinessAreas\"", sql);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS \"DamageItems\"", sql);
+        Assert.DoesNotContain("CREATE TABLE IF NOT EXISTS \"AudienceTemplates\"", sql);
     }
 
     [Fact]
@@ -22,7 +22,7 @@ public class TemplatesStartupSqlTests
         var sql = TemplatesStartupSql.Sql;
         var createCount = System.Text.RegularExpressions.Regex
             .Matches(sql, "CREATE TABLE IF NOT EXISTS").Count;
-        Assert.Equal(5, createCount);
+        Assert.Equal(2, createCount);
     }
 
     [Fact]
@@ -35,38 +35,55 @@ public class TemplatesStartupSqlTests
     }
 
     [Fact]
-    public void SeedsFiveDefaultCleanlinessAreas()
+    public void DropsRemovedDetailTables()
     {
         var sql = TemplatesStartupSql.Sql;
-        Assert.Contains("'卫生间'", sql);
-        Assert.Contains("'厨房'", sql);
-        Assert.Contains("'卧室'", sql);
-        Assert.Contains("'客厅'", sql);
-        Assert.Contains("'阳台'", sql);
+        Assert.Contains("DROP TABLE IF EXISTS \"AudienceTemplates\"", sql);
+        Assert.Contains("DROP TABLE IF EXISTS \"CleanlinessAreas\"", sql);
+        Assert.Contains("DROP TABLE IF EXISTS \"DamageItems\"", sql);
     }
 
     [Fact]
-    public void UpgradesLegacyGeneralTemplatesWithIssueColumnsBeforeCreatingTheIndex()
+    public void GeneralTemplatesAreOnePerInspectionType()
     {
         var sql = TemplatesStartupSql.Sql;
-        var cleanlinessColumn = "ADD COLUMN IF NOT EXISTS \"HasCleanlinessIssue\" boolean NOT NULL DEFAULT false";
-        var damageColumn = "ADD COLUMN IF NOT EXISTS \"HasDamageIssue\" boolean NOT NULL DEFAULT false";
-        var index = "CREATE UNIQUE INDEX IF NOT EXISTS \"IX_GeneralTemplates_Combo\"";
-
-        Assert.Contains(cleanlinessColumn, sql);
-        Assert.Contains(damageColumn, sql);
-        Assert.True(sql.IndexOf(cleanlinessColumn) < sql.IndexOf(index));
-        Assert.True(sql.IndexOf(damageColumn) < sql.IndexOf(index));
+        Assert.Contains("\"IX_GeneralTemplates_InspectionTypeId\"", sql);
+        Assert.DoesNotContain("\"HasCleanlinessIssue\"  boolean", sql);
+        Assert.DoesNotContain("\"HasDamageIssue\"       boolean", sql);
     }
 
     [Fact]
-    public void RemovesTheLegacySingleTemplateIndexBeforeSeedingIssueVariants()
+    public void CollapsePreservesExistingNonEmptyGeneralText()
     {
         var sql = TemplatesStartupSql.Sql;
-        var legacyIndex = "DROP INDEX IF EXISTS \"IX_GeneralTemplates_InspectionTypeId\"";
-        var seedBlock = "-- Seed General + Audience rows";
-
-        Assert.Contains(legacyIndex, sql);
-        Assert.True(sql.IndexOf(legacyIndex) < sql.IndexOf(seedBlock));
+        Assert.Contains("first_non_empty", sql);
+        Assert.Contains("NULLIF(trim(src.\"Text\"), '')", sql);
+        Assert.Contains("SET \"Text\" = COALESCE(first_non_empty.\"Text\", keeper.\"Text\")", sql);
     }
+
+    [Fact]
+    public void SeedsDefaultNoIssueGeneralTemplateTextAndUpgradesKnownOldDefaults()
+    {
+        var sql = TemplatesStartupSql.Sql;
+
+        Assert.Contains("Default no-issue templates", sql);
+        Assert.Contains("Move-in Checks & Observations:", sql);
+        Assert.Contains("The following items were checked with no issue noted:", sql);
+        Assert.Contains("- Fixed heating source", sql);
+        Assert.Contains("- Kitchen rangehood and extraction system", sql);
+        Assert.Contains("- Bathroom extractor fan(s)", sql);
+        Assert.Contains("- Doors, windows, and security locks", sql);
+        Assert.Contains("The following risk and compliance items were checked with no issue noted:", sql);
+        Assert.Contains("- Smoke alarms", sql);
+        Assert.Contains("- Visible moisture, mould, or leaks", sql);
+        Assert.Contains("- Drainage or visible water ingress concerns", sql);
+        Assert.DoesNotContain("full compliance verification is outside the scope", sql);
+        Assert.Contains("The property was returned in a clean and tidy condition.", sql);
+        Assert.Contains("The tenant appears to be maintaining the premises to an acceptable standard.", sql);
+        Assert.Contains("NULLIF(trim(g.\"Text\"), '') IS NULL", sql);
+        Assert.Contains("OR g.\"Text\" = defaults.\"PreviousText\"", sql);
+        Assert.Contains("OR g.\"Text\" = defaults.\"LegacyText\"", sql);
+        Assert.Contains("All smoke alarms have been tested and are compliant with current legislation.", sql);
+    }
+
 }

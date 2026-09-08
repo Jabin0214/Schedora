@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Radio, Checkbox, Button, Input, Empty, Spin, Space, message } from 'antd';
-import { CopyOutlined, SettingOutlined, PlusOutlined, CloseOutlined } from '@ant-design/icons';
+import { Card, Radio, Button, Empty, Spin, message } from 'antd';
+import { CopyOutlined, SettingOutlined } from '@ant-design/icons';
 import { useTemplates } from '../hooks/useTemplates';
 import { assemble } from '../utils/templateAssembly';
 import { IndTitle } from '../components/shared';
@@ -14,14 +14,10 @@ const TemplatesPage: React.FC = () => {
 
   const [state, setState] = useState<AssemblyState>({
     inspectionTypeId: null,
-    selectedAreaIds: [],
-    selectedDamageItemIds: [],
-    customDamageEntries: [],
   });
-  const [customInput, setCustomInput] = useState('');
 
   const output = useMemo(() => {
-    if (!data) return { generalText: '', tenantText: '', landlordText: '' };
+    if (!data) return { generalText: '' };
     return assemble(state, data);
   }, [state, data]);
 
@@ -45,47 +41,19 @@ const TemplatesPage: React.FC = () => {
     }
   };
 
-  const addCustomDamage = () => {
-    const v = customInput.trim();
-    if (!v) return;
-    setState(s => ({ ...s, customDamageEntries: [...s.customDamageEntries, v] }));
-    setCustomInput('');
-  };
-
-  const removeCustomDamage = (i: number) => {
-    setState(s => ({
-      ...s,
-      customDamageEntries: s.customDamageEntries.filter((_, idx) => idx !== i),
-    }));
-  };
-
-  const previewStyle: React.CSSProperties = {
-    background: '#F7F7F5',
-    border: '1px solid #E9E9E7',
-    borderRadius: 4,
-    padding: 12,
-    minHeight: 80,
-    whiteSpace: 'pre-wrap',
-    fontSize: 13,
-    color: '#37352F',
-  };
-
   const reviewComments = (
     <div style={{ marginTop: 24 }}>
       <h2 style={{ fontSize: 18, marginBottom: 0 }}>Review Comments</h2>
       {reviewCommentTemplates.map(template => (
         <Card key={template.title} title={template.title} size="small" style={{ marginTop: 12 }}>
           <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
-          <div style={previewStyle}>{template.copyText}</div>
+          <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderRadius: 4, padding: 12, whiteSpace: 'pre-wrap', fontSize: 13, color: '#37352F' }}>
+            {template.copyText}
+          </div>
           <div style={{ marginTop: 12, fontSize: 13, color: '#6B6B69' }}>
             实际范例：{template.example}
           </div>
-          <Button
-            type="primary"
-            icon={<CopyOutlined />}
-            onClick={() => copy(template.title, template.copyText)}
-            style={{ marginTop: 12 }}
-          >
+          <Button type="primary" icon={<CopyOutlined />} onClick={() => copy(template.title, template.copyText)} style={{ marginTop: 12 }}>
             复制模板
           </Button>
         </Card>
@@ -113,6 +81,17 @@ const TemplatesPage: React.FC = () => {
     );
   }
 
+  const previewStyle: React.CSSProperties = {
+    background: '#F7F7F5',
+    border: '1px solid #E9E9E7',
+    borderRadius: 4,
+    padding: 12,
+    minHeight: 80,
+    whiteSpace: 'pre-wrap',
+    fontSize: 13,
+    color: '#37352F',
+  };
+
   return (
     <div>
       <div className="page-toolbar">
@@ -134,7 +113,6 @@ const TemplatesPage: React.FC = () => {
         />
       </div>
 
-      {/* General output */}
       <Card title="General 整体描述" size="small" style={{ marginBottom: 16 }}>
         <div style={previewStyle}>{output.generalText || <span style={{ color: '#ACABA9' }}>（无文字）</span>}</div>
         <Button
@@ -146,72 +124,6 @@ const TemplatesPage: React.FC = () => {
           复制
         </Button>
       </Card>
-
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-        {/* Tenant column */}
-        <Card title="给房客（卫生）" size="small" style={{ flex: '1 1 280px', minWidth: 0 }}>
-          <Checkbox.Group
-            value={state.selectedAreaIds}
-            onChange={vals => setState(s => ({ ...s, selectedAreaIds: vals as number[] }))}
-            style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
-            options={data.cleanlinessAreas.map(a => ({ label: a.name, value: a.id }))}
-          />
-          <div style={{ ...previewStyle, marginTop: 12 }}>
-            {output.tenantText || <span style={{ color: '#ACABA9' }}>（无文字）</span>}
-          </div>
-          <Button
-            type="primary"
-            icon={<CopyOutlined />}
-            onClick={() => copy('给房客', output.tenantText)}
-            style={{ marginTop: 8 }}
-          >
-            复制
-          </Button>
-        </Card>
-
-        {/* Landlord column */}
-        <Card title="给房东（损坏）" size="small" style={{ flex: '1 1 280px', minWidth: 0 }}>
-          <Checkbox.Group
-            value={state.selectedDamageItemIds}
-            onChange={vals => setState(s => ({ ...s, selectedDamageItemIds: vals as number[] }))}
-            style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
-            options={data.damageItems.map(d => ({ label: d.name, value: d.id }))}
-          />
-          <div style={{ marginTop: 12 }}>
-            <div style={{ fontSize: 12, color: '#787774', marginBottom: 4 }}>+ 自定义损坏项：</div>
-            <Space.Compact style={{ width: '100%' }}>
-              <Input
-                value={customInput}
-                onChange={e => setCustomInput(e.target.value)}
-                onPressEnter={addCustomDamage}
-                placeholder="例如：阳台栏杆松动"
-              />
-              <Button icon={<PlusOutlined />} onClick={addCustomDamage}>添加</Button>
-            </Space.Compact>
-            {state.customDamageEntries.length > 0 && (
-              <ul style={{ listStyle: 'none', padding: 0, margin: '8px 0 0 0' }}>
-                {state.customDamageEntries.map((entry, i) => (
-                  <li key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#37352F' }}>
-                    <span style={{ flex: 1 }}>• {entry}</span>
-                    <Button size="small" type="text" icon={<CloseOutlined />} onClick={() => removeCustomDamage(i)} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div style={{ ...previewStyle, marginTop: 12 }}>
-            {output.landlordText || <span style={{ color: '#ACABA9' }}>（无文字）</span>}
-          </div>
-          <Button
-            type="primary"
-            icon={<CopyOutlined />}
-            onClick={() => copy('给房东', output.landlordText)}
-            style={{ marginTop: 8 }}
-          >
-            复制
-          </Button>
-        </Card>
-      </div>
 
       {reviewComments}
 

@@ -22,6 +22,9 @@ namespace InspectionApi.Controllers
             _logger = logger;
         }
 
+        private static int GetDefaultWorkUnits(InspectionType type) =>
+            type is InspectionType.MoveIn or InspectionType.MoveOut ? 2 : 1;
+
         // GET: api/inspectionrecords
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetInspectionRecords(
@@ -77,6 +80,7 @@ namespace InspectionApi.Controllers
                         r.ExecutionDate,
                         Type = (int)r.Type,
                         r.IsCharged,
+                        r.WorkUnits,
                         r.ParkingFee
                     })
                     .ToListAsync();
@@ -102,9 +106,16 @@ namespace InspectionApi.Controllers
 
                 if (!DateTimeOffset.TryParse(dto.ExecutionDate, null, DateTimeStyles.RoundtripKind, out var parsedDate))
                     return BadRequest(new { message = "日期格式无效，请使用 ISO 8601 格式" });
+                var typeExists = await _context.TaskTypes.AnyAsync(t => t.Id == dto.Type);
+                if (!typeExists)
+                    return BadRequest(new { message = $"指定的任务类型不存在: {dto.Type}" });
+                if (dto.WorkUnits.HasValue && dto.WorkUnits.Value is not (1 or 2))
+                    return BadRequest(new { message = "工时计数只能是1或2" });
+
                 record.ExecutionDate = parsedDate;
                 record.Type          = (InspectionType)dto.Type;
                 record.IsCharged     = dto.IsCharged;
+                record.WorkUnits     = dto.WorkUnits ?? GetDefaultWorkUnits(record.Type);
                 record.ParkingFee    = dto.ParkingFee;
 
                 await _context.SaveChangesAsync();
@@ -142,4 +153,3 @@ namespace InspectionApi.Controllers
         }
     }
 }
-

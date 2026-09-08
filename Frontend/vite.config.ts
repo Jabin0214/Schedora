@@ -17,5 +17,14 @@ export default defineConfig({
   build: {
     outDir: '../Backend/wwwroot',
     emptyOutDir: true,
-  }
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          antd: ['antd'],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1300,
+  },
 })

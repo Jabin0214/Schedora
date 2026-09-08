@@ -18,7 +18,41 @@ export type BillingPolicyValue = BillingPolicy | 0 | 1;
 export interface Property {
   id: number;
   address: string;
+  propertyCondition?: string | null;
   billingPolicy?: BillingPolicyValue;
+  tenantContactCount?: number;
+  tenantContactSummary?: string;
+}
+
+export interface TenantContact {
+  id: number;
+  propertyId: number;
+  propertyAddress: string;
+  sourceAddress: string;
+  phone: string;
+  email: string;
+  leaseDateEnded: string;
+  importedAt: string;
+}
+
+export interface TenantContactImportUnmatched {
+  sourceAddress: string;
+  phone: string;
+  email: string;
+  leaseDateEnded: string;
+}
+
+export interface TenantContactImportResponse {
+  totalRows: number;
+  matchedRows: number;
+  skippedRows: number;
+  importedRows: number;
+  matchedProperties: number;
+  unmatchedRows: number;
+  existingRowsToReplace: number;
+  unchangedRows: number;
+  newOrChangedRows: number;
+  unmatched: TenantContactImportUnmatched[];
 }
 
 export interface CombinedTask {
@@ -72,6 +106,7 @@ export interface InspectionRecordDto {
   executionDate: string;
   type: InspectionType;
   isCharged: boolean;
+  workUnits: number;
   parkingFee?: number;
 }
 
@@ -80,6 +115,7 @@ export interface AiInspectionPolishRequest {
   inspectionType?: string;
   notes: string;
   isBillable: boolean;
+  outputMode?: 'full' | 'generalOnly';
 }
 
 export interface AiInspectionPolishResponse {
@@ -88,4 +124,65 @@ export interface AiInspectionPolishResponse {
   englishLandlordText: string;
   chineseReferenceText: string;
   summary: string;
+}
+
+export interface AiInspectionReportPromptSetting {
+  prompt: string;
+}
+
+export interface AiTaskDraftRequest {
+  text: string;
+}
+
+export interface AiTaskDraftPropertyCandidate {
+  propertyId: number;
+  address: string;
+  billingPolicy: BillingPolicy;
+}
+
+export interface AiTaskDraftResponse {
+  status: 'ready' | 'needsConfirmation';
+  propertyId?: number;
+  propertyAddress?: string;
+  scheduledAt?: string;
+  type: InspectionType;
+  isBillable: boolean;
+  notes?: string;
+  addressQuery: string;
+  propertyCandidates: AiTaskDraftPropertyCandidate[];
+}
+
+export interface WorkflowChecklistItem {
+  id: number;
+  key: string;
+  label: string;
+  stage: number;
+  displayOrder: number;
+  isCompleted: boolean;
+  completedAt?: string | null;
+}
+
+export interface Workflow {
+  id: number;
+  type: number;
+  address: string;
+  stage: number;
+  moveInAppointmentAt?: string | null;
+  notes?: string | null;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+  items: WorkflowChecklistItem[];
+}
+
+export interface WorkflowCreateRequest {
+  address: string;
+  moveInAppointmentAt?: string;
+  notes?: string;
+}
+
+export interface WorkflowUpdateRequest {
+  address: string;
+  moveInAppointmentAt?: string;
+  notes?: string;
 }

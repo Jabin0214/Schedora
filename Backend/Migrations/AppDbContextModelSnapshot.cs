@@ -22,6 +22,30 @@ namespace InspectionApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("InspectionApi.Models.GeneralTemplate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("InspectionTypeId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InspectionTypeId")
+                        .IsUnique();
+
+                    b.ToTable("GeneralTemplates");
+                });
+
             modelBuilder.Entity("InspectionApi.Models.InspectionRecord", b =>
                 {
                     b.Property<int>("Id")
@@ -30,11 +54,14 @@ namespace InspectionApi.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("ExecutionDate")
+                    b.Property<DateTimeOffset>("ExecutionDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsCharged")
                         .HasColumnType("boolean");
+
+                    b.Property<decimal?>("ParkingFee")
+                        .HasColumnType("numeric");
 
                     b.Property<int>("PropertyId")
                         .HasColumnType("integer");
@@ -63,13 +90,12 @@ namespace InspectionApi.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("Notes")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
 
                     b.Property<int>("PropertyId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("ScheduledAt")
+                    b.Property<DateTimeOffset?>("ScheduledAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("Type")
@@ -100,11 +126,116 @@ namespace InspectionApi.Migrations
                     b.Property<int>("BillingPolicy")
                         .HasColumnType("integer");
 
+                    b.Property<string>("PropertyCondition")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Address");
 
                     b.ToTable("Properties");
+                });
+
+            modelBuilder.Entity("InspectionApi.Models.TaskType", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.ToTable("TaskTypes");
+                });
+
+            modelBuilder.Entity("InspectionApi.Models.TemplateInspectionType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.ToTable("TemplateInspectionTypes");
+                });
+
+            modelBuilder.Entity("InspectionApi.Models.TenantContact", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("ImportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LeaseDateEnded")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SourceAddress")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("SourceAddress");
+
+                    b.ToTable("TenantContacts");
+                });
+
+            modelBuilder.Entity("InspectionApi.Models.GeneralTemplate", b =>
+                {
+                    b.HasOne("InspectionApi.Models.TemplateInspectionType", "InspectionType")
+                        .WithMany()
+                        .HasForeignKey("InspectionTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InspectionType");
                 });
 
             modelBuilder.Entity("InspectionApi.Models.InspectionRecord", b =>
@@ -127,6 +258,22 @@ namespace InspectionApi.Migrations
                         .IsRequired();
 
                     b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("InspectionApi.Models.TenantContact", b =>
+                {
+                    b.HasOne("InspectionApi.Models.Property", "Property")
+                        .WithMany("TenantContacts")
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("InspectionApi.Models.Property", b =>
+                {
+                    b.Navigation("TenantContacts");
                 });
 #pragma warning restore 612, 618
         }

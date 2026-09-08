@@ -1,10 +1,12 @@
 using System.Text;
 using System.Text.Json;
 using InspectionApi.Data;
+using InspectionApi.Security;
 using InspectionApi.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,10 +22,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // 2. 注册服务层
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IInspectionTaskService, InspectionTaskService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IGoogleSyncService, GoogleSyncService>();
 builder.Services.AddHttpClient<IAiInspectionService, AiInspectionService>();
+builder.Services.AddScoped<IAiTaskDraftService, AiTaskDraftService>();
+builder.Services.AddHttpClient<IAiTaskDraftExtractor, AiTaskDraftExtractor>();
 builder.Services.AddHostedService<DailySyncBackgroundService>();
 
 // 3. 允许跨域 (CORS) - 允许前端访问
@@ -35,10 +41,20 @@ builder.Services.AddCors(options =>
                         .AllowAnyHeader());
 });
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (context, _) =>
+    {
+        context.HttpContext.Response.Headers["Retry-After"] = "60";
+        return ValueTask.CompletedTask;
+    };
+    options.AddPolicy(LoginRateLimitPolicy.Name, LoginRateLimitPolicy.CreatePartition);
+});
+
 // 3.5 JWT 认证
-var jwtSecret = builder.Configuration["Jwt:Secret"];
-if (string.IsNullOrEmpty(jwtSecret))
-    throw new InvalidOperationException("JWT Secret 未配置。请在 appsettings.local.json 中设置 Jwt:Secret");
+var jwtSettings = JwtSettings.Load(builder.Configuration);
+builder.Services.AddSingleton(jwtSettings);
 
 builder.Services.Configure<HostOptions>(options =>
 {
@@ -54,9 +70,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "Schedora",
-            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "SchedoraApp",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
+            ValidIssuer = jwtSettings.Issuer,
+            ValidAudience = jwtSettings.Audience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Secret)),
         };
     });
 
@@ -133,6 +149,24 @@ using (var scope = app.Services.CreateScope())
             await db.Database.ExecuteSqlRawAsync(TemplatesStartupSql.Sql);
             logger.LogInformation("✅ Template tables ready");
 
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.TenantContactsTableSql);
+            logger.LogInformation("✅ TenantContacts table ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.SystemSettingsTableSql);
+            logger.LogInformation("✅ SystemSettings table ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.PropertiesTableSql);
+            logger.LogInformation("✅ Property condition column ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.InspectionTasksTableSql);
+            logger.LogInformation("✅ Inspection task notes column ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.InspectionRecordsTableSql);
+            logger.LogInformation("✅ Inspection record work units column ready");
+
+            await db.Database.ExecuteSqlRawAsync(DatabaseStartupSql.WorkflowsTableSql);
+            logger.LogInformation("✅ Workflow tables ready");
+
             // Add ParkingFee column if it doesn't exist yet
             await db.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE ""InspectionRecords""
@@ -183,8 +217,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowReactApp"); // 启用跨域
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseDefaultFiles();       // 托管前端静态文件（/ → index.html）
 app.UseStaticFiles();
+app.UseRateLimiter();
 app.UseAuthentication();     // JWT 认证
 app.UseAuthorization();
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }));
