@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Radio, Button, Empty, Spin, message } from 'antd';
+import { Card, Radio, Button, Empty, Spin, Tabs, message } from 'antd';
 import { CopyOutlined, SettingOutlined } from '@ant-design/icons';
 import { useTemplates } from '../hooks/useTemplates';
 import { assemble } from '../utils/templateAssembly';
@@ -7,10 +7,16 @@ import { IndTitle } from '../components/shared';
 import TemplatesManager from '../components/TemplatesManager';
 import type { AssemblyState } from '../types/templates';
 import { reviewCommentTemplates } from '../data/reviewCommentTemplates';
+import {
+  defaultTemplateSection,
+  templateSections,
+  type TemplateSection,
+} from './templateSections';
 
 const TemplatesPage: React.FC = () => {
   const { data, loading, error, refresh } = useTemplates();
   const [showManager, setShowManager] = useState(false);
+  const [activeSection, setActiveSection] = useState<TemplateSection>(defaultTemplateSection);
 
   const [state, setState] = useState<AssemblyState>({
     inspectionTypeId: null,
@@ -42,10 +48,9 @@ const TemplatesPage: React.FC = () => {
   };
 
   const reviewComments = (
-    <div style={{ marginTop: 24 }}>
-      <h2 style={{ fontSize: 18, marginBottom: 0 }}>Review Comments</h2>
+    <div>
       {reviewCommentTemplates.map(template => (
-        <Card key={template.title} title={template.title} size="small" style={{ marginTop: 12 }}>
+        <Card key={template.title} title={template.title} size="small" style={{ marginBottom: 12 }}>
           <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
           <div style={{ background: '#F7F7F5', border: '1px solid #E9E9E7', borderRadius: 4, padding: 12, whiteSpace: 'pre-wrap', fontSize: 13, color: '#37352F' }}>
             {template.copyText}
@@ -61,26 +66,6 @@ const TemplatesPage: React.FC = () => {
     </div>
   );
 
-  if (loading) return <Spin />;
-  if (error || !data) {
-    return (
-      <>
-        <Empty description="报告描述模板加载失败">
-          <Button onClick={refresh}>重试</Button>
-        </Empty>
-        {reviewComments}
-      </>
-    );
-  }
-  if (data.inspectionTypes.length === 0) {
-    return (
-      <>
-        <Empty description="还没有检查类型，先去管理模板里加一个" />
-        {reviewComments}
-      </>
-    );
-  }
-
   const previewStyle: React.CSSProperties = {
     background: '#F7F7F5',
     border: '1px solid #E9E9E7',
@@ -92,16 +77,16 @@ const TemplatesPage: React.FC = () => {
     color: '#37352F',
   };
 
-  return (
-    <div>
-      <div className="page-toolbar">
-        <IndTitle>快速模板</IndTitle>
-        <Button icon={<SettingOutlined />} onClick={() => setShowManager(true)}>
-          管理模板
-        </Button>
-      </div>
-
-      {/* Inspection-type selector */}
+  const reportDescriptions = loading ? (
+    <Spin />
+  ) : error || !data ? (
+    <Empty description="报告描述模板加载失败">
+      <Button onClick={refresh}>重试</Button>
+    </Empty>
+  ) : data.inspectionTypes.length === 0 ? (
+    <Empty description="还没有检查类型，先去管理模板里加一个" />
+  ) : (
+    <>
       <div style={{ marginBottom: 16 }}>
         <Radio.Group
           className="responsive-radio-group"
@@ -113,7 +98,7 @@ const TemplatesPage: React.FC = () => {
         />
       </div>
 
-      <Card title="General 整体描述" size="small" style={{ marginBottom: 16 }}>
+      <Card title="General 整体描述" size="small">
         <div style={previewStyle}>{output.generalText || <span style={{ color: '#ACABA9' }}>（无文字）</span>}</div>
         <Button
           type="primary"
@@ -124,10 +109,30 @@ const TemplatesPage: React.FC = () => {
           复制
         </Button>
       </Card>
+    </>
+  );
 
-      {reviewComments}
+  return (
+    <div>
+      <div className="page-toolbar">
+        <IndTitle>快速模板</IndTitle>
+        {activeSection === 'reports' && (
+          <Button icon={<SettingOutlined />} onClick={() => setShowManager(true)}>
+            管理模板
+          </Button>
+        )}
+      </div>
 
-      {showManager && (
+      <Tabs
+        activeKey={activeSection}
+        onChange={key => setActiveSection(key as TemplateSection)}
+        items={templateSections.map(section => ({
+          ...section,
+          children: section.key === 'reports' ? reportDescriptions : reviewComments,
+        }))}
+      />
+
+      {showManager && data && (
         <TemplatesManager
           data={data}
           onClose={() => setShowManager(false)}
