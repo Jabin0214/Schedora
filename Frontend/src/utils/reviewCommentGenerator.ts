@@ -16,6 +16,16 @@ export function formatReviewDate(value: string): string {
   return `${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+export function calculateFixedTermEndDate(startDate: string, weeks: number): string {
+  if (!startDate || weeks <= 0) return '';
+
+  const start = new Date(`${startDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime())) return '';
+
+  start.setUTCDate(start.getUTCDate() + weeks * 7 - 1);
+  return start.toISOString().slice(0, 10);
+}
+
 export function buildReviewComment(input: ReviewCommentInput): string {
   const rent = input.rent.trim();
   const startDate = formatReviewDate(input.startDate);
