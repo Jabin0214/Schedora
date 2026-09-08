@@ -6,6 +6,7 @@ import { assemble } from '../utils/templateAssembly';
 import { IndTitle } from '../components/shared';
 import TemplatesManager from '../components/TemplatesManager';
 import type { AssemblyState } from '../types/templates';
+import { reviewCommentTemplates } from '../data/reviewCommentTemplates';
 
 const TemplatesPage: React.FC = () => {
   const { data, loading, error, refresh } = useTemplates();
@@ -181,6 +182,27 @@ const TemplatesPage: React.FC = () => {
         </Card>
       </div>
 
+      <div style={{ marginTop: 24 }}>
+        <h2 style={{ fontSize: 18, marginBottom: 0 }}>Review Comments</h2>
+        {reviewCommentTemplates.map(template => (
+          <Card key={template.title} title={template.title} size="small" style={{ marginTop: 12 }}>
+            <p style={{ marginTop: 0, color: '#6B6B69' }}>{template.description}</p>
+            <div style={previewStyle}>{template.copyText}</div>
+            <div style={{ marginTop: 12, fontSize: 13, color: '#6B6B69' }}>
+              实际范例：{template.example}
+            </div>
+            <Button
+              type="primary"
+              icon={<CopyOutlined />}
+              onClick={() => copy(template.title, template.copyText)}
+              style={{ marginTop: 12 }}
+            >
+              复制模板
+            </Button>
+          </Card>
+        ))}
+      </div>
+
       {showManager && (
         <TemplatesManager
           data={data}
@@ -193,3 +215,4 @@ const TemplatesPage: React.FC = () => {
 };
 
 export default TemplatesPage;
+
